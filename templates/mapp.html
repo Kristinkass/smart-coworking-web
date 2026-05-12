@@ -340,6 +340,181 @@
         .form-control option:disabled {
             color: #9ca3af;
         }
+
+        /* ===== РЕЖИМ РЕДАКТИРОВАНИЯ (АДМИН) ===== */
+        .edit-mode-bar {
+            display: none;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .edit-mode-bar.active {
+            display: flex;
+        }
+
+        .edit-mode-bar .edit-mode-label {
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .edit-mode-bar .edit-mode-hint {
+            font-size: 13px;
+            color: #94a3b8;
+            flex: 1;
+        }
+
+        .btn-edit-mode {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn-edit-mode:hover { background: #d97706; }
+        .btn-edit-mode.active { background: #ef4444; }
+        .btn-edit-mode.active:hover { background: #dc2626; }
+
+        /* Панель обслуживания (появляется при выборе зоны в режиме редактирования) */
+        .maintenance-panel {
+            display: none;
+            background: #1e293b;
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .maintenance-panel.active {
+            display: block;
+        }
+
+        .maintenance-panel h4 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .maintenance-panel .place-info {
+            background: #334155;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .maintenance-panel .place-info span {
+            display: block;
+            color: #94a3b8;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .maintenance-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #334155;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .maintenance-toggle .toggle-label {
+            flex: 1;
+        }
+
+        .maintenance-toggle .toggle-label strong {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+
+        .maintenance-toggle .toggle-label small {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #475569;
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: #ef4444;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Подсветка зоны при наведении в режиме редактирования */
+        .edit-mode .place-zone:hover rect {
+            stroke: #f59e0b !important;
+            stroke-width: 6px !important;
+        }
+
+        .edit-mode .place-zone.selected-for-edit rect {
+            stroke: #f59e0b !important;
+            stroke-width: 6px !important;
+            stroke-dasharray: 10,4;
+        }
+
+        /* Индикатор вместимости для openspace */
+        .occupancy-badge {
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -378,19 +553,65 @@
             <h1><i class="fas fa-map-marked-alt"></i> Карта пространства</h1>
             <p>Выберите место на карте для бронирования</p>
 
+            <!-- Панель режима редактирования (только для админов) -->
+            {% if is_admin %}
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <button id="toggle-edit-mode" class="btn-edit-mode" onclick="toggleEditMode()">
+                    <i class="fas fa-tools"></i> Режим редактирования
+                </button>
+                <span style="font-size: 13px; color: #64748b;">Только для администраторов</span>
+            </div>
+            {% endif %}
+
+            <!-- Панель активного режима редактирования -->
+            <div class="edit-mode-bar" id="edit-mode-bar">
+                <div class="edit-mode-label">
+                    <i class="fas fa-tools"></i> Режим редактирования активен
+                </div>
+                <div class="edit-mode-hint">Нажмите на зону карты, чтобы управлять её статусом обслуживания</div>
+                <button class="btn-edit-mode active" onclick="toggleEditMode()">
+                    <i class="fas fa-times"></i> Выйти из режима
+                </button>
+            </div>
+
             <!-- SVG Карта из mapp -->
             <div class="floor-plan-container">
-                <svg id="floor-plan" viewBox="0 0 2228 1224" class="floor-plan-svg">
+                <svg id="floor-plan" viewBox="0 0 2229 1224" class="floor-plan-svg">
                     <!-- Фоновое изображение -->
-                    <image href="/static/office_map.svg" width="2228" height="1224" opacity="0.95"/>
+                    <image href="/static/office_map1.svg" width="2229" height="1224" opacity="0.95"/>
                     <!-- Динамический слой с зонами -->
                     <g id="places-layer"></g>
                 </svg>
             </div>
 
+            <!-- Панель управления обслуживанием (режим редактирования) -->
+            <div class="maintenance-panel" id="maintenance-panel">
+                <h4><i class="fas fa-wrench"></i> Управление зоной</h4>
+                <div class="place-info" id="edit-place-info">
+                    <span>Выбранная зона</span>
+                    <strong id="edit-place-name">—</strong>
+                </div>
+                <div class="maintenance-toggle">
+                    <div class="toggle-label">
+                        <strong>На обслуживании</strong>
+                        <small>Зона станет серой и недоступной для бронирования</small>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="maintenance-toggle-input" onchange="applyMaintenance()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
             <!-- Форма бронирования из map -->
             <div id="booking-form" class="booking-form" style="display: none;">
                 <h3 id="selected-place-name"></h3>
+
+                <!-- Индикатор вместимости для openspace -->
+                <div id="openspace-capacity-info" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 15px; margin-bottom:12px; font-size:14px;">
+                    <i class="fas fa-users" style="color:#3b82f6;"></i>
+                    <span id="openspace-capacity-text"></span>
+                </div>
 
                 <div class="info-message" id="occupied-warning" style="display: none;">
                     <i class="fas fa-info-circle"></i>
@@ -484,6 +705,11 @@
         let availableSlots = [];
         let currentBookings = [];
 
+        // Режим редактирования (только для админов)
+        let editMode = false;
+        let editSelectedPlace = null;
+        const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+
         document.addEventListener('DOMContentLoaded', function() {
             loadPlaces();
             setupEventListeners();
@@ -540,6 +766,7 @@
         function renderFloorPlan() {
             const svg = document.getElementById('floor-plan');
             let layer = document.getElementById('places-layer');
+
             if (!layer) {
                 layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 layer.setAttribute("id", "places-layer");
@@ -547,17 +774,25 @@
             }
             layer.innerHTML = '';
 
+            if (!places || places.length === 0) {
+                console.warn("Нет мест для отрисовки!");
+                return;
+            }
+
+            console.log(`Отрисовываем ${places.length} мест`);
+
             places.forEach(place => {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 g.classList.add('place-zone');
-                g.classList.add(getStatusClass(place.status));
+                g.classList.add(getStatusClass(place.status || 'free'));
+                g.dataset.placeId = place.id;
 
-                const x = place.x;
-                const y = place.y;
-                const w = place.width;
-                const h = place.height;
+                const x = parseFloat(place.x);
+                const y = parseFloat(place.y);
+                const w = parseFloat(place.width || 180);
+                const h = parseFloat(place.height || 140);
 
-                // Прямоугольник зоны
+                // === ПРЯМОУГОЛЬНИК ===
                 const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                 rect.setAttribute("x", x);
                 rect.setAttribute("y", y);
@@ -565,35 +800,36 @@
                 rect.setAttribute("height", h);
                 rect.setAttribute("rx", "12");
                 rect.setAttribute("ry", "12");
-                rect.setAttribute("fill", getStatusColor(place.status));
-                rect.setAttribute("fill-opacity", "0.4");
-                rect.setAttribute("stroke", getStatusColor(place.status));
-                rect.setAttribute("stroke-width", "3");
+                rect.setAttribute("fill", getStatusColor(place.status || 'free'));
+                rect.setAttribute("fill-opacity", "0.45");
+                rect.setAttribute("stroke", "#1e2937");
+                rect.setAttribute("stroke-width", "4");
+                rect.setAttribute("stroke-opacity", "0.8");
                 g.appendChild(rect);
 
-                // Название места
+                // === НАЗВАНИЕ ===
                 const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 text.setAttribute("x", x + w / 2);
-                text.setAttribute("y", y + h / 2 - 15);
+                text.setAttribute("y", y + h / 2 - 8);
                 text.setAttribute("text-anchor", "middle");
                 text.setAttribute("dominant-baseline", "middle");
-                text.setAttribute("font-size", "24");
-                text.setAttribute("font-weight", "bold");
+                text.setAttribute("font-size", "22");
+                text.setAttribute("font-weight", "700");
                 text.setAttribute("fill", "#1e2937");
                 text.setAttribute("pointer-events", "none");
                 text.textContent = place.name;
                 g.appendChild(text);
 
-                // Цена
+                // === ЦЕНА ===
                 const price = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 price.setAttribute("x", x + w / 2);
-                price.setAttribute("y", y + h / 2 + 15);
+                price.setAttribute("y", y + h / 2 + 22);
                 price.setAttribute("text-anchor", "middle");
-                price.setAttribute("fill", "#6b7280");
-                price.setAttribute("font-size", "20");
+                price.setAttribute("fill", "#334155");
+                price.setAttribute("font-size", "18");
                 price.setAttribute("font-weight", "600");
                 price.setAttribute("pointer-events", "none");
-                price.textContent = place.price_per_hour + " ₽/час";
+                price.textContent = `${place.price_per_hour} ₽/ч`;
                 g.appendChild(price);
 
                 // Рейтинг
@@ -611,11 +847,56 @@
                     g.appendChild(ratingText);
                 }
 
-                // Клик по зоне
-                g.addEventListener('click', () => selectPlace(place.id));
+                // Вместимость для openspace
+                if (place.type === 'openspace' && place.capacity > 1) {
+                    const occupancy = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    occupancy.setAttribute("x", x + w / 2);
+                    occupancy.setAttribute("y", y + h / 2 + (place.rating > 0 ? 70 : 45));
+                    occupancy.setAttribute("text-anchor", "middle");
+                    occupancy.setAttribute("fill", place.current_occupancy >= place.capacity ? "#ef4444" : "#22c55e");
+                    occupancy.setAttribute("font-size", "18");
+                    occupancy.setAttribute("font-weight", "700");
+                    occupancy.setAttribute("pointer-events", "none");
+                    occupancy.textContent = `👥 ${place.current_occupancy}/${place.capacity}`;
+                    g.appendChild(occupancy);
+                }
+
+                // Иконка обслуживания
+                if (place.maintenance) {
+                    const maintIcon = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    maintIcon.setAttribute("x", x + w - 20);
+                    maintIcon.setAttribute("y", y + 30);
+                    maintIcon.setAttribute("text-anchor", "middle");
+                    maintIcon.setAttribute("font-size", "24");
+                    maintIcon.setAttribute("pointer-events", "none");
+                    maintIcon.textContent = "🔧";
+                    g.appendChild(maintIcon);
+                }
+
+                // Клик — в зависимости от режима
+                g.style.cursor = 'pointer';
+                g.addEventListener('click', () => {
+                    if (editMode && IS_ADMIN) {
+                        selectPlaceForEdit(place.id);
+                    } else if (!place.maintenance) {
+                        selectPlace(place.id);
+                    } else {
+                        showAlert('Это место сейчас на обслуживании и недоступно для бронирования', 'warning');
+                    }
+                });
 
                 layer.appendChild(g);
             });
+
+            // Подсвечиваем выбранную зону в режиме редактирования
+            if (editMode && editSelectedPlace) {
+                const allGroups = layer.querySelectorAll('.place-zone');
+                allGroups.forEach(g => {
+                    if (parseInt(g.dataset.placeId) === editSelectedPlace.id) {
+                        g.classList.add('selected-for-edit');
+                    }
+                });
+            }
         }
         // ================== ЗАГРУЗКА ДАННЫХ ==================
         async function loadPlaces() {
@@ -634,8 +915,25 @@
             selectedPlace = places.find(p => p.id === placeId);
             if (!selectedPlace) return;
 
+            // Блокируем бронирование мест на обслуживании
+            if (selectedPlace.maintenance) {
+                showAlert('Это место сейчас на обслуживании и недоступно для бронирования', 'warning');
+                return;
+            }
+
             document.getElementById('selected-place-name').textContent = selectedPlace.name;
             document.getElementById('hour-price').textContent = selectedPlace.price_per_hour + ' ₽';
+
+            // Показываем инфо о вместимости для openspace
+            const capacityInfo = document.getElementById('openspace-capacity-info');
+            const capacityText = document.getElementById('openspace-capacity-text');
+            if (selectedPlace.type === 'openspace' && selectedPlace.capacity > 1) {
+                const free = selectedPlace.capacity - (selectedPlace.current_occupancy || 0);
+                capacityText.textContent = ` Open Space: сейчас занято ${selectedPlace.current_occupancy || 0} из ${selectedPlace.capacity} мест. Свободно: ${free}`;
+                capacityInfo.style.display = 'block';
+            } else {
+                capacityInfo.style.display = 'none';
+            }
 
             const occupiedWarning = document.getElementById('occupied-warning');
             const currentOccupation = document.getElementById('current-occupation');
@@ -675,6 +973,8 @@
 
                 availableSlots = data.available_slots || [];
                 currentBookings = data.bookings || [];
+                const isOpenspace = data.is_openspace || false;
+                const capacity = data.capacity || 1;
                 const currentOccupation = data.current_occupation;
 
                 if (currentOccupation) {
@@ -682,9 +982,9 @@
                     occupiedUntil.textContent = currentOccupation.occupied_until;
                 }
 
-                renderTimeSlots(data.all_slots || []);
-                renderTimeline(data.all_slots || []);
-                updateTimeSelects(data.all_slots || []);
+                renderTimeSlots(data.all_slots || [], isOpenspace, capacity);
+                renderTimeline(data.all_slots || [], isOpenspace, capacity);
+                updateTimeSelects(data.all_slots || [], isOpenspace, capacity);
 
                 document.getElementById('availability-check').classList.remove('active');
             } catch (error) {
@@ -694,7 +994,7 @@
             }
         }
 
-        function renderTimeSlots(allSlots) {
+        function renderTimeSlots(allSlots, isOpenspace, capacity) {
             const container = document.getElementById('time-slots');
             container.innerHTML = '';
 
@@ -720,7 +1020,16 @@
                 if (isToday && slot.end <= currentTime) {
                     isAvailable = false;
                     isPast = true;
+                } else if (isOpenspace) {
+                    // Для openspace: слот доступен если ВСЕ 30-минутки внутри него доступны по бэкенду
+                    const coveredSlots = allSlots.filter(s => s.start >= slot.start && s.end <= slot.end);
+                    if (coveredSlots.length > 0) {
+                        isAvailable = coveredSlots.every(s => s.available);
+                    } else {
+                        isAvailable = false;
+                    }
                 } else {
+                    // Обычная логика: любое пересечение с бронью = занято
                     for (const booking of currentBookings) {
                         if (!(slot.end <= booking.start || slot.start >= booking.end)) {
                             isAvailable = false;
@@ -752,7 +1061,7 @@
             });
         }
 
-        function renderTimeline(allSlots) {
+        function renderTimeline(allSlots, isOpenspace, capacity) {
             const timeline = document.getElementById('booking-timeline');
             timeline.innerHTML = '';
 
@@ -762,6 +1071,10 @@
             const isToday = selectedDate === today;
             const currentHour = now.getHours();
 
+            // Строим карту доступности по часам из allSlots (бэкенд уже всё посчитал)
+            const slotMap = {};
+            allSlots.forEach(s => { slotMap[s.start] = s.available; });
+
             for (let hour = 8; hour < 22; hour++) {
                 const slot = document.createElement('div');
                 slot.className = 'timeline-slot';
@@ -770,21 +1083,26 @@
                     slot.classList.add('past');
                 } else {
                     const hourStart = hour.toString().padStart(2, '0') + ':00';
-                    const hourEnd = (hour + 1).toString().padStart(2, '0') + ':00';
+                    const hourHalf  = hour.toString().padStart(2, '0') + ':30';
 
-                    let isOccupied = false;
-                    for (const booking of currentBookings) {
-                        if (!(hourEnd <= booking.start || hourStart >= booking.end)) {
-                            isOccupied = true;
-                            break;
+                    let isOccupied;
+                    if (isOpenspace) {
+                        // Для openspace: час занят только если ОБА 30-минутных слота недоступны
+                        const a1 = slotMap[hourStart];
+                        const a2 = slotMap[hourHalf];
+                        isOccupied = (a1 === false) && (a2 === false);
+                    } else {
+                        const hourEnd = (hour + 1).toString().padStart(2, '0') + ':00';
+                        isOccupied = false;
+                        for (const booking of currentBookings) {
+                            if (!(hourEnd <= booking.start || hourStart >= booking.end)) {
+                                isOccupied = true;
+                                break;
+                            }
                         }
                     }
 
-                    if (isOccupied) {
-                        slot.classList.add('occupied');
-                    } else {
-                        slot.classList.add('available');
-                    }
+                    slot.classList.add(isOccupied ? 'occupied' : 'available');
                 }
 
                 if (hour % 2 === 0) {
@@ -797,13 +1115,11 @@
                 if (!slot.classList.contains('past')) {
                     slot.addEventListener('click', function() {
                         if (this.classList.contains('occupied')) {
-                            showAlert('Это время уже занято', 'error');
+                            showAlert(isOpenspace ? 'Open Space полностью заполнен на этот час' : 'Это время уже занято', 'error');
                             return;
                         }
-
                         const hourStart = hour.toString().padStart(2, '0') + ':00';
                         const hourEnd = (hour + 1).toString().padStart(2, '0') + ':00';
-
                         document.getElementById('start-time').value = hourStart;
                         document.getElementById('end-time').value = hourEnd;
                         updateCalculation();
@@ -814,7 +1130,7 @@
             }
         }
 
-        function updateTimeSelects(allSlots) {
+        function updateTimeSelects(allSlots, isOpenspace, capacity) {
             const startSelect = document.getElementById('start-time');
             const endSelect = document.getElementById('end-time');
 
@@ -828,6 +1144,10 @@
             const currentStart = startSelect.value;
             const currentEnd = endSelect.value;
 
+            // Строим карту доступности из бэкенда: start -> available
+            const slotAvailMap = {};
+            allSlots.forEach(s => { slotAvailMap[s.start] = s.available; });
+
             startSelect.innerHTML = '';
             endSelect.innerHTML = '';
 
@@ -838,62 +1158,57 @@
                     const isPast = isToday && time < currentTime;
 
                     let isOccupied = false;
-                    for (const booking of currentBookings) {
-                        const slotEnd = add30Minutes(time);
-                        if (!(slotEnd <= booking.start || time >= booking.end)) {
-                            isOccupied = true;
-                            break;
+                    if (!isPast) {
+                        if (isOpenspace) {
+                            // Для openspace: слот занят только если бэкенд сказал available=false
+                            isOccupied = slotAvailMap[time] === false;
+                        } else {
+                            // Обычная логика
+                            const slotEnd = add30Minutes(time);
+                            for (const booking of currentBookings) {
+                                if (!(slotEnd <= booking.start || time >= booking.end)) {
+                                    isOccupied = true;
+                                    break;
+                                }
+                            }
                         }
                     }
 
                     const optionStart = document.createElement('option');
                     optionStart.value = time;
-                    optionStart.textContent = time;
-                    if (isPast || isOccupied) {
-                        optionStart.disabled = true;
-                    }
+                    optionStart.textContent = isOpenspace && isOccupied
+                        ? `${time} (мест нет)`
+                        : time;
+                    if (isPast || isOccupied) optionStart.disabled = true;
                     startSelect.appendChild(optionStart);
 
                     const optionEnd = document.createElement('option');
                     optionEnd.value = time;
-                    optionEnd.textContent = time;
-                    if (isPast || isOccupied) {
-                        optionEnd.disabled = true;
-                    }
+                    optionEnd.textContent = isOpenspace && isOccupied
+                        ? `${time} (мест нет)`
+                        : time;
+                    if (isPast || isOccupied) optionEnd.disabled = true;
                     endSelect.appendChild(optionEnd);
                 }
             }
 
+            // Восстанавливаем предыдущие значения если они ещё доступны
             if (currentStart) {
-                const option = startSelect.querySelector(`option[value="${currentStart}"]`);
-                if (option && !option.disabled) {
-                    startSelect.value = currentStart;
-                }
+                const opt = startSelect.querySelector(`option[value="${currentStart}"]`);
+                if (opt && !opt.disabled) startSelect.value = currentStart;
             }
-
             if (currentEnd) {
-                const option = endSelect.querySelector(`option[value="${currentEnd}"]`);
-                if (option && !option.disabled) {
-                    endSelect.value = currentEnd;
-                }
+                const opt = endSelect.querySelector(`option[value="${currentEnd}"]`);
+                if (opt && !opt.disabled) endSelect.value = currentEnd;
             }
 
             if (!startSelect.value) {
-                const firstAvailable = startSelect.querySelector('option:not(:disabled)');
-                if (firstAvailable) {
-                    startSelect.value = firstAvailable.value;
-                } else {
-                    startSelect.value = '09:00';
-                }
+                const first = startSelect.querySelector('option:not(:disabled)');
+                startSelect.value = first ? first.value : '09:00';
             }
-
             if (!endSelect.value) {
-                const firstAvailable = endSelect.querySelector('option:not(:disabled)');
-                if (firstAvailable) {
-                    endSelect.value = firstAvailable.value;
-                } else {
-                    endSelect.value = '10:00';
-                }
+                const first = endSelect.querySelector('option:not(:disabled)');
+                endSelect.value = first ? first.value : '10:00';
             }
         }
 
@@ -1069,6 +1384,88 @@
                 showAlert('Не удалось создать бронирование', 'error');
             } finally {
                 document.getElementById('availability-check').classList.remove('active');
+            }
+        }
+
+        // ================== РЕЖИМ РЕДАКТИРОВАНИЯ (АДМИН) ==================
+        function toggleEditMode() {
+            if (!IS_ADMIN) return;
+
+            editMode = !editMode;
+            editSelectedPlace = null;
+
+            const svg = document.getElementById('floor-plan');
+            const bar = document.getElementById('edit-mode-bar');
+            const panel = document.getElementById('maintenance-panel');
+            const bookingForm = document.getElementById('booking-form');
+
+            if (editMode) {
+                svg.classList.add('edit-mode');
+                bar.classList.add('active');
+                // Скрываем форму бронирования при входе в режим редактирования
+                bookingForm.style.display = 'none';
+                selectedPlace = null;
+            } else {
+                svg.classList.remove('edit-mode');
+                bar.classList.remove('active');
+                panel.classList.remove('active');
+            }
+
+            renderFloorPlan();
+        }
+
+        function selectPlaceForEdit(placeId) {
+            editSelectedPlace = places.find(p => p.id === placeId);
+            if (!editSelectedPlace) return;
+
+            const panel = document.getElementById('maintenance-panel');
+            const nameEl = document.getElementById('edit-place-name');
+            const toggleInput = document.getElementById('maintenance-toggle-input');
+
+            nameEl.textContent = editSelectedPlace.name +
+                (editSelectedPlace.type === 'openspace' ? ` (вместимость: ${editSelectedPlace.capacity})` : '');
+            toggleInput.checked = editSelectedPlace.maintenance || false;
+
+            panel.classList.add('active');
+            panel.scrollIntoView({ behavior: 'smooth' });
+
+            // Перерисовываем для подсветки выбранной зоны
+            renderFloorPlan();
+        }
+
+        async function applyMaintenance() {
+            if (!editSelectedPlace) return;
+
+            const toggleInput = document.getElementById('maintenance-toggle-input');
+            const newState = toggleInput.checked;
+
+            try {
+                const response = await fetch(`/api/admin/place/${editSelectedPlace.id}/toggle_maintenance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // Обновляем локальные данные
+                    const placeIndex = places.findIndex(p => p.id === editSelectedPlace.id);
+                    if (placeIndex !== -1) {
+                        places[placeIndex].maintenance = data.maintenance;
+                        places[placeIndex].status = data.status;
+                        editSelectedPlace = places[placeIndex];
+                    }
+                    renderFloorPlan();
+                } else {
+                    showAlert('Ошибка: ' + data.error, 'error');
+                    // Откатываем переключатель
+                    toggleInput.checked = !newState;
+                }
+            } catch (error) {
+                console.error('Ошибка переключения обслуживания:', error);
+                showAlert('Не удалось изменить статус', 'error');
+                toggleInput.checked = !newState;
             }
         }
 

@@ -40,13 +40,26 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.email}>'
 
+class PlaceType(db.Model):
+    __tablename__ = 'place_types'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)   # desk, room, office, openspace
+    display_name = db.Column(db.String(80), nullable=False)        # "Рабочий стол", "Переговорная" и т.д.
+    default_price = db.Column(db.Float, default=150.0)
+    default_capacity = db.Column(db.Integer, default=1)
+
+    def __repr__(self):
+        return f'<PlaceType {self.name}>'
 
 class Place(db.Model):
     __tablename__ = 'places'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # 'desk', 'room', 'office'
+    type_id = db.Column(db.Integer, db.ForeignKey('place_types.id'), nullable=False)
+    type = db.relationship('PlaceType', backref='places')
+
     description = db.Column(db.Text)
     x = db.Column(db.Integer, nullable=False)
     y = db.Column(db.Integer, nullable=False)
@@ -57,6 +70,10 @@ class Place(db.Model):
     rating = db.Column(db.Float, default=0.0)
     rating_count = db.Column(db.Integer, default=0)
     active = db.Column(db.Boolean, default=True)
+    # Вместимость (для openspace — максимум одновременных бронирований)
+    capacity = db.Column(db.Integer, default=1)
+    # Флаг обслуживания (выставляется администратором вручную)
+    maintenance = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -74,12 +91,63 @@ class Place(db.Model):
             Booking.end_time > current_time
         ).first()
 
+    def get_current_occupancy(self):
+        """Количество активных бронирований прямо сейчас (для openspace)"""
+        now = datetime.now()
+        today = now.date()
+        current_time = now.time()
+        return Booking.query.filter(
+            Booking.place_id == self.id,
+            Booking.status == 'active',
+            Booking.booking_date == today,
+            Booking.start_time <= current_time,
+            Booking.end_time > current_time
+        ).count()
+
+    def get_occupancy_at(self, booking_date, start_time, end_time):
+        """Максимальное количество одновременных бронирований в заданном интервале"""
+        return Booking.query.filter(
+            Booking.place_id == self.id,
+            Booking.booking_date == booking_date,
+            Booking.status == 'active',
+            Booking.start_time < end_time,
+            Booking.end_time > start_time
+        ).count()
+
     def to_dict(self):
         now = datetime.now()
         today = now.date()
         current_time = now.time()
-        current_booking = self.get_current_booking()
-        is_occupied_now = current_booking is not None
+
+        # Если место на обслуживании — всегда maintenance
+        if self.maintenance:
+            return {
+                'id': self.id,
+                'name': self.name,
+                'type': self.type.name if self.type else None,
+                'x': self.x,
+                'y': self.y,
+                'width': self.width,
+                'height': self.height,
+                'status': 'maintenance',
+                'price_per_hour': self.price_per_hour,
+                'rating': round(self.rating, 1) if self.rating else 0.0,
+                'rating_count': self.rating_count,
+                'active': self.active,
+                'capacity': self.capacity,
+                'maintenance': True,
+                'current_occupancy': 0,
+                'occupied_until': None
+            }
+
+        is_openspace = self.type and self.type.name == 'openspace'
+        current_occupancy = self.get_current_occupancy()
+
+        if is_openspace:
+            is_occupied_now = current_occupancy >= self.capacity
+        else:
+            current_booking = self.get_current_booking()
+            is_occupied_now = current_booking is not None
 
         new_status = 'occupied' if is_occupied_now else 'free'
         if self.status != new_status:
@@ -89,12 +157,16 @@ class Place(db.Model):
             except:
                 db.session.rollback()
 
-        occupied_until = current_booking.end_time.strftime('%H:%M') if current_booking else None
+        occupied_until = None
+        if is_occupied_now and not is_openspace:
+            current_booking = self.get_current_booking()
+            if current_booking:
+                occupied_until = current_booking.end_time.strftime('%H:%M')
 
         return {
             'id': self.id,
             'name': self.name,
-            'type': self.type,
+            'type': self.type.name if self.type else None,
             'x': self.x,
             'y': self.y,
             'width': self.width,
@@ -104,6 +176,9 @@ class Place(db.Model):
             'rating': round(self.rating, 1) if self.rating else 0.0,
             'rating_count': self.rating_count,
             'active': self.active,
+            'capacity': self.capacity,
+            'maintenance': self.maintenance,
+            'current_occupancy': current_occupancy,
             'occupied_until': occupied_until
         }
 
@@ -180,12 +255,26 @@ class Tariff(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-# ================== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ==================
 
 def create_sample_data():
     """Создание тестовых данных"""
     print("Создание тестовых данных...")
     try:
+        # === Создаём типы мест ===
+        if PlaceType.query.count() == 0:
+            types = [
+                {'name': 'desk', 'display_name': 'Рабочий стол', 'default_price': 150, 'default_capacity': 1},
+                {'name': 'room', 'display_name': 'Переговорная', 'default_price': 500, 'default_capacity': 6},
+                {'name': 'office', 'display_name': 'Приватный офис', 'default_price': 800, 'default_capacity': 8},
+                {'name': 'openspace', 'display_name': 'Open Space', 'default_price': 150, 'default_capacity': 10},
+            ]
+            for t in types:
+                place_type = PlaceType(**t)
+                db.session.add(place_type)
+            db.session.commit()
+            print("✓ Типы мест созданы")
+
+        # === Создаём администратора ===
         if User.query.filter_by(role='admin').count() == 0:
             admin = User(
                 email='admin@coworking.com',
@@ -196,44 +285,75 @@ def create_sample_data():
             )
             admin.set_password('123456')
             db.session.add(admin)
+            db.session.commit()
+            print("✓ Админ создан")
 
-            user = User(
-                email='user@example.com',
-                username='Тестовый Пользователь',
-                phone='+79993334455',
-                role='client',
-                active=True
-            )
-            user.set_password('user123')
-            db.session.add(user)
-
+        # === Создаём места (самое важное) ===
         if Place.query.count() == 0:
+            desk_type = PlaceType.query.filter_by(name='desk').first()
+            room_type = PlaceType.query.filter_by(name='room').first()
+            office_type = PlaceType.query.filter_by(name='office').first()
+            openspace_type = PlaceType.query.filter_by(name='openspace').first()
+
+            if not all([desk_type, room_type, office_type, openspace_type]):
+                print("❌ Не найдены типы мест!")
+                return
+
             places = [
-                {'name': 'Стол 1', 'type': 'desk', 'x': 100, 'y': 20, 'price_per_hour': 150},
-                {'name': 'Стол 2', 'type': 'desk', 'x': 400, 'y': 20, 'price_per_hour': 150},
-                {'name': 'Стол 3', 'type': 'desk', 'x': 3, 'y': 1, 'price_per_hour': 150},
-                {'name': 'Стол 4', 'type': 'desk', 'x': 4, 'y': 1, 'price_per_hour': 150},
-                {'name': 'Стол 5', 'type': 'desk', 'x': 5, 'y': 1, 'price_per_hour': 150},
-                {'name': 'Стол 6', 'type': 'desk', 'x': 6, 'y': 1, 'price_per_hour': 150},
-                {'name': 'Стол 7', 'type': 'desk', 'x': 1, 'y': 2, 'price_per_hour': 150},
-                {'name': 'Стол 8', 'type': 'desk', 'x': 2, 'y': 2, 'price_per_hour': 150},
-                {'name': 'Стол 9', 'type': 'desk', 'x': 3, 'y': 2, 'price_per_hour': 150},
-                {'name': 'Стол 10', 'type': 'desk', 'x': 4, 'y': 2, 'price_per_hour': 150},
-                {'name': 'Переговорная A', 'type': 'room', 'x': 1, 'y': 4, 'width': 2, 'height': 2, 'price_per_hour': 500},
-                {'name': 'Переговорная B', 'type': 'room', 'x': 4, 'y': 4, 'width': 2, 'height': 2, 'price_per_hour': 500},
-                {'name': 'Переговорная C', 'type': 'room', 'x': 7, 'y': 4, 'width': 2, 'height': 2, 'price_per_hour': 500},
-                {'name': 'Офис 1', 'type': 'office', 'x': 1, 'y': 7, 'width': 3, 'height': 2, 'price_per_hour': 800},
-                {'name': 'Офис 2', 'type': 'office', 'x': 5, 'y': 7, 'width': 3, 'height': 2, 'price_per_hour': 800},
+                # Левый верх (офисы и столы)
+                Place(name='Офис 1', type_id=office_type.id, x=220, y=5, width=625, height=400, price_per_hour=800),
+                Place(name='Стол 1', type_id=desk_type.id, x=20, y=5, width=200, height=310, price_per_hour=250),
+
+                # Верхний ряд переговорок
+                Place(name='Стол 2', type_id=desk_type.id, x=845, y=5, width=222, height=240,
+                      price_per_hour=250),
+                Place(name='Стол 3', type_id=desk_type.id, x=1065, y=5, width=220, height=240,
+                      price_per_hour=250),
+                Place(name='Стол 4', type_id=desk_type.id, x=1285, y=5, width=220, height=240,
+                      price_per_hour=250),
+                Place(name='Стол 5', type_id=desk_type.id, x=1505, y=5, width=220, height=240,
+                      price_per_hour=250),
+                Place(name='Стол 6', type_id=desk_type.id, x=1725, y=5, width=220, height=240,
+                      price_per_hour=250),
+
+                # Правый столбец
+                Place(name='Стол 7', type_id=room_type.id, x=1945, y=5, width=265, height=345, price_per_hour=250),
+                Place(name='Стол 8', type_id=room_type.id, x=1945, y=350, width=265, height=220, price_per_hour=250),
+                Place(name='Стол 9', type_id=room_type.id, x=1945, y=570, width=265, height=220, price_per_hour=250),
+                Place(name='Стол 10', type_id=room_type.id, x=1945, y=790, width=265, height=150, price_per_hour=250),
+
+                # Нижний ряд
+                Place(name='Стол 11', type_id=room_type.id, x=855, y=995, width=223, height=210, price_per_hour=250),
+                Place(name='Стол 12', type_id=room_type.id, x=630, y=995, width=225, height=210, price_per_hour=250),
+
+                # Большая переговорная
+                Place(name='Переговорная 1', type_id=room_type.id, x=1078, y=945, width=500, height=260,
+                      price_per_hour=500),
+                Place(name='Переговорная 2', type_id=room_type.id, x=1707, y=945, width=502, height=260,
+                      price_per_hour=500),
+
+                # Open Space внизу
+                Place(name='Open Space', type_id=openspace_type.id, x=20, y=787, width=610, height=418,
+                      price_per_hour=150, capacity=10),
             ]
-            for place_data in places:
-                place = Place(**place_data)
+
+            for place in places:
                 db.session.add(place)
 
+            db.session.commit()
+            print(f"✓ Создано {len(places)} мест на карте")
+
+        else:
+            print(f"✓ В базе уже {Place.query.count()} мест")
+
         db.session.commit()
-        print("Тестовые данные созданы!")
+        print("Тестовые данные успешно загружены!")
+
     except Exception as e:
         db.session.rollback()
         print(f"Ошибка при создании тестовых данных: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def update_booking_statuses():
@@ -272,6 +392,23 @@ def init_db(app):
         print("Создание/проверка таблиц базы данных...")
         db.create_all()
         print("Таблицы базы данных готовы")
+
+        # Миграция: обновляем capacity у существующего Open Space если он = 1 (дефолт)
+        try:
+            openspace_type = PlaceType.query.filter_by(name='openspace').first()
+            if openspace_type:
+                wrong_capacity = Place.query.filter(
+                    Place.type_id == openspace_type.id,
+                    Place.capacity == 1
+                ).all()
+                for p in wrong_capacity:
+                    p.capacity = 10
+                    print(f"✓ Обновлена вместимость '{p.name}': capacity=10")
+                if wrong_capacity:
+                    db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Ошибка миграции capacity: {e}")
 
         create_sample_data()
         completed = update_booking_statuses()

@@ -85,6 +85,14 @@ def is_time_slot_available(place_id, booking_date, start_time, end_time, exclude
         if isinstance(booking_date, str):
             booking_date = datetime.strptime(booking_date, '%Y-%m-%d').date()
 
+        place = models.Place.query.get(place_id)
+        if not place:
+            return False, "Место не найдено"
+
+        # Проверка флага обслуживания
+        if place.maintenance:
+            return False, "Место находится на обслуживании"
+
         # Проверка времени пройденного
         now = datetime.now()
         if booking_date < now.date():
@@ -113,35 +121,55 @@ def is_time_slot_available(place_id, booking_date, start_time, end_time, exclude
         if duration_hours > 8:
             return False, "Максимальная продолжительность бронирования - 8 часов"
 
-        # Поиск пересекающихся броней
-        query = models.Booking.query.filter(
-            models.Booking.place_id == place_id,
-            models.Booking.booking_date == booking_date,
-            models.Booking.status == 'active',
-            db.or_(
-                db.and_(
-                    models.Booking.start_time <= start_time,
-                    models.Booking.end_time > start_time
-                ),
-                db.and_(
-                    models.Booking.start_time < end_time,
-                    models.Booking.end_time >= end_time
-                ),
-                db.and_(
-                    models.Booking.start_time >= start_time,
-                    models.Booking.end_time <= end_time
+        is_openspace = place.type and place.type.name == 'openspace'
+
+        if is_openspace:
+            # Для openspace проверяем вместимость: считаем пересекающиеся брони
+            query = models.Booking.query.filter(
+                models.Booking.place_id == place_id,
+                models.Booking.booking_date == booking_date,
+                models.Booking.status == 'active',
+                models.Booking.start_time < end_time,
+                models.Booking.end_time > start_time
+            )
+            if exclude_booking_id:
+                query = query.filter(models.Booking.id != exclude_booking_id)
+
+            concurrent_count = query.count()
+            if concurrent_count >= place.capacity:
+                return False, f"Open Space заполнен ({concurrent_count}/{place.capacity} мест занято на это время)"
+
+            return True, f"Время доступно ({concurrent_count}/{place.capacity} мест занято)"
+        else:
+            # Для обычных мест — стандартная проверка пересечений
+            query = models.Booking.query.filter(
+                models.Booking.place_id == place_id,
+                models.Booking.booking_date == booking_date,
+                models.Booking.status == 'active',
+                db.or_(
+                    db.and_(
+                        models.Booking.start_time <= start_time,
+                        models.Booking.end_time > start_time
+                    ),
+                    db.and_(
+                        models.Booking.start_time < end_time,
+                        models.Booking.end_time >= end_time
+                    ),
+                    db.and_(
+                        models.Booking.start_time >= start_time,
+                        models.Booking.end_time <= end_time
+                    )
                 )
             )
-        )
 
-        if exclude_booking_id:
-            query = query.filter(models.Booking.id != exclude_booking_id)
+            if exclude_booking_id:
+                query = query.filter(models.Booking.id != exclude_booking_id)
 
-        conflicting_booking = query.first()
-        if conflicting_booking:
-            return False, f"Место уже забронировано с {conflicting_booking.start_time.strftime('%H:%M')} до {conflicting_booking.end_time.strftime('%H:%M')}"
+            conflicting_booking = query.first()
+            if conflicting_booking:
+                return False, f"Место уже забронировано с {conflicting_booking.start_time.strftime('%H:%M')} до {conflicting_booking.end_time.strftime('%H:%M')}"
 
-        return True, "Время доступно"
+            return True, "Время доступно"
     except Exception as e:
         return False, f"Ошибка проверки: {str(e)}"
 
@@ -389,6 +417,7 @@ def map_view():
                                places=json.dumps(places_data),
                                today=today,
                                time_slots=time_slots,
+                               is_admin=current_user.is_admin(),
                                get_type_name=get_type_name,
                                get_status_name=get_status_name)
     except Exception as e:
@@ -456,16 +485,26 @@ def get_available_times(place_id):
             if booking_date == today and slot_start < current_time:
                 return False
 
-            # Проверяем, не пересекается ли слот с существующими бронированиями
-            for booking in bookings:
-                booking_start = booking.start_time
-                booking_end = booking.end_time
+            is_openspace = place.type and place.type.name == 'openspace'
 
-                # Если слот пересекается с бронированием
-                if not (slot_end <= booking_start or slot_start >= booking_end):
-                    return False
-
-            return True
+            if is_openspace:
+                # Для openspace считаем количество пересекающихся броней
+                count = models.Booking.query.filter(
+                    models.Booking.place_id == place_id,
+                    models.Booking.booking_date == booking_date,
+                    models.Booking.status == 'active',
+                    models.Booking.start_time < slot_end,
+                    models.Booking.end_time > slot_start
+                ).count()
+                return count < place.capacity
+            else:
+                # Проверяем, не пересекается ли слот с существующими бронированиями
+                for booking in bookings:
+                    booking_start = booking.start_time
+                    booking_end = booking.end_time
+                    if not (slot_end <= booking_start or slot_start >= booking_end):
+                        return False
+                return True
 
         while current_time_slot < work_end:
             slot_end = add_hours_to_time(current_time_slot, 0.5)  # 30 минут
@@ -520,6 +559,8 @@ def get_available_times(place_id):
             'date': date_str,
             'available_slots': grouped_slots,
             'all_slots': all_slots,
+            'is_openspace': place.type and place.type.name == 'openspace',
+            'capacity': place.capacity,
             'bookings': [{
                 'start': b.start_time.strftime('%H:%M'),
                 'end': b.end_time.strftime('%H:%M')
@@ -1358,6 +1399,33 @@ def admin_places():
     except Exception as e:
         flash(f'Ошибка при загрузке мест: {str(e)}', 'error')
         return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/api/admin/place/<int:place_id>/toggle_maintenance', methods=['POST'])
+@admin_required
+def admin_toggle_maintenance(place_id):
+    """Переключить флаг обслуживания для места (только для администраторов)"""
+    try:
+        place = models.Place.query.get_or_404(place_id)
+        place.maintenance = not place.maintenance
+
+        # Если ставим на обслуживание — принудительно обновляем статус
+        if place.maintenance:
+            place.status = 'maintenance'
+        else:
+            place.status = 'free'
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'maintenance': place.maintenance,
+            'status': place.status,
+            'message': f'Место "{place.name}" {"переведено на обслуживание" if place.maintenance else "снято с обслуживания"}'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/admin/place/<int:place_id>/toggle_status', methods=['POST'])
