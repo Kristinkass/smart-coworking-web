@@ -26,9 +26,9 @@
                 <label>Телефон <span style="color:#ef4444">*</span></label>
                 <input type="tel" id="qr-phone" class="form-control phone-mask" placeholder="+7 999 123 45 67">
             </div>
-            <div class="form-group" style="margin-bottom:16px;">
-                <label>Почта</label>
-                <input type="email" id="qr-email" class="form-control" placeholder="optional@email.com">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Почта <span style="color:#ef4444">*</span></label>
+                <input type="email" id="qr-email" class="form-control" placeholder="client@email.com" required>
             </div>
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-outline-secondary" onclick="closeQuickRegister()">Отмена</button>
@@ -88,10 +88,21 @@ async function submitQuickRegister() {
     const phone = document.getElementById('qr-phone').value.trim();
     const email = document.getElementById('qr-email').value.trim();
 
-    if (!username || !phone) {
-        showToast('Имя и телефон обязательны', 'warning');
+    if (!username || !phone || !email) {
+        showToast('Имя, почта и телефон обязательны', 'warning');
         return;
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('Укажите корректный email', 'warning');
+        return;
+    }
+
+    if (typeof isPhoneComplete === 'function' && !isPhoneComplete(phone)) {
+        showToast('Введите корректный номер телефона', 'warning');
+        return;
+    }
+
     try {
         const r = await fetch('/api/admin/quick_register', {
             method: 'POST',

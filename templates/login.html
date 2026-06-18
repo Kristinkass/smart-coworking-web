@@ -10,7 +10,7 @@
             <p>Выберите способ входа и введите пароль</p>
         </div>
 
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form" id="login-form">
+        <form method="POST" action="{{ url_for('login') }}" class="auth-form" id="login-form" novalidate>
             <input type="hidden" name="login_mode" id="login_mode" value="{{ login_mode|default('email') }}">
 
             <div class="auth-login-tabs" role="tablist" aria-label="Способ входа">
@@ -107,6 +107,13 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         const mode = modeInput.value;
         const value = identifier.value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!value || !password) {
+            e.preventDefault();
+            showToast('Введите логин и пароль', 'warning');
+            return false;
+        }
 
         if (mode === 'phone') {
             if (typeof isPhoneComplete === 'function' && !isPhoneComplete(value)) {

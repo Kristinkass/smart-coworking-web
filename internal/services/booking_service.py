@@ -625,6 +625,35 @@ def check_period_availability(
 CANCEL_MIN_HOURS_BEFORE = 1
 
 
+def refund_subscription_hours_on_cancel(booking):
+    """Вернуть часы абонемента при отмене почасовой брони по абонементу."""
+    if booking.tariff_type != 'hourly':
+        return False
+
+    from internal.models import Subscription
+
+    subscription = None
+    if booking.subscription_id:
+        subscription = Subscription.query.get(booking.subscription_id)
+    elif not booking.total_price and booking.people_count == 1:
+        subscription = Subscription.query.filter(
+            Subscription.user_id == booking.user_id,
+            Subscription.active.is_(True),
+            Subscription.start_date <= booking.booking_date,
+            Subscription.end_date >= booking.booking_date,
+        ).order_by(Subscription.end_date.desc()).first()
+
+    if not subscription:
+        return False
+
+    refund_hours = booking.duration_hours or 0
+    if refund_hours <= 0:
+        return False
+
+    subscription.hours_used = max(0, subscription.hours_used - int(round(refund_hours)))
+    return True
+
+
 def can_cancel_booking(booking, now=None, allow_staff=False, is_staff=False):
     """Отмена не позднее чем за CANCEL_MIN_HOURS_BEFORE ч до начала."""
     if booking.status in ('cancelled', 'completed'):

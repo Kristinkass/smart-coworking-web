@@ -33,8 +33,18 @@
                 <i class="fas fa-chair"></i>
             </div>
             <div class="stat-info">
-                <h3>{{ total_places }}</h3>
+                <h3>{{ total_desk_seats }}</h3>
                 <p>Рабочих мест</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-door-open"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_meeting_rooms }}</h3>
+                <p>Переговорных</p>
             </div>
         </div>
 
@@ -70,6 +80,10 @@
             <a href="{{ url_for('admin_location_zones') }}" class="action-card" style="border-left: 5px solid #a8b89a;">
                 <i class="fas fa-map-signs" style="color:#a8b89a;"></i>
                 <span>Зоны локаций (A, B…)</span>
+            </a>
+            <a href="{{ url_for('admin_floors') }}" class="action-card" style="border-left: 5px solid #8fa67a;">
+                <i class="fas fa-layer-group" style="color:#8fa67a;"></i>
+                <span>Этажи</span>
             </a>
             <a href="{{ url_for('admin_categories') }}" class="action-card" style="border-left: 5px solid #8fa67a;">
                 <i class="fas fa-tags" style="color:#8fa67a;"></i>

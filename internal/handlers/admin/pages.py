@@ -22,7 +22,9 @@ from internal.utils.formatters import (
     format_duration,
     format_place_code,
 )
+from internal.utils.stats import compute_desk_seat_capacity, compute_meeting_room_count
 from internal.utils.phone import format_phone_display
+from internal.utils.errors import user_error_message
 
 
 def register_admin_pages_routes(app):
@@ -41,7 +43,8 @@ def register_admin_pages_routes(app):
         try:
             # Общая статистика (только реальные рабочие места, без зон-контейнеров)
             total_users = models.User.query.count()
-            total_places = models.Place.query.filter(models.Place.kind == 'desk').count()
+            total_desk_seats = compute_desk_seat_capacity()
+            total_meeting_rooms = compute_meeting_room_count()
             active_bookings = models.Booking.query.filter_by(status='active').count()
 
             # Доход за сегодня (ИСПРАВЛЕНО)
@@ -57,12 +60,13 @@ def register_admin_pages_routes(app):
 
             return render_template('admin/admin.html',
                                    total_users=total_users,
-                                   total_places=total_places,
+                                   total_desk_seats=total_desk_seats,
+                                   total_meeting_rooms=total_meeting_rooms,
                                    active_bookings=active_bookings,
                                    today_revenue=today_revenue,
                                    recent_bookings=recent_bookings)
         except Exception as e:
-            flash(f'Ошибка при загрузке панели администратора: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке панели администратора: {user_error_message(e)}', 'error')
             return redirect(url_for('dashboard'))
 
 
@@ -75,7 +79,7 @@ def register_admin_pages_routes(app):
             users = models.User.query.order_by(models.User.created_at.desc()).all()
             return render_template('admin/admin_users.html', users=users, format_phone=format_phone_display)
         except Exception as e:
-            flash(f'Ошибка при загрузке пользователей: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке пользователей: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))
 
 
@@ -88,7 +92,7 @@ def register_admin_pages_routes(app):
             users = models.User.query.filter_by(role='client').order_by(models.User.created_at.desc()).all()
             return render_template('manager_clients.html', users=users, format_phone=format_phone_display)
         except Exception as e:
-            flash(f'Ошибка при загрузке клиентов: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке клиентов: {user_error_message(e)}', 'error')
             return redirect(url_for('dashboard'))
 
 
@@ -123,7 +127,7 @@ def register_admin_pages_routes(app):
                 } for u in users]
             })
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -275,7 +279,7 @@ def register_admin_pages_routes(app):
                                    expiring_soon_count=expiring_soon_count,  # ДОБАВЛЕНО
                                    active_bookings_count=active_count)
         except Exception as e:
-            flash(f'Ошибка при загрузке бронирований: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке бронирований: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))
 
 
@@ -296,7 +300,7 @@ def register_admin_pages_routes(app):
                 is_manager=current_user.is_manager(),
             )
         except Exception as e:
-            flash(f'Ошибка при загрузке абонементов: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке абонементов: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))
 
 
@@ -316,7 +320,7 @@ def register_admin_pages_routes(app):
             categories = models.PlaceCategory.query.order_by(models.PlaceCategory.kind, models.PlaceCategory.capacity).all()
             return render_template('admin/categories.html', categories=categories)
         except Exception as e:
-            flash(f'Ошибка загрузки категорий: {e}', 'error')
+            flash(f'Ошибка загрузки категорий: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))
 
 
@@ -329,7 +333,7 @@ def register_admin_pages_routes(app):
             categories = models.PlaceCategory.query.order_by(models.PlaceCategory.kind, models.PlaceCategory.capacity).all()
             return render_template('admin/tariffs.html', categories=categories)
         except Exception as e:
-            flash(f'Ошибка загрузки тарифов: {e}', 'error')
+            flash(f'Ошибка загрузки тарифов: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard' if current_user.is_admin() else 'dashboard'))
 
 
@@ -339,6 +343,119 @@ def register_admin_pages_routes(app):
     def admin_schedule():
         """Управление расписанием коворкинга"""
         return render_template('admin/schedule.html')
+
+
+
+    @app.route('/admin/floors')
+    @admin_required
+    def admin_floors():
+        """Управление этажами коворкинга."""
+        return render_template('admin/floors.html')
+
+
+
+    @app.route('/api/admin/floors', methods=['GET'])
+    @admin_required
+    def admin_list_floors():
+        from internal.models.coworking import Coworking
+        cw = Coworking.get_singleton()
+        floors = models.Floor.query.filter_by(coworking_id=cw.id).order_by(models.Floor.number).all()
+        result = []
+        for f in floors:
+            places_count = Place.query.filter_by(floor_id=f.id, active=True).count()
+            result.append({
+                'id': f.id,
+                'number': f.number,
+                'name': f.name,
+                'label': f.name or f'Этаж {f.number}',
+                'places_count': places_count,
+            })
+        return jsonify({'success': True, 'floors': result})
+
+
+
+    @app.route('/api/admin/floors', methods=['POST'])
+    @admin_required
+    def admin_create_floor():
+        from internal.models.coworking import Coworking
+        try:
+            data = request.json or {}
+            number = int(data.get('number', 0))
+            name = (data.get('name') or '').strip() or None
+            if number < 1:
+                return jsonify({'success': False, 'error': 'Номер этажа должен быть ≥ 1'}), 400
+            cw = Coworking.ensure_singleton()
+            if models.Floor.query.filter_by(coworking_id=cw.id, number=number).first():
+                return jsonify({'success': False, 'error': f'Этаж {number} уже существует'}), 400
+            floor = models.Floor(coworking_id=cw.id, number=number, name=name)
+            db.session.add(floor)
+            db.session.commit()
+
+            from internal.layout.repository import LayoutRepository
+            from internal.models.location_zone import LocationZoneType, ensure_location_for_zone
+
+            LayoutRepository.provision_new_floor_layout(number, name=name)
+            for zt in LocationZoneType.query.filter_by(active=True).all():
+                ensure_location_for_zone(number, zt.id_zone_type)
+
+            return jsonify({
+                'success': True,
+                'floor': {
+                    'id': floor.id,
+                    'number': floor.number,
+                    'name': floor.name,
+                    'label': floor.name or f'Этаж {floor.number}',
+                },
+            })
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Укажите корректный номер этажа'}), 400
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+
+
+    @app.route('/api/admin/floors/<int:floor_id>', methods=['PATCH'])
+    @admin_required
+    def admin_update_floor(floor_id):
+        try:
+            floor = models.Floor.query.get_or_404(floor_id)
+            data = request.json or {}
+            if 'name' in data:
+                floor.name = (data.get('name') or '').strip() or None
+            db.session.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+
+
+    @app.route('/api/admin/floors/<int:floor_id>', methods=['DELETE'])
+    @admin_required
+    def admin_delete_floor(floor_id):
+        try:
+            from internal.layout.repository import LayoutRepository
+
+            floor = models.Floor.query.get_or_404(floor_id)
+            places_count = Place.query.filter_by(floor_id=floor.id).count()
+            if places_count:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        f'На этаже {floor.number} есть {places_count} '
+                        f'{"место" if places_count == 1 else "места" if places_count < 5 else "мест"}. '
+                        'Сначала удалите или перенесите их в редакторе.'
+                    ),
+                }), 400
+
+            LayoutRepository.remove_floor_layout(floor.number)
+            db.session.delete(floor)
+            db.session.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -415,7 +532,7 @@ def register_admin_pages_routes(app):
                                    format_booking_duration_display=format_booking_duration_display,
                                    format_booking_subscription_name=format_booking_subscription_name)
         except Exception as e:
-            flash(f'Ошибка при загрузке отчетов: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке отчетов: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))
 
 

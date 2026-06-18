@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 from internal.models import CategoryTariff, PlaceCategory, db
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
+from internal.utils.errors import user_error_message
 
 VALID_CATEGORY_KINDS = frozenset({'desk', 'room'})
 
@@ -171,7 +172,7 @@ def api_get_categories():
             'categories': [_enrich_category(cat) for cat in visible],
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/categories', methods=['POST'])
@@ -204,7 +205,7 @@ def api_create_category():
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/categories/<int:category_id>', methods=['PUT'])
@@ -239,7 +240,7 @@ def api_update_category(category_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/categories/<int:category_id>', methods=['DELETE'])
@@ -264,7 +265,7 @@ def api_delete_category(category_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/place/<int:place_id>/category', methods=['PUT'])
@@ -286,7 +287,7 @@ def api_set_place_category(place_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/place-by-code/<path:code>/category', methods=['PUT'])
@@ -308,7 +309,7 @@ def api_set_place_category_by_code(code):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/tariffs', methods=['GET'])
@@ -321,7 +322,7 @@ def api_get_tariffs():
         tariffs = query.all()
         return jsonify({'success': True, 'tariffs': [t.to_dict() for t in tariffs]})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/categories/<int:category_id>/available-tariff-types', methods=['GET'])
@@ -338,7 +339,7 @@ def api_get_available_tariff_types(category_id):
             'is_complete': len(existing_types) == 3,
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/categories/<int:category_id>/tariffs', methods=['POST'])
@@ -375,7 +376,7 @@ def api_create_category_tariff(category_id):
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/tariffs/<int:tariff_id>', methods=['PUT'])
@@ -395,7 +396,7 @@ def api_update_category_tariff(tariff_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @category_bp.route('/api/admin/tariffs/<int:tariff_id>', methods=['DELETE'])
@@ -407,4 +408,4 @@ def api_delete_category_tariff(tariff_id):
         return jsonify({'success': True, 'message': 'Тариф удален'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500

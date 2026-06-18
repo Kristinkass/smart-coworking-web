@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from internal.handlers.deps import Booking, Place, User, db, models, BookingRepository
 from internal.utils.phone import normalize_phone, digits_only
+from internal.utils.errors import user_error_message
 
 
 def register_user_routes(app):
@@ -71,7 +72,7 @@ def register_user_routes(app):
         except Exception as e:
             db.session.rollback()
             print(f"Ошибка при отправке оценки: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -88,7 +89,7 @@ def register_user_routes(app):
                 return jsonify({'success': False, 'error': 'Имя пользователя обязательно'}), 400
 
             if data.get('email') and data.get('email') != current_user.email:
-                return jsonify({'success': False, 'error': 'Email изменить нельзя'}), 400
+                return jsonify({'success': False, 'error': 'Изменить email нельзя'}), 400
 
             current_user.username = username
             if phone is not None:
@@ -112,7 +113,7 @@ def register_user_routes(app):
         except Exception as e:
             db.session.rollback()
             print(f"Ошибка при обновлении профиля: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -143,7 +144,7 @@ def register_user_routes(app):
         except Exception as e:
             db.session.rollback()
             print(f"Ошибка при смене пароля: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -212,7 +213,7 @@ def register_user_routes(app):
 
         except Exception as e:
             print(f"Ошибка при получении статистики: {e}")
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     # ================== АДМИН ПАНЕЛЬ ==================
 

@@ -18,19 +18,13 @@ from internal.layout.geometry import (
 )
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
+from internal.utils.errors import user_error_message
 from internal.utils.phone import normalize_phone
 
 
 def _api_error(exc):
     """Сообщение об ошибке для API (без технического английского)."""
-    msg = str(exc) if exc else 'Неизвестная ошибка'
-    if 'PlaceCategory' in msg and 'not defined' in msg:
-        return 'Ошибка категории места. Перезапустите сервер и повторите.'
-    if 'IntegrityError' in type(exc).__name__:
-        return 'Запись с такими данными уже существует'
-    if '@' in msg and 'email' in msg.lower():
-        return 'Некорректный адрес электронной почты'
-    return msg
+    return user_error_message(exc)
 
 
 def _desk_center_in_rect(fx, fy, w, h, rx, ry, rw, rh):
@@ -142,14 +136,7 @@ def register_admin_place_routes(app):
         """Переключить флаг обслуживания для места."""
         try:
             place = PlaceRepository.get_or_404(place_id)
-            place.maintenance = not place.maintenance
-
-            # Если ставим на обслуживание – принудительно обновляем статус
-            if place.maintenance:
-                place.status = 'maintenance'
-            else:
-                place.status = 'free'
-
+            place.apply_maintenance(not place.maintenance)
             db.session.commit()
 
             return jsonify({
@@ -173,14 +160,7 @@ def register_admin_place_routes(app):
             maintenance = data.get('maintenance', False)
 
             place = PlaceRepository.get_or_404(place_id)
-            place.maintenance = maintenance
-
-            # Если ставим на обслуживание – принудительно обновляем статус
-            if place.maintenance:
-                place.status = 'maintenance'
-            else:
-                place.status = 'free'
-
+            place.apply_maintenance(maintenance)
             db.session.commit()
 
             return jsonify({
@@ -199,22 +179,25 @@ def register_admin_place_routes(app):
     @staff_required
     def admin_quick_register():
         """Быстрая регистрация клиента менеджером.
-        Вход: username (обязательно), phone (обязательно), email (опционально)
+        Вход: username, email, phone (все обязательны)
         Выход: {success, user_id, temp_password, message}
         """
         try:
             data = request.json
             username = (data.get('username') or '').strip()
             phone = normalize_phone(data.get('phone'))
-            email = (data.get('email') or '').strip().lower() or None
+            email = (data.get('email') or '').strip().lower()
 
-            if not username or not phone:
-                return jsonify({'success': False, 'error': 'Имя и телефон обязательны'}), 400
+            if not username or not phone or not email:
+                return jsonify({'success': False, 'error': 'Имя, почта и телефон обязательны'}), 400
+
+            if '@' not in email or '.' not in email.split('@')[-1]:
+                return jsonify({'success': False, 'error': 'Укажите корректный email'}), 400
 
             if UserRepository.get_by_phone(phone):
                 return jsonify({'success': False, 'error': 'Пользователь с таким телефоном уже существует'}), 400
 
-            if email and UserRepository.get_by_email(email):
+            if UserRepository.get_by_email(email):
                 return jsonify({'success': False, 'error': 'Этот email уже занят'}), 400
 
             # Генерация временного пароля (6 цифр)
@@ -576,7 +559,7 @@ def register_admin_place_routes(app):
             floor = data.get('floor')
 
             if not code or x is None or y is None:
-                return jsonify({'success': False, 'error': 'Не указаны code, x или y'}), 400
+                return jsonify({'success': False, 'error': 'Не указаны код, координаты X или Y'}), 400
 
             place = PlaceRepository.sync_by_code(code)
             if not place:
@@ -649,7 +632,7 @@ def register_admin_place_routes(app):
 
             ok = LayoutRepository.save_place_geometry(place.code, fx, fy, floor=floor)
             if not ok:
-                return jsonify({'success': False, 'error': 'Не удалось сохранить координаты в layout'}), 500
+                return jsonify({'success': False, 'error': 'Не удалось сохранить координаты на карте'}), 500
 
             # Обновляем floor_id в БД для целостности данных
             if floor is not None:
@@ -681,7 +664,7 @@ def register_admin_place_routes(app):
             width = data.get('width')
             height = data.get('height')
             if not code or width is None or height is None:
-                return jsonify({'success': False, 'error': 'Не указаны code, width или height'}), 400
+                return jsonify({'success': False, 'error': 'Не указаны код, ширина или высота'}), 400
             geom = models.get_place_geometry(code)
             floor_num = int(geom.get('floor', 1))
             walls = LayoutRepository.load_walls()
@@ -717,7 +700,7 @@ def register_admin_place_routes(app):
             code = data.get('code')
             rotation = data.get('rotation')
             if not code or rotation is None:
-                return jsonify({'success': False, 'error': 'Не указаны code или rotation'}), 400
+                return jsonify({'success': False, 'error': 'Не указаны код или угол поворота'}), 400
 
             geom = models.get_place_geometry(code)
             if not geom:
@@ -771,7 +754,7 @@ def register_admin_place_routes(app):
             LayoutRepository.delete_wall(wall_id)
             return jsonify({'success': True})
         except PermissionError as e:
-            return jsonify({'success': False, 'error': str(e)}), 403
+            return jsonify({'success': False, 'error': user_error_message(e)}), 403
         except Exception as e:
             return jsonify({'success': False, 'error': _api_error(e)}), 500
 
@@ -839,7 +822,7 @@ def register_admin_place_routes(app):
                 msg += f'; локации подтянуты: {", ".join(synced)}'
             return jsonify({'success': True, 'message': msg, 'synced_places': synced})
         except PermissionError as e:
-            return jsonify({'success': False, 'error': str(e)}), 403
+            return jsonify({'success': False, 'error': user_error_message(e)}), 403
         except Exception as e:
             return jsonify({'success': False, 'error': _api_error(e)}), 500
 

@@ -3,8 +3,10 @@ from datetime import datetime
 
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import IntegrityError
 
 from internal.handlers.deps import User, UserRepository, db, models
+from internal.utils.errors import user_error_message
 from internal.utils.phone import normalize_phone
 
 
@@ -107,9 +109,12 @@ def register_auth_routes(app):
 
                 flash('Регистрация успешна! Теперь вы можете войти.', 'success')
                 return redirect(url_for('login'))
+            except IntegrityError:
+                db.session.rollback()
+                flash('Пользователь с таким email или телефоном уже существует', 'error')
             except Exception as e:
                 db.session.rollback()
-                flash(f'Ошибка при регистрации: {str(e)}', 'error')
+                flash(f'Ошибка при регистрации: {user_error_message(e)}', 'error')
 
         return render_template('register.html')
 

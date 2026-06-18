@@ -8,6 +8,7 @@ from internal.handlers.deps import (
     BookingRepository, staff_required, UserRepository,
 )
 from internal.services import booking_service
+from internal.utils.errors import user_error_message
 
 
 def register_admin_booking_routes(app):
@@ -23,6 +24,7 @@ def register_admin_booking_routes(app):
                 return redirect(url_for('admin_bookings'))
 
             booking.status = 'cancelled'
+            booking_service.refund_subscription_hours_on_cancel(booking)
 
             db.session.commit()
 
@@ -31,7 +33,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при отмене бронирования: {str(e)}', 'error')
+            flash(f'Ошибка при отмене бронирования: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_bookings'))
 
 
@@ -56,7 +58,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при завершении бронирования: {str(e)}', 'error')
+            flash(f'Ошибка при завершении бронирования: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_bookings'))
 
 
@@ -76,7 +78,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при изменении статуса: {str(e)}', 'error')
+            flash(f'Ошибка при изменении статуса: {user_error_message(e)}', 'error')
 
         return redirect(url_for('admin_users'))
 
@@ -97,7 +99,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при изменении роли: {str(e)}', 'error')
+            flash(f'Ошибка при изменении роли: {user_error_message(e)}', 'error')
 
         return redirect(url_for('admin_users'))
 
@@ -108,7 +110,7 @@ def register_admin_booking_routes(app):
     def admin_set_user_role(user_id, role):
         try:
             if role not in ('admin', 'manager', 'client'):
-                flash('Invalid user role', 'error')
+                flash('Некорректная роль пользователя', 'error')
                 return redirect(url_for('admin_users'))
 
             user = UserRepository.get_or_404(user_id)
@@ -116,14 +118,14 @@ def register_admin_booking_routes(app):
             db.session.commit()
 
             role_names = {
-                'admin': 'administrator',
-                'manager': 'reception manager',
-                'client': 'client'
+                'admin': 'администратором',
+                'manager': 'менеджером',
+                'client': 'клиентом',
             }
-            flash(f'User {user.email} is now {role_names[role]}', 'success')
+            flash(f'Пользователь {user.email} теперь {role_names[role]}', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Role update error: {str(e)}', 'error')
+            flash(f'Ошибка при изменении роли: {user_error_message(e)}', 'error')
 
         return redirect(url_for('admin_users'))
 
@@ -153,7 +155,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -209,7 +211,7 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -235,6 +237,6 @@ def register_admin_booking_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 

@@ -10,6 +10,7 @@ from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
 from internal.services.room_editor_service import apply_variant, register_wall_room
 from internal.utils.room_geometry import (
+from internal.utils.errors import user_error_message
     desk_grid_variants,
     dismiss_draft_room,
     link_rooms_with_places,
@@ -229,7 +230,7 @@ def api_dismiss_draft_room():
     width, height = data.get('width'), data.get('height')
     floor = int(data.get('floor', 1))
     if x is None or y is None or not width or not height:
-        return jsonify({'success': False, 'error': 'Укажите x, y, width, height'}), 400
+        return jsonify({'success': False, 'error': 'Укажите координаты и размеры'}), 400
     try:
         result = dismiss_draft_room(
             x, y, width, height,
@@ -244,9 +245,9 @@ def api_dismiss_draft_room():
             msg += f' · мест: {", ".join(result["layout_removed"])}'
         return jsonify({'success': True, 'message': msg, **result})
     except PermissionError as e:
-        return jsonify({'success': False, 'error': str(e)}), 403
+        return jsonify({'success': False, 'error': user_error_message(e)}), 403
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @room_editor_bp.route('/api/admin/room/restore-draft', methods=['POST'])

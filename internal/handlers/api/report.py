@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from internal.handlers.deps import admin_required, models
 from internal.utils.formatters import (
+from internal.utils.errors import user_error_message
     REPORT_SECTIONS,
     build_report_stats,
     format_booking_duration_display,
@@ -233,4 +234,4 @@ def register_report_routes(app):
             print(f'Ошибка генерации PDF: {e}')
             import traceback
             traceback.print_exc()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500

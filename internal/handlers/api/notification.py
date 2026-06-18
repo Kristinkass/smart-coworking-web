@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
 from internal.handlers.deps import Booking, Notification, User, admin_required, db, models, staff_required
+from internal.utils.errors import user_error_message
 
 AUDIENCE_LABELS = {
     'all': 'Все пользователи',
@@ -30,6 +31,32 @@ def register_notification_routes(app):
             .joinedload(Booking.place)
             .joinedload(Place.floor),
         )
+
+    def _can_access_notification(notification):
+        """Проверка, что уведомление видно текущему пользователю."""
+        if current_user.role == 'client':
+            if notification.user_id == current_user.id:
+                return True
+            if notification.target_audience in ('all', 'clients'):
+                return True
+            return False
+        if current_user.role == 'manager':
+            if notification.user_id == current_user.id:
+                return True
+            if notification.target_audience in ('all', 'managers'):
+                return True
+            if notification.is_feedback() and notification.target_audience == 'managers':
+                return True
+            return False
+        if notification.user_id == current_user.id:
+            return True
+        if notification.target_audience in ('all', 'managers', 'admins'):
+            return True
+        if notification.is_feedback() and notification.target_audience == 'admins':
+            return True
+        if notification.sender_id == current_user.id:
+            return True
+        return False
 
     def _can_delete_notification(notification):
         if not notification.is_feedback():
@@ -123,7 +150,7 @@ def register_notification_routes(app):
                 'unread_count': sum(1 for n in payload if not n['is_read']),
             })
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
     @login_required
@@ -131,12 +158,14 @@ def register_notification_routes(app):
         """Отметить уведомление как прочитанное."""
         try:
             notification = Notification.query.get_or_404(notification_id)
+            if not _can_access_notification(notification):
+                return jsonify({'success': False, 'error': 'Недостаточно прав'}), 403
             notification.is_read = True
             db.session.commit()
             return jsonify({'success': True})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
     @login_required
@@ -152,7 +181,7 @@ def register_notification_routes(app):
             return jsonify({'success': True, 'message': 'Обращение удалено'})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/feedback', methods=['POST'])
     @login_required
@@ -175,7 +204,7 @@ def register_notification_routes(app):
                 }), 400
 
             if recipient not in ('manager', 'admin'):
-                return jsonify({'success': False, 'error': 'Укажите получателя: manager или admin'}), 400
+                return jsonify({'success': False, 'error': 'Укажите получателя: менеджер или администратор'}), 400
 
             target_audience = 'managers' if recipient == 'manager' else 'admins'
             linked_booking_id = None
@@ -207,7 +236,7 @@ def register_notification_routes(app):
             })
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/notifications', methods=['POST'])
     @staff_required
@@ -247,7 +276,7 @@ def register_notification_routes(app):
             return jsonify({'success': True, 'message': 'Уведомление отправлено'})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/notifications/history', methods=['GET'])
     @staff_required
@@ -273,5 +302,5 @@ def register_notification_routes(app):
 
             return jsonify({'success': True, 'history': result})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 

@@ -5,6 +5,7 @@ from flask import jsonify, request
 
 from internal.handlers.deps import Coworking, CoworkingSchedule, admin_required, db
 from internal.models.schedule import parse_schedule_time
+from internal.utils.errors import user_error_message
 
 
 def _coworking_id():
@@ -29,7 +30,7 @@ def register_schedule_routes(app):
                 ).order_by(CoworkingSchedule.day_of_week).all()
             return jsonify({'success': True, 'schedule': [s.to_dict() for s in schedules]})
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/schedule/<int:schedule_id>', methods=['PUT'])
     @admin_required
@@ -54,7 +55,7 @@ def register_schedule_routes(app):
             return jsonify({'success': True, 'schedule': schedule.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/schedule/apply-to-all', methods=['POST'])
     @admin_required
@@ -90,7 +91,7 @@ def register_schedule_routes(app):
             return jsonify({'success': True, 'message': f'Расписание применено к {len(target_days)} дням'})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/schedule/reset', methods=['POST'])
     @admin_required
@@ -104,4 +105,4 @@ def register_schedule_routes(app):
             return jsonify({'success': True, 'message': 'Расписание сброшено к значениям по умолчанию'})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500

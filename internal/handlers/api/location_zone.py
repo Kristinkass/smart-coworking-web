@@ -147,7 +147,7 @@ def api_set_place_location_zone(place_id):
     data = request.get_json(silent=True) or {}
     zone_type_id = data.get('zone_type_id')
     if not zone_type_id:
-        return jsonify({'success': False, 'error': 'Укажите zone_type_id'}), 400
+        return jsonify({'success': False, 'error': 'Укажите тип зоны'}), 400
 
     place = PlaceRepository.get_or_404(place_id)
     floor_num = int(data.get('floor') or (place.floor.number if place.floor else 1))
@@ -179,7 +179,7 @@ def api_set_place_location_zone_by_code(code):
     data = request.get_json(silent=True) or {}
     zone_type_id = data.get('zone_type_id')
     if not zone_type_id:
-        return jsonify({'success': False, 'error': 'Укажите zone_type_id'}), 400
+        return jsonify({'success': False, 'error': 'Укажите тип зоны'}), 400
 
     place = PlaceRepository.sync_by_code(code)
     if not place:

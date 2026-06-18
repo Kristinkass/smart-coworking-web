@@ -9,6 +9,7 @@ from internal.handlers.deps import (
     BookingRepository, PlaceRepository, UserRepository,
 )
 from internal.services import booking_service
+from internal.utils.errors import user_error_message
 
 
 def register_booking_legacy_routes(app):
@@ -67,7 +68,7 @@ def register_booking_legacy_routes(app):
                 })
 
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -208,7 +209,7 @@ def register_booking_legacy_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
 
 
@@ -242,7 +243,7 @@ def register_booking_legacy_routes(app):
             place = PlaceRepository.get_by_id(data['place_id'])
             if not place:
                 return jsonify({'success': False, 'error': 'Место не найдено'}), 404
-            if place.maintenance:
+            if place.is_on_maintenance():
                 return jsonify({'success': False, 'error': 'Место находится на обслуживании'}), 400
 
             if not subscription.can_book_place(place.kind):
@@ -312,7 +313,7 @@ def register_booking_legacy_routes(app):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 
@@ -346,6 +347,6 @@ def register_booking_legacy_routes(app):
             return jsonify({'success': True, **payload})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 

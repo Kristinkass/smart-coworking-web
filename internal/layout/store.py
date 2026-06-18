@@ -376,6 +376,94 @@ def remove_layout_places_in_box(x, y, width, height, floor=1):
     return removed
 
 
+def _default_floor_size(layout=None):
+    """Размеры этажа по умолчанию (из существующего этажа или сетки)."""
+    from internal.layout.geometry import CANVAS_HEIGHT, CANVAS_WIDTH
+
+    layout = layout or load_layout()
+    floors = layout.get('floors', [])
+    if floors:
+        ref = floors[0]
+        return int(ref.get('width', CANVAS_WIDTH)), int(ref.get('height', CANVAS_HEIGHT))
+    grid = layout.get('grid', {})
+    cell = int(grid.get('cell', 28))
+    cols = int(grid.get('cols', 80))
+    rows = int(grid.get('rows', 48))
+    return cols * cell, rows * cell
+
+
+def _floor_size(floor_num):
+    from internal.layout.geometry import CANVAS_HEIGHT, CANVAS_WIDTH
+
+    for fl in load_layout().get('floors', []):
+        if int(fl.get('number', 0)) == int(floor_num):
+            return int(fl.get('width', CANVAS_WIDTH)), int(fl.get('height', CANVAS_HEIGHT))
+    return _default_floor_size()
+
+
+def provision_new_floor_layout(floor_number, name=None):
+    """Добавить этаж в layout.json: метаданные, несущие стены по периметру, входная дверь."""
+    layout = load_layout()
+    floors = layout.setdefault('floors', [])
+    floor_num = int(floor_number)
+
+    existing_meta = next((f for f in floors if int(f.get('number', 0)) == floor_num), None)
+    if not existing_meta:
+        ref_w, ref_h = _default_floor_size(layout)
+        new_id = max([int(f.get('id', 0)) for f in floors], default=0) + 1
+        display_name = (name or '').strip() or f'{floor_num}-й этаж'
+        floors.append({
+            'id': new_id,
+            'number': floor_num,
+            'name': display_name,
+            'width': ref_w,
+            'height': ref_h,
+        })
+        floors.sort(key=lambda f: int(f.get('number', 0)))
+        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
+            json.dump(layout, f, ensure_ascii=False, indent=2)
+        reload_layout()
+
+    w, h = _floor_size(floor_num)
+    floor_walls = [
+        wl for wl in load_walls() if int(wl.get('floor', 1)) == floor_num
+    ]
+    if not any(wl.get('protected') for wl in floor_walls):
+        add_wall(0, 0, w, 0, protected=True, floor=floor_num)
+        add_wall(w, 0, w, h, protected=True, floor=floor_num)
+        add_wall(w, h, 0, h, protected=True, floor=floor_num)
+        left_wall_id = add_wall(0, h, 0, 0, protected=True, floor=floor_num)
+        add_door(left_wall_id, 0.5, floor=floor_num, width=180)
+
+    return True
+
+
+def remove_floor_layout(floor_number):
+    """Удалить этаж из layout.json: метаданные, стены, двери, места."""
+    layout = load_layout()
+    floor_num = int(floor_number)
+    changed = False
+
+    floors = layout.get('floors', [])
+    new_floors = [f for f in floors if int(f.get('number', 0)) != floor_num]
+    if len(new_floors) != len(floors):
+        layout['floors'] = new_floors
+        changed = True
+
+    for key in ('places', 'walls', 'doors'):
+        items = layout.get(key, [])
+        new_items = [item for item in items if int(item.get('floor', 1)) != floor_num]
+        if len(new_items) != len(items):
+            layout[key] = new_items
+            changed = True
+
+    if changed:
+        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
+            json.dump(layout, f, ensure_ascii=False, indent=2)
+        reload_layout()
+    return changed
+
+
 def create_walls_around_rect(x, y, width, height, floor=1, skip_if_exists=True):
     """Четыре стены по периметру прямоугольника (закрытая зона)."""
     x, y, w, h = int(x), int(y), int(width), int(height)

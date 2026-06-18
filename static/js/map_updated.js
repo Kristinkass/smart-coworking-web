@@ -750,17 +750,6 @@ function renderFloorPlan() {
         gap.setAttribute('stroke-width', 12);
         gap.setAttribute('stroke-linecap', 'round');
         layer.appendChild(gap);
-
-        // Арка двери
-        const px = -uy, py = ux;
-        const aex = sx + px * hw * 2, aey = sy + py * hw * 2;
-        const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        arc.setAttribute('d', 'M ' + sx + ' ' + sy + ' A ' + hw * 2 + ' ' + hw * 2 + ' 0 0 1 ' + aex + ' ' + aey);
-        arc.setAttribute('fill', 'none');
-        arc.setAttribute('stroke', '#94a3b8');
-        arc.setAttribute('stroke-width', 3);
-        arc.setAttribute('stroke-dasharray', '4,3');
-        layer.appendChild(arc);
     });
 
     // Граница активного помещения
@@ -913,12 +902,15 @@ function handlePlaceClick(place) {
         selectPlaceForBooking(place);
         return;
     }
-    // Переговорная – сразу бронь целиком, без «приближения»
+    // Переговорная без столов внутри – бронь комнаты целиком
     if (!activeSpace && isSpaceContainer(place) && place.is_meeting_room) {
-        selectPlaceForBooking(place);
-        return;
+        const children = desksInSpace(place);
+        if (!children.length) {
+            selectPlaceForBooking(place);
+            return;
+        }
     }
-    // Рабочая зона – войти и выбрать стол
+    // Рабочая зона или переговорная со столами – войти и выбрать место
     if (!activeSpace && isSpaceContainer(place)) {
         enterSpaceView(place);
         return;
@@ -944,6 +936,13 @@ function deskDisplayLabel(place, w) {
     return label.slice(0, maxLen - 1) + '…';
 }
 
+function updateSpaceViewBar() {
+    const bar = document.getElementById('space-view-bar');
+    if (!bar) return;
+    const show = Boolean(activeSpace) && currentUserView === 'map';
+    bar.style.display = show ? 'flex' : 'none';
+}
+
 function enterSpaceView(space) {
     activeSpace = space;
     invalidateViewCache();
@@ -954,9 +953,9 @@ function enterSpaceView(space) {
     minZoomLevel = zoomLevel;
     const bar = document.getElementById('space-view-bar');
     if (bar) {
-        bar.style.display = 'flex';
         document.getElementById('space-view-title').textContent = space.name;
     }
+    updateSpaceViewBar();
     const children = desksInSpace(space);
     if (!children.length) {
         showAlert('В этом помещении пока нет столов. Обратитесь к администратору.', 'info');
@@ -971,8 +970,7 @@ function exitSpaceView() {
     minZoomLevel = 0.4;
     spaceEntryZoomLevel = null;
     document.querySelector('.floor-plan-container')?.classList.remove('space-zoom-active');
-    const bar = document.getElementById('space-view-bar');
-    if (bar) bar.style.display = 'none';
+    updateSpaceViewBar();
     renderFloorPlan();
     updateManagerStatusList();
 }
@@ -1274,7 +1272,7 @@ async function selectPlaceForBooking(place) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const payCb = document.getElementById('pay-without-subscription');
     if (payCb) payCb.checked = false;
-    if (timegridContainer && tariffType === 'hourly') {
+    if (timegridContainer && tariffType === 'hourly' && !(typeof isMobileViewport === 'function' && isMobileViewport())) {
         if (typeof updateTimegridCapacity === 'function') {
             updateTimegridCapacity({ zone_capacity: place.zone_seat_capacity, capacity: displayCapacity(place) });
         } else {
@@ -1613,6 +1611,7 @@ function cancelBookingForm() {
 
 async function loadPlaces() {
     try {
+        await loadFloors();
         const r = await fetch('/api/places');
         const data = await r.json();
         places = data.places || [];
@@ -1698,14 +1697,48 @@ function setupEventListeners() {
 }
 
 // ================== ЭТАЖИ ==================
+let availableFloors = [{ number: 1, label: 'Этаж 1' }];
+
+async function loadFloors() {
+    try {
+        const r = await fetch('/api/floors');
+        const d = await r.json();
+        if (d.success && Array.isArray(d.floors) && d.floors.length) {
+            availableFloors = d.floors;
+            const nums = availableFloors.map(f => f.number);
+            if (!nums.includes(currentFloor)) {
+                currentFloor = availableFloors[0].number;
+            }
+        }
+    } catch (e) {
+        console.warn('Не удалось загрузить этажи', e);
+    }
+    renderFloorToggles();
+}
+
+function renderFloorToggles() {
+    const mapToggle = document.getElementById('floor-map-toggle');
+    const listToggle = document.getElementById('list-floor-toggle');
+    const buttonsHtml = availableFloors.map(f => {
+        const label = f.label || f.name || `Этаж ${f.number}`;
+        const active = Number(f.number) === Number(currentFloor) ? 'active' : '';
+        return `<button type="button" id="floor-map-btn-${f.number}" class="${active}" onclick="setMapFloor(${f.number})">${label}</button>`;
+    }).join('');
+    if (mapToggle) mapToggle.innerHTML = buttonsHtml;
+    if (listToggle) listToggle.innerHTML = buttonsHtml;
+}
+
 function setMapFloor(floor) {
     currentFloor = floor;
+    if (typeof listActiveZoneCode !== 'undefined') {
+        listActiveZoneCode = null;
+    }
     activeSpace = null;
     invalidateViewCache();
-    const bar = document.getElementById('space-view-bar');
-    if (bar) bar.style.display = 'none';
+    updateSpaceViewBar();
     document.querySelectorAll('[id^="floor-map-btn-"]').forEach(b => b.classList.remove('active'));
     document.getElementById('floor-map-btn-' + floor)?.classList.add('active');
+    renderFloorToggles();
     renderFloorPlan();
     if (currentUserView === 'list' && typeof renderPlacesList === 'function') {
         renderPlacesList();
@@ -1731,36 +1764,6 @@ function applyZoom() {
 function updateManagerStatusList() {
     const list = document.getElementById('manager-status-list');
     if (!list) return;
+    list.style.display = 'none';
     list.innerHTML = '';
-    const visibleIds = new Set(placesForCurrentView().map(v => v.id));
-    places.filter(p =>
-        Number(p.floor || 1) === currentFloor && visibleIds.has(p.id)
-    ).forEach(place => {
-        const item = document.createElement('div');
-        const cls  = place.maintenance ? 'maintenance' : effectivePlaceStatus(place);
-        const st = effectivePlaceStatus(place);
-        const isSelected = editMode && editSelectedPlace && editSelectedPlace.id === place.id;
-        item.className = 'manager-status-item ' + cls + (isSelected ? ' selected-for-edit' : '');
-        if (isSelected) {
-            item.style.border = '2px solid #f59e0b';
-            item.style.background = '#fef3c7';
-        }
-        const statusText = place.maintenance ? 'Обслуживание'
-            : st === 'occupied' ? 'Занято' + (place.occupied_until ? ' до ' + place.occupied_until : '')
-            : st === 'partial' ? 'Частично' + (place.partial_occupancy ? ` (${place.partial_occupancy.occupied}/${place.partial_occupancy.capacity})` : '')
-            : isSpaceContainer(place) && !activeSpace ? 'Помещение · ' + childCount(place) + ' столов'
-            : 'Свободно';
-        item.innerHTML = `
-            <div><span class="dot"></span><strong>${formatPlaceCode(place)}</strong> – ${place.name}</div>
-            <div style="font-size:11px; color:#64748b;">${placeTypeLabel(place)} · ${displayCapacity(place)} мест<br><span>${statusText}</span></div>`;
-        item.addEventListener('click', () => {
-            if (editMode) {
-                selectPlaceForEdit(place);
-            } else {
-                if (typeof setUserView === 'function') setUserView('map');
-                handlePlaceClick(place);
-            }
-        });
-        list.appendChild(item);
-    });
 }

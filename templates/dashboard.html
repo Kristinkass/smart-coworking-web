@@ -1307,7 +1307,40 @@
 
                 function toggleFeedbackCard(button) {
                     const card = button.closest('.feedback-card');
+                    if (!card) return;
+                    const wasOpen = card.classList.contains('open');
+                    document.querySelectorAll('.feedback-card.open').forEach(el => {
+                        if (el !== card) el.classList.remove('open');
+                    });
+                    if (wasOpen) {
+                        card.classList.remove('open');
+                    } else {
+                        card.classList.add('open');
+                        if (card.classList.contains('unread')) {
+                            const id = card.dataset.feedbackId;
+                            if (id) markReadById(parseInt(id, 10));
+                        }
+                    }
+                }
+
+                async function markReadById(id) {
+                    try {
+                        const res = await fetch('/api/notifications/' + id + '/read', { method: 'POST' });
+                        if (!res.ok) return;
+                        await loadNotifications();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
+                function toggleSystemNotification(button) {
+                    const card = button.closest('.notify-card');
+                    const wasOpen = card.classList.contains('open');
                     card.classList.toggle('open');
+                    if (!wasOpen && card.dataset.unread === 'true') {
+                        const id = parseInt(card.dataset.notifyId, 10);
+                        if (id) markReadById(id);
+                    }
                 }
 
                 function renderSystemNotifications(items, container) {
@@ -1321,19 +1354,22 @@
                         return;
                     }
                     container.innerHTML = items.map(n => {
-                        const unreadBadge = !n.is_read ? '<span style="background:#c75050;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">Новое</span>' : '';
-                        const readBtn = !n.is_read ? `<button class="btn btn-sm btn-outline-primary" onclick="markRead(${n.id}, this)" style="font-size:12px;white-space:nowrap;"><i class="fas fa-check"></i> Прочитано</button>` : '';
+                        const unreadClass = !n.is_read ? ' unread' : '';
+                        const preview = escapeHtml(n.message.length > 120 ? n.message.slice(0, 120) + '…' : n.message);
                         return `
-                            <div class="notify-card">
-                                <div style="display:flex;justify-content:space-between;align-items:start;gap:16px;">
-                                    <div style="flex:1;">
-                                        <div style="font-weight:700;font-size:15px;color:#1e293b;margin-bottom:6px;">
-                                            <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}${unreadBadge}
+                            <div class="notify-card${unreadClass}" data-notify-id="${n.id}" data-unread="${!n.is_read}">
+                                <button type="button" class="notify-head" onclick="toggleSystemNotification(this)">
+                                    <div class="notify-head-main">
+                                        <div class="notify-title">
+                                            <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}
                                         </div>
-                                        <div style="font-size:14px;color:#64748b;margin-bottom:4px;">${escapeHtml(n.message)}</div>
-                                        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">${escapeHtml(n.created_at)}</div>
+                                        <div class="notify-preview">${preview}</div>
+                                        <div class="notify-meta">${escapeHtml(n.created_at)}</div>
                                     </div>
-                                    ${readBtn}
+                                    <i class="fas fa-chevron-down notify-chevron"></i>
+                                </button>
+                                <div class="notify-body">
+                                    <div class="notify-text">${escapeHtml(n.message)}</div>
                                 </div>
                             </div>`;
                     }).join('');
@@ -1369,7 +1405,7 @@
                     return `<div class="feedback-booking"><strong>Привязка:</strong>${path}${details}</div>`;
                 }
 
-                function renderFeedbackNotifications(items, container, emptyText) {
+                function renderFeedbackNotifications(items, container, emptyText, showReadStatus) {
                     if (!items.length) {
                         container.innerHTML = `
                             <div class="empty-state">
@@ -1381,32 +1417,33 @@
                     container.innerHTML = items.map(n => {
                         const unreadClass = !n.is_read ? ' unread' : '';
                         const bookingBlock = formatFeedbackBookingBlock(n.booking);
-                        const bookingPreview = formatFeedbackBookingPreview(n.booking);
                         const metaParts = [escapeHtml(n.created_at)];
                         if (n.sender_name) metaParts.unshift(escapeHtml(n.sender_name));
                         if (n.recipient_label) metaParts.push(escapeHtml(n.recipient_label));
+                        const readStatusHtml = showReadStatus
+                            ? (n.is_read
+                                ? '<span class="feedback-read-status read"><i class="fas fa-check-double"></i> Прочитано</span>'
+                                : '<span class="feedback-read-status pending"><i class="fas fa-clock"></i> Не прочитано</span>')
+                            : '';
                         return `
                             <div class="feedback-card${unreadClass}" data-feedback-id="${n.id}">
-                                <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
-                                    <div class="feedback-head-main">
-                                        <div class="feedback-title">${escapeHtml(n.title)}</div>
-                                        <div class="feedback-preview">${escapeHtml(n.message)}</div>
-                                        ${bookingPreview}
-                                    </div>
-                                    <div class="feedback-actions">
-                                        <span class="feedback-meta">${metaParts.join(' · ')}</span>
-                                        <button type="button" class="feedback-delete-btn" title="Удалить из истории"
-                                                onclick="deleteFeedback(${n.id}, event)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                <div class="feedback-head-row">
+                                    <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
+                                        <div class="feedback-head-main">
+                                            <div class="feedback-title">${escapeHtml(n.title)}</div>
+                                            <span class="feedback-meta">${metaParts.join(' · ')}</span>
+                                        </div>
                                         <i class="fas fa-chevron-down feedback-chevron"></i>
-                                    </div>
-                                </button>
-                                <div class="feedback-booking-visible">
-                                    ${bookingBlock || '<div class="feedback-booking-empty">Без привязки к бронированию</div>'}
+                                    </button>
+                                    ${readStatusHtml ? `<div class="feedback-status-wrap">${readStatusHtml}</div>` : ''}
+                                    <button type="button" class="feedback-delete-btn" title="Удалить из истории"
+                                            onclick="deleteFeedback(${n.id}, event)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                                 <div class="feedback-body">
                                     <div class="feedback-text">${escapeHtml(n.message)}</div>
+                                    ${bookingBlock || '<div class="feedback-booking-empty">Без привязки к бронированию</div>'}
                                 </div>
                             </div>`;
                     }).join('');
@@ -1432,13 +1469,15 @@
                         renderFeedbackNotifications(
                             data.sent_feedback || [],
                             document.getElementById('notifications-sent-feedback-container'),
-                            'Вы ещё не отправляли обращений'
+                            'Вы ещё не отправляли обращений',
+                            true
                         );
                         {% else %}
                         renderFeedbackNotifications(
                             data.feedback || [],
                             document.getElementById('notifications-feedback-container'),
-                            'Нет входящих обращений'
+                            'Нет входящих обращений',
+                            false
                         );
                         {% endif %}
                     } catch (e) {
@@ -1463,13 +1502,7 @@
                     }
                 }
                 async function markRead(id, btn) {
-                    try {
-                        await fetch('/api/notifications/' + id + '/read', {method: 'POST'});
-                        btn.remove();
-                        loadNotifications();
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    await markReadById(id);
                 }
                 async function submitFeedback(event) {
                     event.preventDefault();

@@ -416,6 +416,7 @@ def cancel_booking_route(booking_id):
         return jsonify({'success': False, 'error': err}), 400
 
     booking.status = 'cancelled'
+    booking_service.refund_subscription_hours_on_cancel(booking)
     db.session.flush()
 
     user = UserRepository.get_by_id(booking.user_id)

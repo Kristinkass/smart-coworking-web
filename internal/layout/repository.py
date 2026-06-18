@@ -40,6 +40,14 @@ class LayoutRepository:
         return layout_store.load_doors()
 
     @staticmethod
+    def remove_floor_layout(floor_number):
+        return layout_store.remove_floor_layout(floor_number)
+
+    @staticmethod
+    def provision_new_floor_layout(floor_number, name=None):
+        return layout_store.provision_new_floor_layout(floor_number, name=name)
+
+    @staticmethod
     def add_wall(x1, y1, x2, y2, floor=1):
         return layout_store.add_wall(x1, y1, x2, y2, floor=floor)
 

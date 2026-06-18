@@ -13,9 +13,27 @@ from internal.models import Floor
 from internal.layout.repository import LayoutRepository
 from internal.services import booking_service
 from internal.utils.formatters import format_place_full_code_dict
+from internal.utils.errors import user_error_message
 
 
 def register_place_routes(app):
+    @app.route('/api/floors', methods=['GET'])
+    def get_floors():
+        """Список этажей коворкинга."""
+        floors = Floor.query.order_by(Floor.number).all()
+        return jsonify({
+            'success': True,
+            'floors': [
+                {
+                    'id': f.id,
+                    'number': f.number,
+                    'name': f.name,
+                    'label': f.name or f'Этаж {f.number}',
+                }
+                for f in floors
+            ],
+        })
+
     @app.route('/api/places', methods=['GET'])
     def get_places():
         try:
@@ -68,7 +86,7 @@ def register_place_routes(app):
             category_tariffs = {}
 
             def live_status(db_place):
-                if db_place.maintenance:
+                if db_place.is_on_maintenance():
                     return {
                         'status': 'maintenance',
                         'current_occupancy': 0,
@@ -115,6 +133,9 @@ def register_place_routes(app):
                 }
 
             def display_status(db_place):
+                if db_place.is_on_maintenance():
+                    return live_status(db_place)
+
                 if db_place.is_container() and child_ids_by_container_code.get(db_place.code):
                     own = live_status(db_place)
                     if own['current_occupancy'] > 0:
@@ -157,12 +178,15 @@ def register_place_routes(app):
                 if db_place:
                     place_id = db_place.id
                     category_info = None
+                    hourly_price = db_place.get_price('hourly')
                     if db_place.category:
                         cat = db_place.category
                         category_info = {
                             'id': cat.id,
                             'name': cat.name,
                             'capacity': cat.capacity,
+                            'kind': cat.kind,
+                            'hourly_price': hourly_price,
                         }
                         if cat.id not in category_tariffs:
                             category_tariffs[cat.id] = [
@@ -173,6 +197,21 @@ def register_place_routes(app):
                     category_info = None
                 else:
                     continue
+
+                hourly_price = db_place.get_price('hourly') if db_place else None
+                show_list_price = bool(
+                    db_place
+                    and (
+                        db_place.kind == 'desk'
+                        or db_place.is_meeting_room()
+                        or db_place.kind == 'room'
+                    )
+                    and not (
+                        db_place.is_container()
+                        and db_place.allows_child_desks()
+                        and not db_place.is_meeting_room()
+                    )
+                )
 
                 live = display_status(db_place) if db_place else {'status': 'free'}
                 layout_meta = p
@@ -224,9 +263,10 @@ def register_place_routes(app):
                     'zone_type': zone_type,
                     'zone_type_id': zone_type['id'] if zone_type else layout_meta.get('zone_type_id'),
                     'capacity': db_place.capacity if db_place else p.get('capacity', 1),
-                    'price_per_hour': p.get('price_per_hour', 250),
+                    'price_per_hour': hourly_price,
+                    'show_list_price': show_list_price,
                     'active': p.get('active', True),
-                    'maintenance': db_place.maintenance if db_place else False,
+                    'maintenance': db_place.is_on_maintenance() if db_place else False,
                     'status': live['status'],
                     'current_occupancy': live.get('current_occupancy', 0),
                     'occupied_until': live.get('occupied_until'),
@@ -292,7 +332,7 @@ def register_place_routes(app):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/seat_occupancy/<int:place_id>', methods=['GET'])
     @login_required
@@ -304,7 +344,7 @@ def register_place_routes(app):
             start_str = request.args.get('start')
             end_str = request.args.get('end')
             if not (date_str and start_str and end_str):
-                return jsonify({'success': False, 'error': 'Нужны параметры date, start, end'}), 400
+                return jsonify({'success': False, 'error': 'Укажите дату, время начала и окончания'}), 400
 
             booking_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
             start_t = datetime.strptime(start_str, '%H:%M').time()
@@ -319,7 +359,7 @@ def register_place_routes(app):
                 'whole_table_taken': status['whole_table_taken'],
             })
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/available_times/<int:place_id>', methods=['GET'])
     @login_required
@@ -426,6 +466,6 @@ def register_place_routes(app):
                 'current_occupation': current_occupation_info,
             })
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
 

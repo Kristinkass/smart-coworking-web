@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 
 from internal.handlers.deps import Subscription, User, admin_required, db, manager_required, models, staff_required
 from internal.repositories.user_repository import UserRepository
+from internal.utils.errors import user_error_message
 
 
 def _parse_place_kinds(data):
@@ -25,7 +26,7 @@ def register_subscription_routes(app):
             subs = models.Subscription.query.filter_by(is_template=False).all()
             return jsonify({'subscriptions': [sub.to_dict() for sub in subs]})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscription-templates', methods=['GET'])
     @admin_required
@@ -36,7 +37,7 @@ def register_subscription_routes(app):
             ).all()
             return jsonify({'templates': [t.to_dict() for t in templates]})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/subscription-templates', methods=['GET'])
     @login_required
@@ -48,7 +49,7 @@ def register_subscription_routes(app):
             ).order_by(models.Subscription.price).all()
             return jsonify({'success': True, 'templates': [t.to_dict() for t in templates]})
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/staff/users/<int:user_id>/subscriptions', methods=['GET'])
     @staff_required
@@ -68,7 +69,7 @@ def register_subscription_routes(app):
             ).all()
             return jsonify({'success': True, 'subscriptions': [s.to_dict() for s in subs]})
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions/<int:user_id>', methods=['GET'])
     @admin_required
@@ -77,7 +78,7 @@ def register_subscription_routes(app):
             subs = Subscription.query.filter_by(user_id=user_id, is_template=False).all()
             return jsonify({'subscriptions': [sub.to_dict() for sub in subs]})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions/issue-template', methods=['POST'])
     @manager_required
@@ -128,7 +129,7 @@ def register_subscription_routes(app):
             return jsonify({'success': True, 'subscription': subscription.to_dict()}), 201
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions', methods=['POST'])
     @admin_required
@@ -164,7 +165,7 @@ def register_subscription_routes(app):
             return jsonify({'success': True, 'template': subscription.to_dict()}), 201
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions/<int:subscription_id>', methods=['PUT'])
     @admin_required
@@ -197,7 +198,7 @@ def register_subscription_routes(app):
             return jsonify({'success': True, 'subscription': subscription.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscription-templates/<int:template_id>', methods=['PUT'])
     @admin_required
@@ -222,7 +223,7 @@ def register_subscription_routes(app):
             return jsonify({'success': True, 'template': template.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/user/subscriptions/purchase', methods=['POST'])
     @login_required
@@ -269,7 +270,7 @@ def register_subscription_routes(app):
             return jsonify({'success': True, 'subscription': subscription.to_dict()})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/user/subscriptions', methods=['GET'])
     @login_required
@@ -280,7 +281,7 @@ def register_subscription_routes(app):
             ).all()
             return jsonify({'subscriptions': [sub.to_dict() for sub in subs]})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/my/subscriptions', methods=['GET'])
     @login_required
@@ -296,4 +297,4 @@ def register_subscription_routes(app):
             ).all()
             return jsonify({'success': True, 'subscriptions': [s.to_dict() for s in subs]})
         except Exception as e:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500

@@ -11,6 +11,7 @@
   let places = [], walls = [], doors = [], wallRooms = [];
   let categories = [], locationZones = [];
   let currentFloor = 1, zoomLevel = 1;
+  let availableFloors = [{ number: 1, label: 'Этаж 1' }];
   let wallMode = false, doorMode = false, wallMoveMode = false, wallStart = null;
   let selection = null; // { type: 'location'|'desk', room, place, draft }
   let variants = [], variantMode = 'desks';
@@ -1191,12 +1192,6 @@
       frameR.classList.add('door-frame');
       g.appendChild(frameR);
 
-      const aex = sx + px * hw * 2, aey = sy + py * hw * 2;
-      const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      arc.setAttribute('d', 'M ' + sx + ' ' + sy + ' A ' + hw * 2 + ' ' + hw * 2 + ' 0 0 1 ' + aex + ' ' + aey);
-      arc.classList.add('door-arc');
-      g.appendChild(arc);
-
       const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       hit.setAttribute('x1', sx); hit.setAttribute('y1', sy);
       hit.setAttribute('x2', ex); hit.setAttribute('y2', ey);
@@ -1601,15 +1596,38 @@
     } catch (e) { toast('Ошибка', 'error'); }
   }
 
+  async function loadFloors() {
+    try {
+      const data = await api('/api/floors');
+      if (data.success && Array.isArray(data.floors) && data.floors.length) {
+        availableFloors = data.floors;
+        const nums = availableFloors.map(f => f.number);
+        if (!nums.includes(currentFloor)) {
+          currentFloor = availableFloors[0].number;
+        }
+      }
+    } catch (e) {
+      console.warn('Не удалось загрузить этажи', e);
+    }
+    renderFloorButtons();
+  }
+
+  function renderFloorButtons() {
+    const bar = $('floor-toggle-bar');
+    if (!bar) return;
+    bar.innerHTML = availableFloors.map(f => {
+      const label = f.label || f.name || `Этаж ${f.number}`;
+      const active = Number(f.number) === Number(currentFloor);
+      return `<button type="button" onclick="setFloor(${f.number})" id="floor-btn-${f.number}"${active ? ' style="background:#0ea5e9;"' : ''}>${label}</button>`;
+    }).join('');
+  }
+
   // --- Walls / doors ---
   window.setFloor = function (n) {
     currentFloor = n;
     selection = null;
     clearSelection();
-    [1, 2, 3].forEach(i => {
-      const b = $('floor-btn-' + i);
-      if (b) b.style.background = i === n ? '#0ea5e9' : '';
-    });
+    renderFloorButtons();
     loadAll(true);
   };
 
@@ -1731,6 +1749,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     await loadLocationZones();
     await loadCategories();
+    await loadFloors();
     await loadAll();
   });
 })();

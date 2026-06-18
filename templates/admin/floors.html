@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Этажи – Умный Коворкинг{% endblock %}
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
+        <h1><i class="fas fa-layer-group"></i> Этажи коворкинга</h1>
+        <p class="text-muted" style="margin-top:8px;">Добавляйте этажи для карты и списка бронирования. Номер этажа используется в кодах мест (например, <strong>3A-T1</strong> — 3-й этаж). Удалить можно этаж без рабочих мест; служебные зоны (A, B, C…) удаляются вместе с этажом.</p>
+    </div>
+
+    <div class="admin-grid">
+        <div class="admin-card">
+            <div class="card-header"><h3><i class="fas fa-plus"></i> Новый этаж</h3></div>
+            <form id="floor-form" class="admin-form">
+                <div class="form-group">
+                    <label>Номер этажа <span style="color:#ef4444">*</span></label>
+                    <input type="number" id="floor-number" class="form-control" min="1" step="1" required placeholder="4">
+                </div>
+                <div class="form-group">
+                    <label>Название (необязательно)</label>
+                    <input type="text" id="floor-name" class="form-control" placeholder="4-й этаж · Open space">
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Добавить этаж</button>
+            </form>
+            <div id="floor-form-result" style="margin-top:12px;font-size:13px;"></div>
+        </div>
+
+        <div class="admin-card">
+            <div class="card-header"><h3><i class="fas fa-list"></i> Этажи</h3></div>
+            <div id="floors-list" class="categories-list">Загрузка…</div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadFloorsAdmin() {
+    const box = document.getElementById('floors-list');
+    try {
+        const r = await fetch('/api/admin/floors');
+        const d = await r.json();
+        if (!d.success || !d.floors.length) {
+            box.innerHTML = '<p class="text-muted">Этажей пока нет. Добавьте первый этаж.</p>';
+            return;
+        }
+        box.innerHTML = d.floors.map(f => `
+            <div class="category-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee;">
+                <div>
+                    <strong>Этаж ${f.number}</strong>
+                    ${f.name ? `<span style="color:#64748b;"> — ${f.name}</span>` : ''}
+                    <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Мест на этаже: ${f.places_count}</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" class="form-control form-control-sm" value="${f.name || ''}"
+                           placeholder="Название" style="width:160px;font-size:13px;"
+                           onchange="renameFloor(${f.id}, this.value)">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFloor(${f.id}, ${f.number})" title="Удалить">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        box.innerHTML = '<p style="color:#c75050;">Ошибка загрузки</p>';
+    }
+}
+
+document.getElementById('floor-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const result = document.getElementById('floor-form-result');
+    const number = parseInt(document.getElementById('floor-number').value, 10);
+    const name = document.getElementById('floor-name').value.trim();
+    try {
+        const r = await fetch('/api/admin/floors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number, name: name || null }),
+        });
+        const d = await r.json();
+        if (!d.success) {
+            result.innerHTML = `<span style="color:#c75050;">${d.error || 'Ошибка'}</span>`;
+            return;
+        }
+        result.innerHTML = '<span style="color:#4d8f5f;">Этаж добавлен</span>';
+        document.getElementById('floor-number').value = '';
+        document.getElementById('floor-name').value = '';
+        loadFloorsAdmin();
+    } catch (err) {
+        result.innerHTML = `<span style="color:#c75050;">${err.message}</span>`;
+    }
+});
+
+async function renameFloor(id, name) {
+    await fetch('/api/admin/floors/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() || null }),
+    });
+}
+
+async function deleteFloor(id, number) {
+    if (!confirm('Удалить этаж ' + number + '?')) return;
+    const r = await fetch('/api/admin/floors/' + id, { method: 'DELETE' });
+    const d = await r.json();
+    if (!d.success) {
+        alert(d.error || 'Не удалось удалить');
+        return;
+    }
+    loadFloorsAdmin();
+}
+
+document.addEventListener('DOMContentLoaded', loadFloorsAdmin);
+</script>
+{% endblock %}

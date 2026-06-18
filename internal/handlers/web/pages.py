@@ -14,22 +14,26 @@ from internal.utils.formatters import (
     render_stars,
 )
 from internal.utils.phone import format_phone_display
+from internal.utils.errors import user_error_message
 
 
 def register_pages_routes(app):
     @app.route('/api/public/stats')
     def public_stats():
         """Публичная сводка для главной страницы (без авторизации)."""
-        from sqlalchemy import func
+        from internal.utils.stats import compute_desk_seat_capacity, compute_meeting_room_count
         today = datetime.now().date()
-        total_places = Place.query.filter(Place.kind.in_(('desk', 'room', 'space'))).count()
+        total_desk_seats = compute_desk_seat_capacity()
+        total_meeting_rooms = compute_meeting_room_count()
         total_users = User.query.filter_by(role='client', active=True).count()
         today_bookings = Booking.query.filter(
             Booking.booking_date == today,
             Booking.status.in_(('active', 'completed')),
         ).count()
         return jsonify({
-            'total_places': total_places,
+            'total_places': total_desk_seats,
+            'total_desk_seats': total_desk_seats,
+            'total_meeting_rooms': total_meeting_rooms,
             'total_users': total_users,
             'today_bookings': today_bookings,
         })
@@ -178,7 +182,7 @@ def register_pages_routes(app):
                                    get_type_name=get_type_name,
                                    get_status_name=get_status_name)
         except Exception as e:
-            flash(f'Ошибка при загрузке карты: {str(e)}', 'error')
+            flash(f'Ошибка при загрузке карты: {user_error_message(e)}', 'error')
             return redirect(url_for('dashboard'))
 
 

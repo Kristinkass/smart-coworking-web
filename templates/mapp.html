@@ -112,18 +112,7 @@
         .view-toggle button.active { background: #8fa67a; border-color: #8fa67a; color: white; }
         .map-view-hidden { display: none !important; }
 
-        .manager-status-list { margin: 10px 0 16px; display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
-        .manager-status-item { display: flex; align-items: center; justify-content: space-between;
-            gap: 10px; padding: 10px 14px; border-radius: 10px; background: #fff;
-            border: 1px solid #e5e7eb; font-size: 13px; cursor: pointer; transition: all .15s; }
-        .manager-status-item:hover { transform: translateY(-1px); border-color: #b5c9a4; }
-        .manager-status-item .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .manager-status-item.free .dot { background: #16a34a; }
-        .manager-status-item.occupied .dot { background: #dc2626; }
-        .manager-status-item.partial .dot { background: #d97706; }
-        .manager-status-item.maintenance .dot { background: #6b7280; }
-        .manager-status-item.maintenance { background: #f3f4f6; color: #6b7280; }
+        .manager-status-list { display: none !important; }
 
         .edit-mode-bar { display: none; background: #1e293b; color: white; padding: 12px 20px;
             border-radius: 10px; margin-bottom: 12px; align-items: center; gap: 15px; flex-wrap: wrap; }
@@ -322,6 +311,23 @@
             .view-toggle button { flex: 1; min-width: 0; padding: 10px 8px; font-size: 13px; }
             .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
+            .form-row-2 { grid-template-columns: 1fr; }
+            #timegrid-container,
+            #hourly-hint,
+            .zoom-controls { display: none !important; }
+        }
+
+        body.mobile-no-map .map-view-panel,
+        body.mobile-no-map .zoom-controls {
+            display: none !important;
+        }
+
+        body.mobile-no-map #places-list-view {
+            display: block !important;
+        }
+
+        body.mobile-no-map .view-mode-switch {
+            display: none !important;
         }
     </style>
 </head>
@@ -338,7 +344,7 @@
     {% set active_page = 'map' %}
     {% include '_navbar.html' %}
 
-    <div class="zoom-controls">
+    <div class="zoom-controls map-only-view">
         <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
         <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
         <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
@@ -348,23 +354,28 @@
         <div class="map-container">
             <h1><i class="fas fa-map-marked-alt"></i> Карта пространства</h1>
 
-            <div id="space-view-bar" class="space-view-bar map-only-view" style="display:none;">
+            <!-- Переключатель список/карта -->
+            <div class="view-toggle view-mode-switch">
+                <button id="map-view-btn" class="active" onclick="setUserView('map')"><i class="fas fa-map"></i> Карта</button>
+                <button id="list-view-btn" onclick="setUserView('list')"><i class="fas fa-list"></i> Список</button>
+            </div>
+
+            <div id="map-view-panel" class="map-view-panel">
+            <div id="space-view-bar" class="space-view-bar" style="display:none;">
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exitSpaceView()">
                     <i class="fas fa-arrow-left"></i> К этажу
                 </button>
                 <span id="space-view-title" class="space-view-title"></span>
-                <button type="button" class="btn btn-primary btn-sm" onclick="bookWholeSpace()" title="Доступно только если все столы внутри свободны на выбранное время">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="book-whole-space-btn" onclick="bookWholeSpace()" style="display:none;" title="Доступно только если все столы внутри свободны на выбранное время">
                     <i class="fas fa-door-open"></i> Забронировать всё помещение
                 </button>
             </div>
 
-            <div class="view-toggle map-only-view">
+            <div class="view-toggle map-only-view" id="floor-map-toggle">
                 <button id="floor-map-btn-1" class="active" onclick="setMapFloor(1)">Этаж 1</button>
-                <button id="floor-map-btn-2" onclick="setMapFloor(2)">Этаж 2</button>
-                <button id="floor-map-btn-3" onclick="setMapFloor(3)">Этаж 3</button>
             </div>
 
-            <div class="map-legend map-only-view">
+            <div class="map-legend">
                 <div class="legend-item"><div class="legend-box desk"></div> Рабочий стол</div>
                 <div class="legend-item"><div class="legend-box room"></div> Переговорная</div>
                 <div class="legend-item"><div class="legend-box partial"></div> Частично занято</div>
@@ -372,14 +383,67 @@
                 <div class="legend-item"><div class="legend-box maintenance"></div> На обслуживании</div>
             </div>
 
-            <!-- Переключатель список/карта для всех пользователей -->
-            <div class="view-toggle">
-                <button id="map-view-btn" class="active" onclick="setUserView('map')"><i class="fas fa-map"></i> Карта</button>
-                <button id="list-view-btn" onclick="setUserView('list')"><i class="fas fa-list"></i> Список</button>
+            {% if is_admin or is_manager %}
+            <div class="manager-status-list map-view-hidden" id="manager-status-list"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <button id="toggle-edit-mode" class="btn-edit-mode" onclick="toggleEditMode()">
+                    <i class="fas fa-tools"></i> Режим техобслуживания
+                </button>
+                <span style="font-size:13px; color:#64748b;">Переводите места на обслуживание</span>
+            </div>
+            {% endif %}
+
+            <div class="edit-mode-bar" id="edit-mode-bar">
+                <div style="font-weight:700; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-tools"></i> Режим техобслуживания активен
+                </div>
+                <div style="font-size:13px; color:#94a3b8; flex:1;">Выберите место и переключите обслуживание</div>
+                <button class="btn-edit-mode active" onclick="toggleEditMode()"><i class="fas fa-times"></i> Выйти</button>
             </div>
 
-            <!-- Список мест для просмотра в режиме списка -->
+            <div class="floor-plan-container">
+                <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
+                    <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="16"/>
+                    <defs>
+                        <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect x="0" y="0" width="2240" height="1344" fill="url(#grid)" opacity="0.5" pointer-events="none"/>
+                    <g id="walls-layer"></g>
+                    <g id="doors-layer"></g>
+                    <g id="places-layer"></g>
+                </svg>
+            </div>
+
+            <div class="maintenance-panel" id="maintenance-panel">
+                <h4><i class="fas fa-wrench"></i> Управление местом</h4>
+                <div class="place-info" id="edit-place-info">
+                    <span style="display:block; color:#94a3b8; font-size:12px; margin-bottom:4px;">Выбранное место</span>
+                    <strong id="edit-place-name">-</strong>
+                </div>
+                <div class="maintenance-toggle">
+                    <div class="toggle-label">
+                        <strong>На обслуживании</strong>
+                        <small>Место станет серым и недоступным для бронирования</small>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="maintenance-toggle-input" onchange="applyMaintenance()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            </div><!-- /map-view-panel -->
+
+            <!-- Список мест (отдельный режим) -->
             <div id="places-list-view" class="places-list-container" style="display:none;">
+                <div id="list-floor-toggle" class="view-toggle"></div>
+                <div id="list-zone-bar" class="list-zone-bar">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exitListZone()">
+                        <i class="fas fa-arrow-left"></i> К списку
+                    </button>
+                    <span id="list-zone-title" class="list-zone-title"></span>
+                </div>
                 <div id="places-list-filters" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
                     <div style="display:flex; align-items:center; gap:6px;">
                         <label style="font-size:13px; color:#475569; font-weight:600;">Тип:</label>
@@ -407,57 +471,6 @@
                 </div>
                 <div id="places-list-content">
                     <!-- Заполняется через JS -->
-                </div>
-            </div>
-
-            {% if is_admin or is_manager %}
-            <div class="manager-status-list map-view-hidden map-only-view" id="manager-status-list"></div>
-            <div class="map-only-view" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                <button id="toggle-edit-mode" class="btn-edit-mode" onclick="toggleEditMode()">
-                    <i class="fas fa-tools"></i> Режим техобслуживания
-                </button>
-                <span style="font-size:13px; color:#64748b;">Переводите места на обслуживание</span>
-            </div>
-            {% endif %}
-
-            <div class="edit-mode-bar map-only-view" id="edit-mode-bar">
-                <div style="font-weight:700; display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-tools"></i> Режим техобслуживания активен
-                </div>
-                <div style="font-size:13px; color:#94a3b8; flex:1;">Выберите место и переключите обслуживание</div>
-                <button class="btn-edit-mode active" onclick="toggleEditMode()"><i class="fas fa-times"></i> Выйти</button>
-            </div>
-
-            <div class="floor-plan-container map-only-view">
-                <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
-                    <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="16"/>
-                    <defs>
-                        <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
-                            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#e2e8f0" stroke-width="1"/>
-                        </pattern>
-                    </defs>
-                    <rect x="0" y="0" width="2240" height="1344" fill="url(#grid)" opacity="0.5" pointer-events="none"/>
-                    <g id="walls-layer"></g>
-                    <g id="doors-layer"></g>
-                    <g id="places-layer"></g>
-                </svg>
-            </div>
-
-            <div class="maintenance-panel map-only-view" id="maintenance-panel">
-                <h4><i class="fas fa-wrench"></i> Управление местом</h4>
-                <div class="place-info" id="edit-place-info">
-                    <span style="display:block; color:#94a3b8; font-size:12px; margin-bottom:4px;">Выбранное место</span>
-                    <strong id="edit-place-name">-</strong>
-                </div>
-                <div class="maintenance-toggle">
-                    <div class="toggle-label">
-                        <strong>На обслуживании</strong>
-                        <small>Место станет серым и недоступным для бронирования</small>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="maintenance-toggle-input" onchange="applyMaintenance()">
-                        <span class="toggle-slider"></span>
-                    </label>
                 </div>
             </div>
 
@@ -644,10 +657,20 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=4"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=5"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
-    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=2"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=15"></script>
-    <script>document.addEventListener('DOMContentLoaded', () => setUserView('map'));</script>
+    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=20"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof activeSpace !== 'undefined') activeSpace = null;
+            if (typeof updateSpaceViewBar === 'function') updateSpaceViewBar();
+            if (typeof applyMobileLayout === 'function') {
+                applyMobileLayout();
+            } else if (typeof setUserView === 'function') {
+                setUserView('map');
+            }
+        });
+    </script>
 </body>
 </html>

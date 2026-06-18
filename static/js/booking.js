@@ -20,9 +20,10 @@ function setBookingTimeControlsEnabled(enabled) {
         const timegrid = document.getElementById('timegrid-container');
         const durationBtns = document.getElementById('duration-buttons-row');
         const durationRow = document.getElementById('duration-row');
+        const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
         if (timePicker) timePicker.style.display = enabled ? '' : 'none';
-        if (timegrid) timegrid.style.display = enabled ? 'block' : 'none';
-        if (durationBtns) durationBtns.style.display = enabled ? 'flex' : 'none';
+        if (timegrid) timegrid.style.display = (enabled && !hideTimeline) ? 'block' : 'none';
+        if (durationBtns) durationBtns.style.display = (enabled && !hideTimeline) ? 'flex' : 'none';
         if (durationRow) durationRow.style.display = enabled ? 'flex' : 'none';
     }
 
@@ -67,6 +68,7 @@ async function loadTimegrid(placeId, date) {
     const timeline = document.getElementById('booking-timeline');
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     if (tariffType !== 'hourly') return;
+    if (typeof isMobileViewport === 'function' && isMobileViewport()) return;
 
     hideScheduleStatus();
     if (timeline) {

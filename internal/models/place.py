@@ -136,6 +136,22 @@ class Place(db.Model):
             return None
         return Place.query.filter_by(code=self.container_code).first()
 
+    def is_on_maintenance(self):
+        """Собственный флаг или обслуживание родительской зоны."""
+        if self.maintenance:
+            return True
+        parent = self.get_container_place()
+        return bool(parent and parent.maintenance)
+
+    def apply_maintenance(self, maintenance):
+        """Установить обслуживание; для зоны — каскад на все столы внутри."""
+        self.maintenance = maintenance
+        self.status = 'maintenance' if maintenance else 'free'
+        if self.is_container():
+            for child in Place.query.filter_by(container_code=self.code, kind='desk').all():
+                child.maintenance = maintenance
+                child.status = 'maintenance' if maintenance else 'free'
+
     def location_path(self):
         """Читаемый путь «где находится место»: этаж · зона/помещение · место.
 
@@ -169,6 +185,9 @@ class Place(db.Model):
 
     def compute_container_status(self):
         """Статус закрытого помещения по дочерним столам и целой брони комнаты."""
+        if self.is_on_maintenance():
+            return self.compute_live_status()
+
         children = self.get_child_places()
         if not children:
             return self.compute_live_status()
@@ -206,7 +225,7 @@ class Place(db.Model):
 
     def get_display_status(self):
         """Статус для отображения на карте (контейнер или обычное место)."""
-        if self.maintenance:
+        if self.is_on_maintenance():
             return self.compute_live_status()
         if self.is_container() and self.get_child_places():
             return self.compute_container_status()
@@ -216,7 +235,7 @@ class Place(db.Model):
         """Актуальный статус места (free / partial / occupied / maintenance)."""
         effective_capacity = self.capacity if self.capacity else 1
 
-        if self.maintenance:
+        if self.is_on_maintenance():
             return {
                 'status': 'maintenance',
                 'current_occupancy': 0,
@@ -281,7 +300,7 @@ class Place(db.Model):
                 'tariffs': tariffs_info,
             }
 
-        if self.maintenance:
+        if self.is_on_maintenance():
             return {
                 'id': self.id, 'code': self.code, 'name': self.name,
                 'type': self.kind, 'kind': self.kind,
@@ -328,7 +347,7 @@ class Place(db.Model):
             'rating': round(self.rating, 1) if self.rating else 0.0,
             'rating_count': self.rating_count,
             'active': self.active, 'capacity': effective_capacity,
-            'maintenance': self.maintenance,
+            'maintenance': self.is_on_maintenance(),
             'container_code': self.container_code or get_layout_place_meta(self.code).get('container_code'),
             'location_path': self.location_path(),
             'enclosed': self.enclosed,

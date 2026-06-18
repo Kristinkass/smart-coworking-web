@@ -12,6 +12,7 @@
   .topbar h1 { margin:0; font-size:18px; }
   .topbar .spacer { flex:1; }
   .topbar a, .topbar button { color:#e2e8f0; text-decoration:none; padding:6px 12px; border-radius:6px; background:#334155; border:none; cursor:pointer; font-size:13px; }
+  .floor-toggle-bar { display:flex; gap:8px; flex-wrap:wrap; }
   .topbar a:hover, .topbar button:hover { background:#475569; }
   .topbar button.active { background:#f59e0b; color:#1e293b; }
 
@@ -90,8 +91,6 @@
   .wall-line:hover { stroke:#dc2626; }
   .wall-line.protected { stroke:#475569; cursor: not-allowed; }
   .wall-line.protected:hover { stroke:#475569; }
-  .door-arc { fill:none; stroke:#b45309; stroke-width:3; stroke-dasharray:5,4; pointer-events:none; }
-  .door-group.selected .door-arc { stroke:#dc2626; stroke-width:4; }
   .door-frame { stroke:#92400e; stroke-width:5; stroke-linecap:round; pointer-events:none; }
   .door-group.selected .door-frame { stroke:#dc2626; }
   .door-gap { stroke:#e2e8f0; stroke-width:12; stroke-linecap:round; pointer-events:none; }
@@ -118,9 +117,7 @@
   <h1><i class="fas fa-pencil-ruler"></i> Редактор планировки</h1>
   <span id="mode-label" class="mode-indicator" style="display:none;">Режим стен</span>
   <div class="spacer"></div>
-  <button onclick="setFloor(1)" id="floor-btn-1">Этаж 1</button>
-  <button onclick="setFloor(2)" id="floor-btn-2">Этаж 2</button>
-  <button onclick="setFloor(3)" id="floor-btn-3">Этаж 3</button>
+  <div id="floor-toggle-bar" class="floor-toggle-bar"></div>
   <button onclick="toggleWallMode()" id="btn-wall-mode">Стены</button>
   <button onclick="toggleWallMoveMode()" id="btn-wall-move">Двигать стены</button>
   <button onclick="toggleDoorMode()" id="btn-door-mode">Двери</button>
@@ -281,6 +278,6 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/editor/geometry.js') }}?v=1"></script>
-<script src="{{ url_for('static', filename='js/editor/app.js') }}?v=6"></script>
+<script src="{{ url_for('static', filename='js/editor/app.js') }}?v=7"></script>
 </body>
 </html>

@@ -36,7 +36,7 @@ def is_time_slot_available(place_id, booking_date, start_time, end_time, exclude
             return False, "Место не найдено"
 
         # Проверка флага обслуживания
-        if place.maintenance:
+        if place.is_on_maintenance():
             return False, "Место находится на обслуживании"
 
         # Проверка времени пройденного
