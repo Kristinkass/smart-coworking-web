@@ -1,0 +1,10 @@
+# Production: приложение только на localhost, PostgreSQL не публикуется наружу.
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    ports: !reset []
+
+  app:
+    ports: !reset
+      - "127.0.0.1:5000:5000"
