@@ -52,16 +52,6 @@ python cmd/app/main.py
 
 При первом запуске создаются таблицы, выполняются миграции и инициализируются начальные данные (включая администратора из `.env`).
 
-## API-документация (Swagger)
-
-После запуска доступны:
-
-| URL | Описание |
-|-----|----------|
-| http://127.0.0.1:5000/docs/ | Swagger UI |
-| http://127.0.0.1:5000/openapi.json | OpenAPI 3.0 спецификация |
-
-Документация генерируется автоматически из всех зарегистрированных маршрутов Flask. Для защищённых эндпоинтов используется сессионная cookie (`session`) — сначала войдите через `/login`.
 
 ## Запуск через Docker
 
@@ -72,6 +62,8 @@ cp .env.example .env
 # Сборка и запуск (приложение + PostgreSQL)
 docker compose up --build
 ```
+
+Для Docker **обязательны** в корне проекта: `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `wsgi.py`, `requirements.txt`, папки `internal/`, `static/`, `templates/`. Папки `docs/`, `tests/`, `scripts/generate_*.py` для запуска **не нужны** — их можно не копировать в «лёгкую» версию для деплоя.
 
 Приложение: http://localhost:5000  
 Swagger: http://localhost:5000/docs/

@@ -13,11 +13,12 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
-RUN chmod +x scripts/docker-entrypoint.sh
+COPY . .
 
 EXPOSE 5000
 
-ENTRYPOINT ["scripts/docker-entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["waitress-serve", "--host=0.0.0.0", "--port=5000", "wsgi:app"]
