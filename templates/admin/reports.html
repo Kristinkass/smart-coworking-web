@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}Отчеты и статистика{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --primary-color: #8fa67a;
+    --primary-dark: #6f855c;
+    --primary-light: #b5c9a4;
+    --secondary-color: #a8b89a;
+    --success-color: #4d8f5f;
+    --danger-color: #c75050;
+    --warning-color: #c9a84c;
+    --info-color: #6b8f9e;
+    --bg-color: #f6f7f2;
+    --card-bg: #fdfdf9;
+    --text-primary: #2f3428;
+    --text-secondary: #5c6554;
+    --border-color: #dde3d4;
+}
+
+.admin-reports-container {
+    padding: 30px;
+    background: var(--bg-color);
+    min-height: 100vh;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.filter-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.filter-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 20px 0;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-control, .form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-generate {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.bookings {
+    background: var(--primary-color);
+    color: white;
+}
+
+.stat-card.revenue {
+    background: var(--success-color);
+    color: white;
+}
+
+.stat-card.hours {
+    background: var(--info-color);
+    color: white;
+}
+
+.stat-card.users {
+    background: var(--warning-color);
+    color: white;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.reports-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.btn-download {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.reports-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.reports-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    vertical-align: top;
+}
+
+.reports-table th:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+.reports-table th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.reports-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    vertical-align: top;
+}
+
+.reports-table td .badge {
+    white-space: nowrap;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.section-empty {
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 12px 0;
+}
+
+.tariff-summary-block {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.tariff-summary-block h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.tariff-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tariff-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tariff-summary-row:last-child {
+    border-bottom: none;
+}
+
+.tariff-summary-row .label {
+    color: var(--text-secondary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    flex: 1 1 50%;
+}
+
+.tariff-summary-row .value {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    flex: 1 1 50%;
+}
+
+.reports-table tbody tr:hover {
+    background: #f1f5f9;
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.badge-warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.badge-danger {
+    background: var(--danger-color);
+    color: white;
+}
+</style>
+
+<div class="admin-reports-container">
+    <div class="page-header">
+        {% include "admin/_nav_back.html" %}
+        <h1 class="page-title">
+            {% if report_type == 'completed' %}Отчет: Завершенные бронирования
+            {% elif report_type == 'active' %}Отчет: Активные бронирования
+            {% elif report_type == 'cancelled' %}Отчет: Отмененные бронирования
+            {% else %}Отчет: Все бронирования
+            {% endif %}
+            <span style="font-size: 16px; color: #64748b; font-weight: 500;">({{ start_date }} - {{ end_date }})</span>
+        </h1>
+    </div>
+
+    <!-- Фильтры для отчета -->
+    <div class="filter-card">
+        <h3 class="filter-title">Параметры отчета</h3>
+        <div class="filter-row">
+            <div>
+                <label class="form-label">Дата начала</label>
+                <input type="date" id="startDate" class="form-control" value="{{ start_date }}">
+            </div>
+            <div>
+                <label class="form-label">Дата окончания</label>
+                <input type="date" id="endDate" class="form-control" value="{{ end_date }}">
+            </div>
+            <div>
+                <label class="form-label">Тип отчета</label>
+                <select id="reportType" class="form-select">
+                    <option value="all" {% if report_type == 'all' %}selected{% endif %}>Все бронирования</option>
+                    <option value="completed" {% if report_type == 'completed' %}selected{% endif %}>Завершенные</option>
+                    <option value="active" {% if report_type == 'active' %}selected{% endif %}>Активные</option>
+                    <option value="cancelled" {% if report_type == 'cancelled' %}selected{% endif %}>Отмененные</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn-generate" onclick="generateReport()">Сформировать отчет</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Общая статистика за период -->
+    <div class="stats-grid">
+        <div class="stat-card bookings">
+            <div class="stat-label">Всего бронирований</div>
+            <h2 class="stat-value">{{ stats.total_bookings }}</h2>
+        </div>
+        <div class="stat-card revenue">
+            <div class="stat-label">Общий доход</div>
+            <h2 class="stat-value">{{ format_money(stats.total_revenue) }}</h2>
+        </div>
+        <div class="stat-card users">
+            <div class="stat-label">Уникальных пользователей</div>
+            <h2 class="stat-value">{{ stats.unique_users }}</h2>
+        </div>
+    </div>
+
+    {% if stats.tariff_summary %}
+    <div class="tariff-summary-block">
+        <h3>Тарифы</h3>
+        <div class="tariff-summary-list">
+            {% for row in stats.tariff_summary %}
+            <div class="tariff-summary-row">
+                <span class="label">{{ row.label }}</span>
+                <span class="value">{{ row.detail }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stats.subscription_summary %}
+    <div class="tariff-summary-block">
+        <h3>Абонементы</h3>
+        <div class="tariff-summary-list">
+            {% for row in stats.subscription_summary %}
+            <div class="tariff-summary-row">
+                <span class="label">{{ row.label }}</span>
+                <span class="value">{{ row.detail }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Статистика по типам мест -->
+    <div class="reports-card">
+        <h3 class="card-title">Статистика по типам мест</h3>
+        <div class="table-responsive">
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>Тип места</th>
+                        <th>Количество бронирований</th>
+                        <th>Общий доход</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kind, data in stats.by_place_type.items() %}
+                    <tr>
+                        <td>{{ get_type_name(kind) }}</td>
+                        <td>{{ data.count }}</td>
+                        <td>{{ format_money(data.total_revenue) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Статистика по пользователям -->
+    <div class="reports-card">
+        <h3 class="card-title">Топ пользователей по расходам</h3>
+        <div class="table-responsive">
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>Почта</th>
+                        <th>Количество бронирований</th>
+                        <th>Общая сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in stats.top_users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.booking_count }}</td>
+                        <td>{{ format_money(user.total_spent) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Детальный список бронирований по типам тарифа -->
+    <div class="reports-card">
+        <div class="card-header">
+            <h3 class="card-title">Детальный список бронирований</h3>
+            <button class="btn-download" onclick="downloadPDF()">
+                <i class="fas fa-file-pdf"></i> Скачать PDF
+            </button>
+        </div>
+
+        {% for section in report_sections %}
+        {% set section_key = section.key %}
+        {% set section_title = section.title %}
+        {% set section_mode = section.mode %}
+        {% set value_label = section.value_label %}
+        {% set section_bookings = grouped_bookings[section_key] %}
+        <div style="margin-bottom: 28px;">
+            <h4 class="section-title">{{ section_title }} ({{ section_bookings|length }})</h4>
+            {% if section_bookings %}
+            <div class="table-responsive">
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Дата</th>
+                            {% if section_mode == 'period' %}
+                            <th>Период</th>
+                            {% else %}
+                            <th>Время</th>
+                            {% endif %}
+                            <th>Пользователь</th>
+                            <th>Место</th>
+                            <th>Локация</th>
+                            {% if section_mode == 'subscription' %}
+                            <th>Абонемент</th>
+                            {% elif value_label %}
+                            <th>{{ value_label }}</th>
+                            {% endif %}
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in section_bookings %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ booking.booking_date.strftime('%d.%m.%Y') }}</td>
+                            <td>{{ format_booking_time_or_period(booking) }}</td>
+                            <td class="col-user">{{ booking.user.username }}</td>
+                            <td class="col-place">
+                                <strong>{{ format_place_code(booking.place) if booking.place else '–' }}</strong>
+                                {% if booking.place %}<br><small>{{ booking.place.name }}</small>{% endif %}
+                            </td>
+                            <td class="col-location">{{ format_place_container(booking.place) if booking.place else '' }}</td>
+                            {% if section_mode == 'subscription' %}
+                            <td>{{ format_booking_subscription_name(booking) }}</td>
+                            {% elif value_label %}
+                            <td>{{ format_booking_duration_display(booking) }}</td>
+                            {% endif %}
+                            <td>{{ format_money(booking.total_price) }}</td>
+                            <td>
+                                <span class="badge badge-{{ 'success' if booking.status == 'completed' else 'warning' if booking.status == 'active' else 'danger' }}">
+                                    {{ get_status_name(booking.status) }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="section-empty">Нет бронирований за выбранный период.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+async function generateReport() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const reportType = document.getElementById('reportType').value;
+    
+    window.location.href = `/admin/reports?start_date=${startDate}&end_date=${endDate}&type=${reportType}`;
+}
+
+async function downloadPDF() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const reportType = document.getElementById('reportType').value;
+    
+    try {
+        const response = await fetch(`/api/admin/reports/pdf?start_date=${startDate}&end_date=${endDate}&type=${reportType}`);
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `report_${startDate}_${endDate}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            alert('Ошибка при генерации PDF');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при генерации PDF');
+    }
+}
+</script>
+{% endblock %}

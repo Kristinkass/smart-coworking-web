@@ -1,0 +1,997 @@
+{% extends "base.html" %}
+
+{% block title %}Управление абонементами{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --primary-color: #8fa67a;
+    --primary-dark: #6f855c;
+    --primary-light: #b5c9a4;
+    --secondary-color: #a8b89a;
+    --success-color: #4d8f5f;
+    --danger-color: #c75050;
+    --warning-color: #c9a84c;
+    --info-color: #6b8f9e;
+    --bg-color: #f6f7f2;
+    --card-bg: #fdfdf9;
+    --text-primary: #2f3428;
+    --text-secondary: #5c6554;
+    --border-color: #dde3d4;
+}
+
+.admin-subscriptions-container {
+    padding: 30px;
+    background: var(--bg-color);
+    min-height: 100vh;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.btn-create {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.filter-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-filter {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-filter:hover {
+    background: var(--primary-dark);
+}
+
+.subscriptions-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.subscriptions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.subscriptions-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.subscriptions-table th:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+.subscriptions-table th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.subscriptions-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.subscriptions-table tbody tr:hover {
+    background: #f1f5f9;
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-active {
+    background: var(--success-color);
+    color: white;
+}
+
+.badge-inactive {
+    background: var(--text-secondary);
+    color: white;
+}
+
+.badge-archived {
+    background: #94a3b8;
+    color: white;
+}
+
+.price-stepper {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+.price-stepper .form-control {
+    flex: 1;
+    text-align: center;
+}
+.price-step-btn {
+    min-width: 56px;
+    padding: 8px 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: #f6f7f2;
+    font-weight: 700;
+    cursor: pointer;
+}
+.price-step-btn:hover {
+    background: #eef2ff;
+    border-color: var(--primary-color);
+}
+.form-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.text-success {
+    color: var(--success-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+.btn-action {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.btn-edit {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-edit:hover {
+    background: var(--primary-dark);
+}
+
+.btn-delete {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+    color: var(--danger-color);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.form-check-input {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    accent-color: var(--primary-color);
+}
+
+.form-check-label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-secondary {
+    background: var(--text-secondary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--text-primary);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+</style>
+
+<div class="admin-subscriptions-container">
+    <div class="page-header">
+        {% include "admin/_nav_back.html" %}
+        <h1 class="page-title">{% if is_manager and not is_admin %}Выдача абонементов{% else %}Управление абонементами{% endif %}</h1>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            {% if is_manager %}
+            <button class="btn-create" onclick="openIssueTemplateModal()">
+                <i class="fas fa-user-plus"></i> Выдать по шаблону
+            </button>
+            {% endif %}
+            {% if is_admin %}
+            <button class="btn-create" style="background:var(--success-color);" onclick="openCreateTemplateModal()">
+                <i class="fas fa-copy"></i> Шаблон
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="subscriptions-card" style="margin-bottom:24px;">
+        <h3 style="margin:0 0 16px;"><i class="fas fa-copy"></i> Шаблоны для самостоятельного оформления</h3>
+        <div class="table-responsive">
+            <table class="subscriptions-table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Название</th>
+                        <th>Срок</th>
+                        <th>Типы мест</th>
+                        <th>Часы</th>
+                        <th>Цена</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="templatesTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-card">
+        <div class="filter-row">
+            <div>
+                <label class="form-label">Пользователь</label>
+                <select id="filterUser" class="form-select">
+                    <option value="">Все пользователи</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.email }} - {{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Статус</label>
+                <select id="filterStatus" class="form-select">
+                    <option value="">Все</option>
+                    <option value="active">Активные</option>
+                    <option value="inactive">Неактивные</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn-filter" onclick="filterSubscriptions()">Применить фильтры</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица абонементов -->
+    <div class="subscriptions-card">
+        <div class="table-responsive">
+            <table class="subscriptions-table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Пользователь</th>
+                        <th>Название</th>
+                        <th>Типы мест</th>
+                        <th>Период</th>
+                        <th>Часы</th>
+                        <th>Цена</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="subscriptionsTable">
+                    <!-- Заполняется через JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно: выдать шаблон пользователю -->
+<div class="modal" id="issueTemplateModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Выдать абонемент по шаблону</h2>
+            <button class="modal-close" onclick="closeIssueTemplateModal()">×</button>
+        </div>
+        <form id="issueTemplateForm">
+            <div class="form-group">
+                <label class="form-label">Пользователь</label>
+                <select name="user_id" class="form-select" required>
+                    {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.email }} - {{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Шаблон</label>
+                <select name="template_id" id="issue-template-select" class="form-select" required>
+                    <option value="">– выберите шаблон –</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeIssueTemplateModal()">Отмена</button>
+                <button type="button" class="btn-primary" onclick="issueTemplateToUser()">Выдать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования шаблона -->
+<div class="modal" id="editTemplateModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Редактировать шаблон</h2>
+            <button class="modal-close" onclick="closeEditTemplateModal()">×</button>
+        </div>
+        <form id="editTemplateForm">
+            <input type="hidden" id="editTemplateId">
+            <div class="form-group">
+                <label class="form-label">Название</label>
+                <input type="text" id="editTemplateName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Срок (дней)</label>
+                <input type="number" id="editTemplateDuration" class="form-control" min="1" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Типы мест</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="editTplKindDesk" value="desk">
+                    <label class="form-check-label" for="editTplKindDesk">Рабочие столы</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="editTplKindRoom" value="room">
+                    <label class="form-check-label" for="editTplKindRoom">Переговорные</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Лимит часов</label>
+                <input type="number" id="editTemplateHours" class="form-control" placeholder="пусто = безлимит">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Цена (₽)</label>
+                <div class="price-stepper">
+                    <button type="button" class="price-step-btn" onclick="stepTemplatePrice('editTemplatePrice', -50)">−50</button>
+                    <input type="number" id="editTemplatePrice" class="form-control" step="1" min="0" required>
+                    <button type="button" class="price-step-btn" onclick="stepTemplatePrice('editTemplatePrice', 50)">+50</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-check-label">
+                    <input type="checkbox" id="editTemplateActive" checked> Активен
+                </label>
+                <p class="form-hint">Снятая галочка = шаблон в архиве. Уже выданные абонементы действуют до конца срока, продлить нельзя.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditTemplateModal()">Отмена</button>
+                <button type="button" class="btn-primary" onclick="updateTemplate()">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования абонемента -->
+<div class="modal" id="editSubscriptionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Редактировать абонемент</h2>
+            <button class="modal-close" onclick="closeEditModal()">×</button>
+        </div>
+        <form id="editSubscriptionForm">
+            <input type="hidden" name="subscription_id" id="editSubscriptionId">
+            <div class="form-group">
+                <label class="form-label">Название абонемента</label>
+                <input type="text" name="name" id="editName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Типы мест</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="place_kinds" value="desk" id="editKindDesk">
+                    <label class="form-check-label" for="editKindDesk">Рабочие столы</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="place_kinds" value="room" id="editKindRoom">
+                    <label class="form-check-label" for="editKindRoom">Переговорные</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата начала</label>
+                <input type="date" name="start_date" id="editStartDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата окончания</label>
+                <input type="date" name="end_date" id="editEndDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Лимит часов (оставьте пустым для безлимита)</label>
+                <input type="number" name="hours_limit" id="editHoursLimit" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Цена (руб)</label>
+                <input type="number" name="price" id="editPrice" class="form-control" required step="0.01">
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="active" id="editActive">
+                <label class="form-check-label" for="editActive">Активен</label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Отмена</button>
+                <button type="button" class="btn-primary" onclick="updateSubscription()">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Шаблон абонемента -->
+<div class="modal" id="createTemplateModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Шаблон абонемента</h2>
+            <button class="modal-close" onclick="closeCreateTemplateModal()">×</button>
+        </div>
+        <form id="createTemplateForm">
+            <div class="form-group">
+                <label class="form-label">Название</label>
+                <input type="text" name="name" class="form-control" required placeholder="Например: Столы на месяц">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Срок (дней)</label>
+                <input type="number" name="duration_days" class="form-control" value="30" min="1" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Типы мест</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="place_kinds" value="desk" id="tplKindDesk" checked>
+                    <label class="form-check-label" for="tplKindDesk">Рабочие столы</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="place_kinds" value="room" id="tplKindRoom">
+                    <label class="form-check-label" for="tplKindRoom">Переговорные</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Лимит часов (пусто = безлимит)</label>
+                <input type="number" name="hours_limit" class="form-control" placeholder="40">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Цена (₽)</label>
+                <div class="price-stepper">
+                    <button type="button" class="price-step-btn" onclick="stepTemplatePrice('createTemplatePrice', -50)">−50</button>
+                    <input type="number" name="price" id="createTemplatePrice" class="form-control" required step="1" min="0" value="1500">
+                    <button type="button" class="price-step-btn" onclick="stepTemplatePrice('createTemplatePrice', 50)">+50</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeCreateTemplateModal()">Отмена</button>
+                <button type="button" class="btn-primary" onclick="createTemplate()">Сохранить шаблон</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+const IS_MANAGER = {{ 'true' if is_manager else 'false' }};
+let allSubscriptions = [];
+let allTemplates = [];
+
+async function loadTemplates() {
+    try {
+        const url = IS_ADMIN
+            ? '/api/admin/subscription-templates'
+            : '/api/subscription-templates';
+        const response = await fetch(url);
+        const data = await response.json();
+        allTemplates = data.templates || [];
+        renderTemplates(allTemplates);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderTemplates(templates) {
+    const tbody = document.getElementById('templatesTable');
+    const issueSel = document.getElementById('issue-template-select');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (issueSel) {
+        issueSel.innerHTML = '<option value="">– выберите шаблон –</option>' +
+            templates.filter(t => t.active !== false).map(t =>
+                `<option value="${t.id}">${t.name} (${t.duration_days || '–'} дн., ${Math.round(Number(t.price) || 0)} ₽)</option>`
+            ).join('');
+    }
+    templates.forEach((tpl, index) => {
+        const kinds = (tpl.place_kinds || []).map(k => k === 'desk' ? 'Столы' : 'Переговорные').join(', ');
+        const hours = tpl.hours_limit ? `${tpl.hours_limit} ч` : 'Безлимит';
+        const archived = tpl.active === false;
+        const statusBadge = archived
+            ? '<span class="status-badge badge-archived">Архив</span>'
+            : '<span class="status-badge badge-active">Активен</span>';
+        const price = Math.round(Number(tpl.price) || 0);
+        const adminActions = IS_ADMIN
+            ? (archived
+                ? `<button class="btn-action btn-edit" style="background:#4d8f5f;color:#fff;" onclick="archiveTemplate(${tpl.id}, false)">Восстановить</button>`
+                : `<button class="btn-action btn-edit" onclick="editTemplate(${tpl.id})">Редактировать</button>
+                   <button class="btn-action btn-delete" style="background:#c9a84c;color:#fff;" onclick="archiveTemplate(${tpl.id}, true)">Архивировать</button>`)
+            : '–';
+        tbody.innerHTML += `
+            <tr${archived ? ' style="opacity:.75"' : ''}>
+                <td>${index + 1}</td>
+                <td>${tpl.name}</td>
+                <td>${tpl.duration_days || '–'} дн.</td>
+                <td>${kinds}</td>
+                <td>${hours}</td>
+                <td>${price} ₽</td>
+                <td>${statusBadge}</td>
+                <td>${adminActions}</td>
+            </tr>`;
+    });
+}
+
+function stepTemplatePrice(inputId, delta) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const cur = parseInt(inp.value, 10) || 0;
+    inp.value = Math.max(0, cur + delta);
+}
+
+function openCreateTemplateModal() {
+    document.getElementById('createTemplateModal').classList.add('active');
+}
+function closeCreateTemplateModal() {
+    document.getElementById('createTemplateModal').classList.remove('active');
+    document.getElementById('createTemplateForm').reset();
+}
+
+async function createTemplate() {
+    const form = document.getElementById('createTemplateForm');
+    const formData = new FormData(form);
+    const placeKinds = [];
+    document.querySelectorAll('#createTemplateForm input[name="place_kinds"]:checked').forEach(cb => placeKinds.push(cb.value));
+    const data = {
+        name: formData.get('name'),
+        duration_days: parseInt(formData.get('duration_days'), 10),
+        place_kinds: placeKinds,
+        hours_limit: formData.get('hours_limit') ? parseInt(formData.get('hours_limit'), 10) : null,
+        price: Math.round(parseFloat(formData.get('price')) || 0),
+    };
+    const r = await fetch('/api/admin/subscription-templates', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (r.ok) {
+        closeCreateTemplateModal();
+        loadTemplates();
+        alert('Шаблон создан');
+    } else {
+        const err = await r.json();
+        alert(err.error || 'Ошибка');
+    }
+}
+
+async function archiveTemplate(id, archive) {
+    const msg = archive ? 'Архивировать шаблон? Клиенты больше не смогут его оформить.' : 'Восстановить шаблон?';
+    if (!confirm(msg)) return;
+    const r = await fetch('/api/admin/subscription-templates/' + id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ active: !archive }),
+    });
+    if (r.ok) loadTemplates();
+    else alert('Ошибка');
+}
+
+function openIssueTemplateModal() {
+    document.getElementById('issueTemplateModal').classList.add('active');
+}
+function closeIssueTemplateModal() {
+    document.getElementById('issueTemplateModal').classList.remove('active');
+    document.getElementById('issueTemplateForm').reset();
+}
+
+async function issueTemplateToUser() {
+    const form = document.getElementById('issueTemplateForm');
+    const formData = new FormData(form);
+    const userId = formData.get('user_id');
+    const templateId = formData.get('template_id');
+    if (!userId || !templateId) {
+        alert('Выберите пользователя и шаблон');
+        return;
+    }
+    const r = await fetch('/api/admin/subscriptions/issue-template', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: parseInt(userId, 10), template_id: parseInt(templateId, 10) }),
+    });
+    if (r.ok) {
+        closeIssueTemplateModal();
+        loadSubscriptions();
+        alert('Абонемент выдан');
+    } else {
+        const err = await r.json();
+        alert(err.error || 'Ошибка');
+    }
+}
+
+function editTemplate(id) {
+    const tpl = allTemplates.find(t => t.id === id);
+    if (!tpl) return;
+    document.getElementById('editTemplateId').value = tpl.id;
+    document.getElementById('editTemplateName').value = tpl.name;
+    document.getElementById('editTemplateDuration').value = tpl.duration_days || 30;
+    document.getElementById('editTemplateHours').value = tpl.hours_limit || '';
+    document.getElementById('editTemplatePrice').value = tpl.price;
+    document.getElementById('editTemplateActive').checked = tpl.active !== false;
+    document.getElementById('editTplKindDesk').checked = (tpl.place_kinds || []).includes('desk');
+    document.getElementById('editTplKindRoom').checked = (tpl.place_kinds || []).includes('room');
+    document.getElementById('editTemplateModal').classList.add('active');
+}
+
+function closeEditTemplateModal() {
+    document.getElementById('editTemplateModal').classList.remove('active');
+}
+
+async function updateTemplate() {
+    const id = document.getElementById('editTemplateId').value;
+    const placeKinds = [];
+    if (document.getElementById('editTplKindDesk').checked) placeKinds.push('desk');
+    if (document.getElementById('editTplKindRoom').checked) placeKinds.push('room');
+    const data = {
+        name: document.getElementById('editTemplateName').value,
+        duration_days: parseInt(document.getElementById('editTemplateDuration').value, 10),
+        place_kinds: placeKinds,
+        hours_limit: document.getElementById('editTemplateHours').value
+            ? parseInt(document.getElementById('editTemplateHours').value, 10) : null,
+        price: Math.round(parseFloat(document.getElementById('editTemplatePrice').value) || 0),
+        active: document.getElementById('editTemplateActive').checked,
+    };
+    const r = await fetch('/api/admin/subscription-templates/' + id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data),
+    });
+    if (r.ok) {
+        closeEditTemplateModal();
+        loadTemplates();
+        alert('Шаблон обновлён');
+    } else {
+        const err = await r.json();
+        alert(err.error || 'Ошибка');
+    }
+}
+
+// Загрузка абонементов
+async function loadSubscriptions() {
+    try {
+        const response = await fetch('/api/admin/subscriptions');
+        const data = await response.json();
+        allSubscriptions = data.subscriptions;
+        renderSubscriptions(allSubscriptions);
+    } catch (error) {
+        console.error('Ошибка загрузки абонементов:', error);
+        alert('Ошибка загрузки абонементов');
+    }
+}
+
+// Отображение абонементов
+function renderSubscriptions(subscriptions) {
+    const tbody = document.getElementById('subscriptionsTable');
+    tbody.innerHTML = '';
+    
+    subscriptions.forEach((sub, index) => {
+        const placeKinds = sub.place_kinds.map(k => {
+            const kindNames = {desk: 'Столы', room: 'Переговорные'};
+            return kindNames[k] || k;
+        }).join(', ');
+        
+        const hoursInfo = sub.hours_limit 
+            ? `${sub.hours_used} / ${sub.hours_limit} ч` 
+            : 'Безлимит';
+        
+        const statusClass = sub.active ? 'badge-active' : 'badge-inactive';
+        const statusText = sub.active ? 'Активен' : 'Неактивен';
+        const validClass = sub.is_valid ? 'text-success' : 'text-danger';
+        const validText = sub.is_valid ? '✓ Действителен' : '✗ Недействителен';
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${sub.user_email}</td>
+                <td>${sub.name}</td>
+                <td>${placeKinds}</td>
+                <td>${sub.start_date} - ${sub.end_date}</td>
+                <td>${hoursInfo}</td>
+                <td>${sub.price} ₽</td>
+                <td>
+                    <span class="badge ${statusClass}">${statusText}</span>
+                    <br>
+                    <small class="${validClass}">${validText}</small>
+                </td>
+                <td>
+                    ${IS_ADMIN ? `<button class="btn-action btn-edit" onclick="editSubscription(${sub.id})">Редактировать</button>` : '–'}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// Фильтрация
+function filterSubscriptions() {
+    const userId = document.getElementById('filterUser').value;
+    const status = document.getElementById('filterStatus').value;
+    
+    let filtered = allSubscriptions;
+    
+    if (userId) {
+        filtered = filtered.filter(s => s.user_id == userId);
+    }
+    
+    if (status === 'active') {
+        filtered = filtered.filter(s => s.active);
+    } else if (status === 'inactive') {
+        filtered = filtered.filter(s => !s.active);
+    }
+    
+    renderSubscriptions(filtered);
+}
+
+// Модальные окна
+function closeEditModal() {
+    document.getElementById('editSubscriptionModal').classList.remove('active');
+}
+
+// Редактирование абонемента
+function editSubscription(id) {
+    const sub = allSubscriptions.find(s => s.id === id);
+    if (!sub) return;
+    
+    document.getElementById('editSubscriptionId').value = sub.id;
+    document.getElementById('editName').value = sub.name;
+    document.getElementById('editStartDate').value = sub.start_date;
+    document.getElementById('editEndDate').value = sub.end_date;
+    document.getElementById('editHoursLimit').value = sub.hours_limit || '';
+    document.getElementById('editPrice').value = sub.price;
+    document.getElementById('editActive').checked = sub.active;
+    
+    // Чекбоксы типов мест
+    document.getElementById('editKindDesk').checked = sub.place_kinds.includes('desk');
+    document.getElementById('editKindRoom').checked = sub.place_kinds.includes('room');
+    document.getElementById('editSubscriptionModal').classList.add('active');
+}
+
+// Обновление абонемента
+async function updateSubscription() {
+    const id = document.getElementById('editSubscriptionId').value;
+    
+    const placeKinds = [];
+    document.querySelectorAll('#editSubscriptionForm input[name="place_kinds"]:checked').forEach(cb => {
+        placeKinds.push(cb.value);
+    });
+    
+    const data = {
+        name: document.getElementById('editName').value,
+        place_kinds: placeKinds,
+        start_date: document.getElementById('editStartDate').value,
+        end_date: document.getElementById('editEndDate').value,
+        hours_limit: document.getElementById('editHoursLimit').value ? parseInt(document.getElementById('editHoursLimit').value) : null,
+        price: parseFloat(document.getElementById('editPrice').value),
+        active: document.getElementById('editActive').checked
+    };
+    
+    try {
+        const response = await fetch(`/api/admin/subscriptions/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            closeEditModal();
+            loadSubscriptions();
+            alert('Абонемент обновлен');
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.error);
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка обновления абонемента');
+    }
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+    loadSubscriptions();
+    loadTemplates();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Зоны локаций{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
+        <h1><i class="fas fa-map-signs"></i> Категории зон локаций</h1>
+        <p class="text-muted">Буква зоны в коде места: <strong>1A-L1</strong> – локация (помещение), <strong>1A-T1</strong> – рабочий стол. Префикс <strong>1A</strong> = 1 этаж, зона A. Архивные зоны остаются у уже созданных мест, но недоступны для новых.</p>
+        <div style="margin-top:12px;">
+            <a href="{{ url_for('admin_editor') }}" class="btn btn-secondary"><i class="fas fa-pencil-ruler"></i> Редактор планировки</a>
+        </div>
+    </div>
+
+    <div class="admin-grid">
+        <div class="admin-card">
+            <div class="card-header"><h3><i class="fas fa-plus"></i> Новая зона</h3></div>
+            <form id="zone-form" class="admin-form">
+                <input type="hidden" id="zone-id" value="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Буква зоны</label>
+                        <input type="text" id="zone-letter" class="form-control" maxlength="2" placeholder="A" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="zone-name" class="form-control" placeholder="Зона рабочих столов" required>
+                </div>
+                <div class="form-group">
+                    <label>Тип</label>
+                    <select id="zone-kind" class="form-control">
+                        <option value="desk_zone">Рабочие столы</option>
+                        <option value="room_zone">Переговорные / помещения</option>
+                        <option value="lounge_zone">Зона отдыха (диваны)</option>
+                        <option value="kitchen_zone">Кухня</option>
+                        <option value="wc_zone">Санузел</option>
+                        <option value="amenity_zone">Прочее (служебное)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="zone-desc" class="form-control" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить</button>
+                <button type="button" class="btn btn-secondary" id="zone-cancel" style="display:none;">Отмена</button>
+            </form>
+        </div>
+
+        <div class="admin-card">
+            <div class="card-header"><h3><i class="fas fa-list"></i> Зоны</h3></div>
+            <div id="zones-list" class="categories-list">Загрузка…</div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function api(url, opts) {
+  const r = await fetch(url, {headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', ...opts});
+  return r.json();
+}
+
+const kindLabels = {
+  desk_zone:'Столы', room_zone:'Помещения', lounge_zone:'Отдых',
+  kitchen_zone:'Кухня', wc_zone:'Санузел', amenity_zone:'Служебное'
+};
+
+async function loadZones() {
+  const data = await api('/api/admin/location-zones?all=1');
+  const box = document.getElementById('zones-list');
+  if (!data.zones || !data.zones.length) {
+    box.innerHTML = '<p class="text-muted">Нет зон. Создайте первую (например A – столы, B – переговорные).</p>';
+    return;
+  }
+  const active = data.zones.filter(z => z.active !== false);
+  const archived = data.zones.filter(z => z.active === false);
+
+  function renderZone(z, archivedRow) {
+    const badge = archivedRow
+      ? '<span class="badge badge-secondary">Архив</span>'
+      : `<span class="badge badge-secondary">${kindLabels[z.kind] || z.kind}</span>`;
+    const actions = archivedRow
+      ? `<button class="btn btn-sm btn-outline-success" onclick="unarchiveZone(${z.id})">Разархивировать</button>`
+      : `<button class="btn btn-sm btn-outline-primary" onclick="editZone(${z.id})">Изменить</button>
+         <button class="btn btn-sm btn-outline-warning" onclick="archiveZone(${z.id})">Архивировать</button>`;
+    return `<div class="category-item" style="padding:12px;border-bottom:1px solid #eee;${archivedRow ? 'opacity:.75;' : ''}">
+      <strong>${z.letter}</strong> – ${z.name} ${badge}
+      <div class="text-muted" style="font-size:12px;">Пример кода: ${z.code_example}</div>
+      ${actions}
+    </div>`;
+  }
+
+  box.innerHTML = [
+    ...active.map(z => renderZone(z, false)),
+    archived.length ? '<h4 style="margin:16px 0 8px;font-size:14px;color:#6b7280;">Архив</h4>' : '',
+    ...archived.map(z => renderZone(z, true)),
+  ].join('');
+  window._zones = data.zones;
+}
+
+function editZone(id) {
+  const z = (window._zones || []).find(x => x.id === id);
+  if (!z) return;
+  document.getElementById('zone-id').value = z.id;
+  document.getElementById('zone-letter').value = z.letter;
+  document.getElementById('zone-name').value = z.name;
+  document.getElementById('zone-kind').value = z.kind;
+  document.getElementById('zone-desc').value = z.description || '';
+  document.getElementById('zone-cancel').style.display = 'inline-block';
+}
+
+document.getElementById('zone-cancel').onclick = () => {
+  document.getElementById('zone-form').reset();
+  document.getElementById('zone-id').value = '';
+  document.getElementById('zone-cancel').style.display = 'none';
+};
+
+document.getElementById('zone-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('zone-id').value;
+  const payload = {
+    letter: document.getElementById('zone-letter').value.trim().toUpperCase(),
+    name: document.getElementById('zone-name').value.trim(),
+    kind: document.getElementById('zone-kind').value,
+    description: document.getElementById('zone-desc').value,
+  };
+  if (id) {
+    await api('/api/admin/location-zones/' + id, {method: 'PUT', body: JSON.stringify(payload)});
+  } else {
+    await api('/api/admin/location-zones', {method: 'POST', body: JSON.stringify(payload)});
+  }
+  document.getElementById('zone-form').reset();
+  document.getElementById('zone-id').value = '';
+  loadZones();
+};
+
+async function archiveZone(id) {
+  if (!confirm('Архивировать зону? У существующих мест она сохранится, но для новых будет недоступна.')) return;
+  const res = await api('/api/admin/location-zones/' + id + '/archive', {method: 'POST'});
+  if (res.message) alert(res.message);
+  if (res.success !== false) loadZones();
+}
+
+async function unarchiveZone(id) {
+  const res = await api('/api/admin/location-zones/' + id + '/unarchive', {method: 'POST'});
+  if (res.message) alert(res.message);
+  if (res.success !== false) loadZones();
+}
+
+loadZones();
+</script>
+{% endblock %}

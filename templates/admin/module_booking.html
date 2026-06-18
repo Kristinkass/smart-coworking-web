@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Бронирование – Умный Коворкинг{% endblock %}
+{% block content %}
+{% include "admin/module_hub_styles.html" %}
+<div class="module-page">
+  <div class="module-header">
+    <a href="{{ url_for('admin_dashboard') if current_user.is_admin() else url_for('dashboard') }}" class="module-back"><i class="fas fa-arrow-left"></i> Назад</a>
+    <div>
+      <h1><i class="fas fa-calendar-check"></i> Бронирование</h1>
+      <p>Рабочие места и переговорные – для клиентов и менеджеров</p>
+    </div>
+  </div>
+  <div class="module-grid">
+    <a href="{{ url_for('map_view') }}" class="module-card">
+      <i class="fas fa-map-marked-alt"></i><span>Карта бронирования</span>
+      <small>Выбор места и времени</small>
+    </a>
+    {% if current_user.is_admin() or current_user.is_manager() %}
+    <a href="{{ url_for('admin_bookings') }}" class="module-card">
+      <i class="fas fa-list-alt"></i><span>Все бронирования</span>
+      <small>Просмотр, отмена, продление</small>
+    </a>
+    <a href="{{ url_for('manager_clients') }}" class="module-card">
+      <i class="fas fa-users"></i><span>Клиенты</span>
+      <small>Список клиентов и быстрая регистрация</small>
+    </a>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin_users') }}" class="module-card">
+      <i class="fas fa-users-cog"></i><span>Все пользователи</span>
+      <small>Полное управление пользователями</small>
+    </a>
+    {% endif %}
+    {% endif %}
+  </div>
+  <div class="module-note">Клиент бронирует на карте. Менеджер может оформить бронь за клиента.</div>
+</div>
+{% endblock %}

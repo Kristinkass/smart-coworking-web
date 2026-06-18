@@ -5,14 +5,12 @@
 {% block content %}
 <div class="admin-container">
     <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
         <div class="header-left">
             <h1><i class="fas fa-calendar-alt"></i> Управление бронированиями</h1>
             <p class="text-muted mb-0">Всего бронирований: {{ bookings|length }}</p>
         </div>
         <div class="header-right">
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Назад
-            </a>
             <button onclick="refreshPage()" class="btn btn-outline-primary ml-2">
                 <i class="fas fa-sync-alt"></i>
             </button>
@@ -91,9 +89,10 @@
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th width="60">ID</th>
+                    <th width="60">№</th>
                     <th>Пользователь</th>
                     <th>Место</th>
+                    <th width="180">Локация</th>
                     <th width="140">Дата</th>
                     <th width="180">Время</th>
                     <th width="120">Стоимость</th>
@@ -107,7 +106,7 @@
                     <tr class="{% if booking.status == 'active' %}active-row{% elif booking.status == 'cancelled' %}cancelled-row{% endif %}">
                         <td>
                             <div class="booking-id">
-                                <strong>#{{ booking.id }}</strong>
+                                <strong>{{ loop.index }}</strong>
                                 <small class="text-muted">{{ booking.created_at.strftime('%d.%m') }}</small>
                             </div>
                         </td>
@@ -127,38 +126,52 @@
                         </td>
                         <td>
                             <div class="place-info">
-                                <div class="place-name">{{ booking.place.name }}</div>
+                                <div class="place-name"><code>{{ format_place_code(booking.place) }}</code></div>
                                 <div class="place-meta">
-                                    <span class="place-type-badge place-type-{{ booking.place.type }}">
-                                        {% if booking.place.type == 'desk' %}
-                                            <i class="fas fa-chair"></i> Стол
-                                        {% elif booking.place.type == 'room' %}
-                                            <i class="fas fa-door-closed"></i> Переговорная
-                                        {% elif booking.place.type == 'office' %}
-                                            <i class="fas fa-building"></i> Офис
-                                        {% endif %}
-                                    </span>
-                                    <small class="text-muted ml-2">{{ booking.place.price_per_hour }} ₽/час</small>
+                                    <span>{{ booking.place.name }}</span>
+                                    <small class="text-muted">{{ get_type_name(booking.place.kind) }} · {{ booking.place.price_per_hour }} ₽/час</small>
                                 </div>
                             </div>
                         </td>
                         <td>
+                            {% if booking.place and format_place_container(booking.place) %}
+                            <span class="text-muted">{{ format_place_container(booking.place) }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="date-cell">
+                                {% if booking.tariff_type in ('weekly', 'monthly') %}
+                                <strong>{{ booking.booking_date.strftime('%d.%m.%Y') }} - {{ booking.period_end_date.strftime('%d.%m.%Y') }}</strong>
+                                <small class="text-muted d-block">
+                                    {{ 'Недельный тариф' if booking.tariff_type == 'weekly' else 'Месячный тариф' }}
+                                </small>
+                                {% else %}
                                 <strong>{{ booking.booking_date.strftime('%d.%m.%Y') }}</strong>
                                 <small class="text-muted d-block">
                                     {{ booking.booking_date.strftime('%A')|replace('Monday', 'Понедельник')|replace('Tuesday', 'Вторник')|replace('Wednesday', 'Среда')|replace('Thursday', 'Четверг')|replace('Friday', 'Пятница')|replace('Saturday', 'Суббота')|replace('Sunday', 'Воскресенье') }}
                                 </small>
+                                {% endif %}
                             </div>
                         </td>
                         <td>
                             <div class="time-cell">
+                                {% if booking.tariff_type in ('weekly', 'monthly') %}
+                                <div class="time-range">
+                                    <i class="far fa-calendar-alt"></i>
+                                    Весь период · рабочие часы
+                                </div>
+                                <div class="duration">
+                                    <small class="text-muted">{{ '7 дн.' if booking.tariff_type == 'weekly' else '30 дн.' }}</small>
+                                </div>
+                                {% else %}
                                 <div class="time-range">
                                     <i class="far fa-clock"></i>
                                     {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}
                                 </div>
                                 <div class="duration">
-                                    <small class="text-muted">{{ "%.1f"|format(booking.duration_hours) }} ч</small>
+                                    <small class="text-muted">{{ format_duration(booking.duration_hours) }}</small>
                                 </div>
+                                {% endif %}
                                 {% if booking.status == 'active' %}
                                 <div class="time-progress">
                                     <div class="progress">
@@ -211,7 +224,7 @@
                             <div class="action-buttons">
                             {% if booking.status == 'active' %}
                                 <button class="btn btn-sm btn-outline-primary"
-                                        onclick="extendBooking({{ booking.id }})"
+                                        onclick="showAdminExtendMenu(this, {{ booking.id }})"
                                         title="Продлить бронирование">
                                     <i class="fas fa-plus"></i>
                                 </button>
@@ -224,7 +237,7 @@
                                         <i class="fas fa-ban"></i>
                                     </button>
                                 </form>
-                            {% elif booking.status == 'cancelled' %}
+                            {% elif booking.status == 'cancelled' and booking.can_restore %}
                                 <button class="btn btn-sm btn-outline-success"
                                         onclick="restoreBooking({{ booking.id }})"
                                         title="Восстановить бронирование">
@@ -279,7 +292,7 @@
 
 .header-left h1 i {
     margin-right: 12px;
-    color: #3B82F6;
+    color: #8fa67a;
 }
 
 .header-left p {
@@ -319,14 +332,14 @@
 
 .filter-btn:hover {
     background: #f1f5f9;
-    color: #3B82F6;
+    color: #8fa67a;
     border-color: #d1d5db;
 }
 
 .filter-btn.active {
-    background: #3B82F6;
+    background: #8fa67a;
     color: white;
-    border-color: #3B82F6;
+    border-color: #8fa67a;
 }
 
 .filter-btn.active i {
@@ -377,14 +390,14 @@
 .stat-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    border-color: #3B82F6;
+    border-color: #8fa67a;
 }
 
 .stat-icon {
     width: 60px;
     height: 60px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    background: #8fa67a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -412,8 +425,8 @@
 
 /* Системное уведомление */
 .system-notice {
-    background: linear-gradient(135deg, #E0F2FE, #BAE6FD);
-    border: 1px solid #BAE6FD;
+    background: #eef2e8;
+    border: 1px solid #c5d4b8;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 30px;
@@ -427,20 +440,20 @@
 
 .notice-content i {
     font-size: 24px;
-    color: #0C4A6E;
+    color: #4a5c40;
     margin-top: 2px;
 }
 
 .notice-content strong {
     display: block;
-    color: #0C4A6E;
+    color: #4a5c40;
     margin-bottom: 5px;
     font-size: 16px;
 }
 
 .notice-content p {
     margin: 0;
-    color: #0C4A6E;
+    color: #5c6554;
     font-size: 14px;
     line-height: 1.5;
     opacity: 0.9;
@@ -457,7 +470,7 @@
 }
 
 .admin-table thead {
-    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    background: #8fa67a;
 }
 
 .admin-table th {
@@ -521,7 +534,7 @@
 .user-avatar {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    background: #8fa67a;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -652,7 +665,7 @@
 
 .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #10B981, #3B82F6);
+    background: #4d8f5f;
     border-radius: 3px;
     transition: width 0.3s ease;
 }
@@ -735,12 +748,12 @@
 }
 
 .btn-outline-primary {
-    border: 1px solid #3B82F6;
-    color: #3B82F6;
+    border: 1px solid #8fa67a;
+    color: #8fa67a;
 }
 
 .btn-outline-primary:hover {
-    background: #3B82F6;
+    background: #8fa67a;
     color: white;
 }
 
@@ -892,29 +905,49 @@ function refreshPage() {
     window.location.reload();
 }
 
-function extendBooking(bookingId) {
-    if (confirm('Продлить бронирование на 1 час?')) {
-        fetch(`/admin/booking/${bookingId}/extend`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ hours: 1 })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Бронирование успешно продлено');
-                refreshPage();
-            } else {
-                alert('Ошибка: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при продлении бронирования');
-        });
-    }
+function extendBooking(bookingId, hours) {
+    const label = hours === 1 ? '1 час' : hours + ' ч';
+    if (!confirm('Продлить бронирование на ' + label + '?')) return;
+    fetch(`/admin/booking/${bookingId}/extend`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ hours: hours })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Бронирование успешно продлено');
+            refreshPage();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Произошла ошибка при продлении бронирования');
+    });
+}
+
+function showAdminExtendMenu(btn, bookingId) {
+    document.querySelectorAll('.admin-extend-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'admin-extend-menu';
+    menu.style.cssText = 'position:absolute;z-index:100;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.12);padding:4px 0;min-width:120px;';
+    [1, 2].forEach(h => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = h === 1 ? '+1 час' : '+2 часа';
+        b.style.cssText = 'display:block;width:100%;padding:8px 14px;border:none;background:none;text-align:left;cursor:pointer;font-size:13px;';
+        b.onmouseover = () => { b.style.background = '#f3f4f6'; };
+        b.onmouseout = () => { b.style.background = 'none'; };
+        b.onclick = () => { menu.remove(); extendBooking(bookingId, h); };
+        menu.appendChild(b);
+    });
+    const wrap = btn.parentElement;
+    wrap.style.position = 'relative';
+    wrap.appendChild(menu);
 }
 
 function restoreBooking(bookingId) {

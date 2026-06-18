@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net" agent="cursor" version="22.1.0" type="device">
+  <diagram id="dfd-a12-l2" name="DFD A12 Уровень 2">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="640" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="DFD уровень 2: A12 «Редактор планировки»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="200" y="15" width="900" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="adm_sh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" vertex="1" parent="1">
+          <mxGeometry x="36" y="274" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="adm" value="Администратор" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="30" y="280" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1" value="Рисование стен и дверей" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="220" y="80" width="120" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1n" value="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="80" width="28" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2" value="Регистрация комнаты по стенам" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2n" value="2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="28" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3" value="Размещение столов" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="120" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3n" value="3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="28" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="p6" value="Создание зоны вручную" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="780" y="80" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p6n" value="6" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="80" width="28" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4" value="Проверка пересечений" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="600" y="260" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4n" value="4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="260" width="28" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5" value="Сохранение мест в базе данных" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="940" y="260" width="130" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5n" value="5" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="940" y="260" width="28" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dw" value="Стены" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=36;" vertex="1" parent="1">
+          <mxGeometry x="210" y="480" width="130" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="dwn" value="D1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="210" y="480" width="32" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="dd" value="Двери" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=36;" vertex="1" parent="1">
+          <mxGeometry x="360" y="480" width="130" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="ddn" value="D2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="480" width="32" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="dp" value="Геометрия мест" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=36;" vertex="1" parent="1">
+          <mxGeometry x="700" y="480" width="180" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="dpn" value="D3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="480" width="32" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="db" value="Рабочие места (база данных)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=36;" vertex="1" parent="1">
+          <mxGeometry x="940" y="480" width="160" height="46" as="geometry"/>
+        </mxCell>
+        <mxCell id="dbn" value="D4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="940" y="480" width="32" height="46" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="g1" value="сегменты стен" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;" edge="1" parent="1" source="adm" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g2" value="стены" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p1" target="dw"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g3" value="двери" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.7;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p1" target="dd"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g4" value="контур комнаты" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="p1" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g5" value="зона / закрытое помещение" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="p2" target="dp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g6" value="шаблон стола" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="p2" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g7" value="стол" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p3" target="p4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g8" value="выделенные столы" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="p3" target="p6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g9" value="открытая зона" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="p6" target="p4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g10" value="рабочие места" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p4" target="dp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g11" value="код места" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="dp" target="p5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g12" value="запись о месте" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p5" target="db"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="g13" value="геометрия" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="dp" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="legend" value="Обозначения DFD (Гейн–Сарсон):&#xa;□ — внешняя сущность&#xa;▭ — процесс (номер в углу)&#xa;═| — хранилище данных" style="text;html=1;strokeColor=#999999;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="540" width="240" height="88" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

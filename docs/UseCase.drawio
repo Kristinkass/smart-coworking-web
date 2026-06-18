@@ -1,0 +1,179 @@
+<mxfile host="Electron" agent="cursor">
+  <diagram id="use-case-coworking" name="Use Case">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="920" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" value="Система управления рабочими местами в коворкинге" vertex="1">
+          <mxGeometry height="30" width="700" x="450" y="10" as="geometry" />
+        </mxCell>
+
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=0;align=left;spacingLeft=8;dashed=0;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="820" width="1080" x="260" y="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="zone_line1" parent="1" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="310" as="sourcePoint" />
+            <mxPoint x="1340" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zone_line2" parent="1" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="530" as="sourcePoint" />
+            <mxPoint x="1340" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Акторы -->
+        <mxCell id="actor_client" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1" value="Клиент" vertex="1">
+          <mxGeometry height="60" width="30" x="130" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_manager" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1" value="Менеджер" vertex="1">
+          <mxGeometry height="60" width="30" x="130" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_admin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontStyle=1" value="Администратор" vertex="1">
+          <mxGeometry height="60" width="30" x="1380" y="420" as="geometry" />
+        </mxCell>
+
+        <!-- Общий use case: карта -->
+        <mxCell id="uc_map" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="Просмотр карты&#xa;коворкинга" vertex="1">
+          <mxGeometry height="80" width="140" x="730" y="400" as="geometry" />
+        </mxCell>
+
+        <!-- Клиент -->
+        <mxCell id="uc_reg" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Регистрация&#xa;и авторизация" vertex="1">
+          <mxGeometry height="70" width="150" x="320" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_book" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Бронирование&#xa;рабочего места" vertex="1">
+          <mxGeometry height="70" width="150" x="680" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_tariff" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Выбор тарифа&#xa;бронирования" vertex="1">
+          <mxGeometry height="70" width="150" x="900" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_active" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр активных&#xa;бронирований" vertex="1">
+          <mxGeometry height="70" width="160" x="480" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_extend_cancel" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Продление или&#xa;отмена брони" vertex="1">
+          <mxGeometry height="70" width="150" x="300" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_history" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр истории&#xa;бронирований" vertex="1">
+          <mxGeometry height="70" width="160" x="900" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_rate" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Оценка&#xa;рабочего места" vertex="1">
+          <mxGeometry height="70" width="130" x="1100" y="200" as="geometry" />
+        </mxCell>
+
+        <!-- Менеджер -->
+        <mxCell id="uc_book_user" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Бронирование места&#xa;для пользователя" vertex="1">
+          <mxGeometry height="70" width="170" x="420" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_add_user_mgr" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Добавление&#xa;пользователя" vertex="1">
+          <mxGeometry height="70" width="130" x="420" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_maintenance" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление&#xa;доступностью мест" vertex="1">
+          <mxGeometry height="70" width="160" x="620" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_notify" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Отправка&#xa;уведомлений" vertex="1">
+          <mxGeometry height="70" width="130" x="900" y="350" as="geometry" />
+        </mxCell>
+
+        <!-- Администратор -->
+        <mxCell id="uc_auth" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Авторизация" vertex="1">
+          <mxGeometry height="60" width="120" x="1080" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_space" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление&#xa;пространством" vertex="1">
+          <mxGeometry height="70" width="150" x="420" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_add_place" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Добавление&#xa;места" vertex="1">
+          <mxGeometry height="70" width="120" x="300" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_edit_place" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Редактирование&#xa;места" vertex="1">
+          <mxGeometry height="70" width="130" x="420" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_del_place" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Удаление&#xa;места" vertex="1">
+          <mxGeometry height="70" width="120" x="560" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_schedule" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Редактирование&#xa;расписания" vertex="1">
+          <mxGeometry height="70" width="150" x="720" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_users" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление&#xa;пользователями" vertex="1">
+          <mxGeometry height="70" width="150" x="900" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_add_user_adm" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Добавление&#xa;пользователя" vertex="1">
+          <mxGeometry height="70" width="130" x="820" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_block" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Блокировка или&#xa;разблокировка&#xa;пользователя" vertex="1">
+          <mxGeometry height="80" width="160" x="980" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_role" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Изменение роли&#xa;пользователя" vertex="1">
+          <mxGeometry height="70" width="150" x="1160" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_tariffs_mgmt" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление категориями&#xa;и тарифами" vertex="1">
+          <mxGeometry height="70" width="170" x="1080" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_tariff_add" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" value="Добавление&#xa;тарифа/категории" vertex="1">
+          <mxGeometry height="70" width="130" x="1240" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_tariff_edit" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" value="Редактирование&#xa;тарифа/категории" vertex="1">
+          <mxGeometry height="70" width="140" x="1240" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_tariff_del" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" value="Удаление&#xa;тарифа/категории" vertex="1">
+          <mxGeometry height="70" width="130" x="1240" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_reports" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр статистики&#xa;и отчётности" vertex="1">
+          <mxGeometry height="70" width="170" x="620" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_report_dl" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Формирование и&#xa;скачивание отчёта" vertex="1">
+          <mxGeometry height="70" width="160" x="620" y="680" as="geometry" />
+        </mxCell>
+
+        <!-- Связи актор → use case -->
+        <mxCell id="a1" edge="1" parent="1" source="actor_client" style="endArrow=none;html=1;rounded=0;" target="uc_reg" />
+        <mxCell id="a2" edge="1" parent="1" source="actor_client" style="endArrow=none;html=1;rounded=0;" target="uc_book" />
+        <mxCell id="a3" edge="1" parent="1" source="actor_client" style="endArrow=none;html=1;rounded=0;" target="uc_active" />
+        <mxCell id="a4" edge="1" parent="1" source="actor_client" style="endArrow=none;html=1;rounded=0;" target="uc_history" />
+        <mxCell id="a5" edge="1" parent="1" source="actor_client" style="endArrow=none;html=1;rounded=0;" target="uc_auth" />
+
+        <mxCell id="a6" edge="1" parent="1" source="actor_manager" style="endArrow=none;html=1;rounded=0;" target="uc_book_user" />
+        <mxCell id="a7" edge="1" parent="1" source="actor_manager" style="endArrow=none;html=1;rounded=0;" target="uc_maintenance" />
+        <mxCell id="a8" edge="1" parent="1" source="actor_manager" style="endArrow=none;html=1;rounded=0;" target="uc_notify" />
+
+        <mxCell id="a9" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_auth" />
+        <mxCell id="a10" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_maintenance" />
+        <mxCell id="a11" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_space" />
+        <mxCell id="a12" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_schedule" />
+        <mxCell id="a13" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_users" />
+        <mxCell id="a14" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_tariffs_mgmt" />
+        <mxCell id="a15" edge="1" parent="1" source="actor_admin" style="endArrow=none;html=1;rounded=0;" target="uc_reports" />
+
+        <!-- include -->
+        <mxCell id="i1" edge="1" parent="1" source="uc_book" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_map" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+          <mxGeometry relative="1" x="-0.2" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="i2" edge="1" parent="1" source="uc_book_user" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_map" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" />
+        <mxCell id="i3" edge="1" parent="1" source="uc_maintenance" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_map" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" />
+
+        <!-- extend -->
+        <mxCell id="e1" edge="1" parent="1" source="uc_tariff" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_book" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e2" edge="1" parent="1" source="uc_extend_cancel" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_active" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e3" edge="1" parent="1" source="uc_rate" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_history" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e4" edge="1" parent="1" source="uc_add_user_mgr" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_book_user" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e5" edge="1" parent="1" source="uc_add_place" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_space" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e6" edge="1" parent="1" source="uc_edit_place" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_space" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e7" edge="1" parent="1" source="uc_del_place" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_space" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e8" edge="1" parent="1" source="uc_add_user_adm" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_users" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e9" edge="1" parent="1" source="uc_block" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_users" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e10" edge="1" parent="1" source="uc_role" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_users" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e11" edge="1" parent="1" source="uc_tariff_add" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_tariffs_mgmt" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e12" edge="1" parent="1" source="uc_tariff_edit" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_tariffs_mgmt" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e13" edge="1" parent="1" source="uc_tariff_del" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_tariffs_mgmt" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+        <mxCell id="e14" edge="1" parent="1" source="uc_report_dl" style="endArrow=open;dashed=1;html=1;rounded=0;endFill=0;" target="uc_reports" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" />
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

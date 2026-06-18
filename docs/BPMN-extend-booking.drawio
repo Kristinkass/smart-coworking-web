@@ -1,0 +1,104 @@
+<mxfile host="Electron" agent="cursor">
+  <diagram id="bpmn-extend-booking" name="BPMN Продление бронирования">
+    <mxGraphModel dx="1212" dy="736" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1850" pageHeight="620" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" value="BPMN: процесс «Продление почасового бронирования»" vertex="1">
+          <mxGeometry height="28" width="900" x="320" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_client" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" value="Клиент" vertex="1">
+          <mxGeometry height="210" width="1590" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Подтвердить продление" vertex="1">
+          <mxGeometry height="55" width="130" x="843" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Просмотр обновлённой брони" vertex="1">
+          <mxGeometry height="55" width="150" x="1245" y="70.5" as="geometry" />
+        </mxCell>
+        <mxCell id="end_ok" parent="lane_client" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" value="Бронь продлена" vertex="1">
+          <mxGeometry height="36" width="36" x="1490" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ec6" edge="1" parent="lane_client" source="t6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="end_ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_system" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" value="Система" vertex="1">
+          <mxGeometry height="300" width="1590" x="40" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Проверить доступность интервалов +1/+2/+3 ч" vertex="1">
+          <mxGeometry height="60" width="160" x="410" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Сформировать варианты продления и доплаты" vertex="1">
+          <mxGeometry height="60" width="160" x="650" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="es1" edge="1" parent="lane_system" source="s1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g1" parent="lane_system" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="Интервал свободен?" vertex="1">
+          <mxGeometry height="77" width="86" x="865" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Рассчитать доплату" vertex="1">
+          <mxGeometry height="60" width="140" x="1010" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Обновить время окончания и стоимость брони в БД" vertex="1">
+          <mxGeometry height="80" width="180" x="1230" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="err1" parent="lane_system" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" value="Отказ: интервал занят" vertex="1">
+          <mxGeometry height="36" width="36" x="890" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="es3" edge="1" parent="lane_system" source="g1" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s3" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es4" edge="1" parent="lane_system" source="g1" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="err1" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es5" edge="1" parent="lane_system" source="s3" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;" value="Начало" vertex="1">
+          <mxGeometry height="36" width="36" x="80" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Открыть «Мои бронирования»" vertex="1">
+          <mxGeometry height="55" width="130" x="135" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Выбрать активную почасовую бронь" vertex="1">
+          <mxGeometry height="55" width="130" x="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Нажать «Продлить»" vertex="1">
+          <mxGeometry height="55" width="130" x="465" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Выбрать вариант продления (+x ч)" vertex="1">
+          <mxGeometry height="55" width="140" x="700" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ec0" edge="1" parent="1" source="start" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec1" edge="1" parent="1" source="t1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec2" edge="1" parent="1" source="t2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec3" edge="1" parent="1" source="t3" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="s1" value="Запрос вариантов">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es2" edge="1" parent="1" source="s2" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="t4" value="Варианты и доплаты">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec4" edge="1" parent="1" source="t4" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec5" edge="1" parent="1" source="t5" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="g1" value="Выбранное продление">
+          <mxGeometry relative="1" x="0.0625" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="es6" edge="1" parent="1" source="s4" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="t6" value="Обновлённая бронь">
+          <mxGeometry relative="1" x="-0.0596" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

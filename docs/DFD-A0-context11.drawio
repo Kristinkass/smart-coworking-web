@@ -1,0 +1,295 @@
+<mxfile host="Electron" agent="cursor">
+  <diagram id="dfd-a0" name="DFD A-0 Контекст">
+    <mxGraphModel dx="469" dy="589" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="e_admin_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="76" width="130" x="46" y="194" as="geometry" />
+        </mxCell>
+        <mxCell id="e_admin" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Администратор" vertex="1">
+          <mxGeometry height="80" width="130" x="40" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="e_admin_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="20" width="26" x="40" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="80" width="130" x="46" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Клиент" vertex="1">
+          <mxGeometry height="84" width="130" x="40" y="406" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="2" vertex="1">
+          <mxGeometry height="20" width="26" x="40" y="406" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="76" width="130" x="46" y="594" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Менеджер" vertex="1">
+          <mxGeometry height="80" width="130" x="40" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="3" vertex="1">
+          <mxGeometry height="20" width="26" x="40" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-11" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=1.001;entryY=0.856;entryDx=0;entryDy=0;entryPerimeter=0;curved=0;endArrow=classic;endFill=1;" target="e_admin_sh">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="399" />
+              <mxPoint x="330" y="259" />
+              <mxPoint x="176" y="259" />
+            </Array>
+            <mxPoint x="570" y="399" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p0" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=14;spacingLeft=6;spacingRight=6;fontSize=13;" value="Система управления рабочими местами в коворкинге" vertex="1">
+          <mxGeometry height="250" width="220" x="580" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="e_admin" style="endArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.25;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitDx=0;exitDy=0;curved=0;endFill=1;" value="">
+          <mxGeometry relative="1" x="-0.1508" y="50" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="170" y="200" />
+              <mxPoint x="410" y="200" />
+              <mxPoint x="410" y="341" />
+            </Array>
+            <mxPoint x="580" y="341" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="e_client" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1.002;exitY=0.167;exitDx=0;exitDy=0;exitPerimeter=0;endFill=1;" value="">
+          <mxGeometry relative="1" x="-0.0001" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="170" y="415" />
+              <mxPoint x="550" y="415" />
+              <mxPoint x="550" y="415" />
+            </Array>
+            <mxPoint x="570" y="415" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" source="e_manager" style="endArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.25;exitDx=0;exitDy=0;curved=0;endFill=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="570" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;entryX=1;entryY=0.75;entryDx=0;entryDy=0;endFill=1;" target="e_client_sh" value="">
+          <mxGeometry relative="1" x="0.0133" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="370" y="460" />
+              <mxPoint x="370" y="460" />
+            </Array>
+            <mxPoint x="570" y="460" as="sourcePoint" />
+            <mxPoint x="190" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" style="endArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;fontSize=10;entryX=0.998;entryY=0.656;entryDx=0;entryDy=0;curved=0;endFill=1;entryPerimeter=0;" target="e_admin_sh" value="">
+          <mxGeometry relative="1" x="0.1193" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="350" y="387" />
+              <mxPoint x="350" y="244" />
+              <mxPoint x="190" y="244" />
+              <mxPoint x="190" y="244" />
+            </Array>
+            <mxPoint x="570" y="387" as="sourcePoint" />
+            <mxPoint x="210" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" style="endArrow=classic;html=1;rounded=1;edgeStyle=orthogonalEdgeStyle;fontSize=10;entryX=1;entryY=0.75;entryDx=0;entryDy=0;curved=0;endFill=1;" target="e_manager_sh" value="отчёты, статистика">
+          <mxGeometry relative="1" x="-0.1355" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="580" y="490" />
+              <mxPoint x="420" y="490" />
+              <mxPoint x="420" y="644" />
+              <mxPoint x="220" y="644" />
+            </Array>
+            <mxPoint x="570" y="490" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="0" vertex="1">
+          <mxGeometry height="30" width="30" x="580" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-3" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="311" />
+              <mxPoint x="490" y="311" />
+            </Array>
+            <mxPoint x="480" y="341" as="sourcePoint" />
+            <mxPoint x="530" y="281" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-4" edge="1" parent="1" source="e_admin_sh" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.999;exitY=0.415;exitDx=0;exitDy=0;curved=0;endArrow=classic;endFill=1;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="221" />
+              <mxPoint x="170" y="220" />
+              <mxPoint x="390" y="220" />
+              <mxPoint x="390" y="360" />
+            </Array>
+            <mxPoint x="570" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-5" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="190" />
+              <mxPoint x="260" y="190" />
+            </Array>
+            <mxPoint x="250" y="220" as="sourcePoint" />
+            <mxPoint x="300" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Настройка мест,&amp;nbsp;&lt;/span&gt;&lt;div style=&quot;font-size: 10px; text-wrap-mode: nowrap;&quot;&gt;категорий и&amp;nbsp;&lt;/div&gt;&lt;div style=&quot;font-size: 10px; text-wrap-mode: nowrap;&quot;&gt;планировки&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="510" y="243" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Расписание работы&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="275" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-8" edge="1" parent="1" source="e_admin_sh" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;curved=0;endArrow=classic;endFill=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="176" y="230" />
+              <mxPoint x="378" y="230" />
+              <mxPoint x="378" y="375" />
+              <mxPoint x="530" y="375" />
+            </Array>
+            <mxPoint x="570" y="375" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-9" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="418" y="230" />
+              <mxPoint x="388" y="230" />
+            </Array>
+            <mxPoint x="378" y="260" as="sourcePoint" />
+            <mxPoint x="428" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Таарифы и абонементы&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="404" y="171" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Запрос бронирования&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="244" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-13" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="400" />
+              <mxPoint x="320" y="400" />
+            </Array>
+            <mxPoint x="310" y="415" as="sourcePoint" />
+            <mxPoint x="300" y="385" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-14" edge="1" parent="1" source="e_client_sh" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="176" y="430" />
+              <mxPoint x="540" y="430" />
+            </Array>
+            <mxPoint x="570" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Параметры поиска места&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="135" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-16" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="181" y="400" />
+              <mxPoint x="211" y="400" />
+            </Array>
+            <mxPoint x="221" y="430" as="sourcePoint" />
+            <mxPoint x="171" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-17" edge="1" parent="1" source="e_client_sh" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="176" y="445" />
+              <mxPoint x="560" y="445" />
+              <mxPoint x="560" y="445" />
+            </Array>
+            <mxPoint x="570" y="445" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;flipV=1;legacyAnchorPoints=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Оценка рабочего места&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="128" y="498" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-19" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="174" y="475.0000000000002" />
+              <mxPoint x="204" y="475.0000000000002" />
+            </Array>
+            <mxPoint x="214" y="445.0000000000002" as="sourcePoint" />
+            <mxPoint x="164" y="505.0000000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;flipV=1;legacyAnchorPoints=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Интерактивная карта&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;со статусами мест&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="240" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-25" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="218" y="268.5" />
+              <mxPoint x="188" y="268.5" />
+            </Array>
+            <mxPoint x="190" y="290" as="sourcePoint" />
+            <mxPoint x="220" y="244" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-26" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Аналитические отчеты&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="135" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-28" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="301" y="279" />
+              <mxPoint x="271" y="279" />
+            </Array>
+            <mxPoint x="270" y="300" as="sourcePoint" />
+            <mxPoint x="297" y="259" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;Сводная статистика&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 10px; text-wrap-mode: nowrap; background-color: rgb(255, 255, 255);&quot;&gt;звгрузки и доходов&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="244" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-30" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="239" y="475" />
+              <mxPoint x="269" y="475" />
+            </Array>
+            <mxPoint x="259" y="460" as="sourcePoint" />
+            <mxPoint x="249" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-32" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;entryX=1;entryY=0.75;entryDx=0;entryDy=0;endFill=1;" value="">
+          <mxGeometry relative="1" x="0.0133" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="370" y="470" />
+              <mxPoint x="370" y="470" />
+            </Array>
+            <mxPoint x="570" y="470" as="sourcePoint" />
+            <mxPoint x="176" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kh3ZC5Hcawmi5HCj1C6g-33" edge="1" parent="1" style="endArrow=none;html=1;rounded=1;fontSize=13;curved=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="500" />
+              <mxPoint x="350" y="500" />
+            </Array>
+            <mxPoint x="360" y="470" as="sourcePoint" />
+            <mxPoint x="310" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

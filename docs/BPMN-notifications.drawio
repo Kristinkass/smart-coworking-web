@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net" agent="cursor" version="22.1.0" type="device">
+  <diagram id="bpmn-notifications" name="BPMN Отправка уведомлений">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1760" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="BPMN: процесс «Отправка уведомлений пользователям»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="10" width="900" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lane_actor" value="Администратор / Менеджер" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1680" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane_system" value="Система" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="1680" height="290" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="start" value="Начало" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="t1" value="Открыть форму отправки уведомлений" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="135" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t2" value="Ввести заголовок и текст" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="300" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t3" value="Выбрать аудиторию (все / менеджеры / клиенты)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="465" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t4" value="Нажать «Отправить»" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="630" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t5" value="Подтверждение отправки" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="133" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="end_ok" value="Уведомления отправлены" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="s1" value="Проверить заполнение полей" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="630" y="360" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="g1" value="Поля заполнены?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="815" y="357" width="90" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2" value="Определить получателей по аудитории" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="945" y="355" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3" value="Создать записи уведомлений в БД" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="355" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s4" value="Доставить уведомления в личные кабинеты" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1325" y="350" width="170" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="err1" value="Отказ: поля не заполнены" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="842" y="480" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ec0" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="start" target="t1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t1" target="t2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t2" target="t3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec3" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t3" target="t4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec4" value="текст и аудитория" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="t4" target="s1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s1" target="g1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es2" value="Да" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="g1" target="s2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es3" value="Нет" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="g1" target="err1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es4" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es5" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es6" value="доставлено" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="s4" target="t5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t5" target="end_ok"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Тарифы и абonementы – Умный Коворкинг{% endblock %}
+{% block content %}
+{% include "admin/module_hub_styles.html" %}
+<div class="module-page">
+  <div class="module-header">
+    <a href="{{ url_for('admin_dashboard') if current_user.is_admin() else url_for('dashboard') }}" class="module-back"><i class="fas fa-arrow-left"></i> Назад</a>
+    <div>
+      <h1><i class="fas fa-credit-card"></i> Тарифы и абonementы</h1>
+      <p>Шаблоны тарифов, покупка и выдача абonementов</p>
+    </div>
+  </div>
+  <div class="module-grid">
+    <a href="{{ url_for('dashboard') }}#subscriptions" class="module-card">
+      <i class="fas fa-id-card"></i><span>Мои абonementы</span>
+      <small>Покупка и использование (клиент)</small>
+    </a>
+    {% if current_user.is_manager() %}
+    <a href="{{ url_for('admin_subscriptions') }}" class="module-card">
+      <i class="fas fa-gift"></i><span>Выдача абonementов</span>
+      <small>Оформление абonementа клиенту по шаблону</small>
+    </a>
+    {% endif %}
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin_subscriptions') }}" class="module-card">
+      <i class="fas fa-copy"></i><span>Шаблоны абonementов</span>
+      <small>Создание, редактирование и архивирование</small>
+    </a>
+    <a href="{{ url_for('admin_tariffs') }}" class="module-card">
+      <i class="fas fa-dollar-sign"></i><span>Шаблоны тарифов</span>
+      <small>Часовой, недельный, месячный по категориям</small>
+    </a>
+    <a href="{{ url_for('admin_categories') }}" class="module-card">
+      <i class="fas fa-layer-group"></i><span>Категории</span>
+      <small>Базовые типы мест для тарификации</small>
+    </a>
+    {% endif %}
+  </div>
+  <div class="module-note">Администратор создаёт и архивирует шаблоны. Менеджер выдаёт абonementы клиентам. Клиент оформляет доступные шаблоны самостоятельно.</div>
+</div>
+{% endblock %}

@@ -7,35 +7,119 @@
     <div class="auth-card">
         <div class="auth-header">
             <h1><i class="fas fa-sign-in-alt"></i> Вход в систему</h1>
-            <p>Введите ваши учетные данные</p>
+            <p>Выберите способ входа и введите пароль</p>
         </div>
-        
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
-            <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                <input type="email" id="email" name="email" required 
-                       placeholder="ваш@email.com" class="form-control">
+
+        <form method="POST" action="{{ url_for('login') }}" class="auth-form" id="login-form">
+            <input type="hidden" name="login_mode" id="login_mode" value="{{ login_mode|default('email') }}">
+
+            <div class="auth-login-tabs" role="tablist" aria-label="Способ входа">
+                <button type="button" class="auth-login-tab{% if login_mode != 'phone' %} active{% endif %}"
+                        data-mode="email" role="tab" aria-selected="{% if login_mode != 'phone' %}true{% else %}false{% endif %}">
+                    <i class="fas fa-envelope"></i> Почта
+                </button>
+                <button type="button" class="auth-login-tab{% if login_mode == 'phone' %} active{% endif %}"
+                        data-mode="phone" role="tab" aria-selected="{% if login_mode == 'phone' %}true{% else %}false{% endif %}">
+                    <i class="fas fa-phone"></i> Телефон
+                </button>
             </div>
-            
+
+            <div class="form-group">
+                <label for="login_identifier" id="login-identifier-label">
+                    <i class="fas fa-envelope" id="login-identifier-icon"></i>
+                    <span id="login-identifier-text">Почта</span>
+                </label>
+                <input type="email" id="login_identifier" name="identifier" required
+                       class="form-control" autocomplete="email"
+                       placeholder="ваш@email.com" data-login-identifier>
+            </div>
+
             <div class="form-group">
                 <label for="password"><i class="fas fa-lock"></i> Пароль</label>
-                <input type="password" id="password" name="password" required 
-                       placeholder="Введите пароль" class="form-control">
+                <input type="password" id="password" name="password" required
+                       placeholder="Введите пароль" class="form-control" autocomplete="current-password">
             </div>
-            
+
             <div class="form-check">
                 <input type="checkbox" id="remember" name="remember" class="form-check-input">
                 <label for="remember" class="form-check-label">Запомнить меня</label>
             </div>
-            
+
             <button type="submit" class="btn btn-primary btn-block">
                 <i class="fas fa-sign-in-alt"></i> Войти
             </button>
-            
+
             <div class="auth-links">
                 <p>Еще нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a></p>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('login-form');
+    const modeInput = document.getElementById('login_mode');
+    const identifier = document.getElementById('login_identifier');
+    const labelText = document.getElementById('login-identifier-text');
+    const labelIcon = document.getElementById('login-identifier-icon');
+    const tabs = document.querySelectorAll('.auth-login-tab');
+
+    function setLoginMode(mode) {
+        modeInput.value = mode;
+        tabs.forEach(tab => {
+            const active = tab.dataset.mode === mode;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+
+        if (typeof detachPhoneMask === 'function') {
+            detachPhoneMask(identifier);
+        }
+        identifier.value = '';
+
+        if (mode === 'phone') {
+            labelText.textContent = 'Телефон';
+            labelIcon.className = 'fas fa-phone';
+            identifier.type = 'tel';
+            identifier.placeholder = '+7 999 123 45 67';
+            identifier.setAttribute('autocomplete', 'tel');
+            identifier.removeAttribute('pattern');
+            if (typeof attachPhoneMask === 'function') {
+                attachPhoneMask(identifier);
+            }
+        } else {
+            labelText.textContent = 'Почта';
+            labelIcon.className = 'fas fa-envelope';
+            identifier.type = 'email';
+            identifier.placeholder = 'ваш@email.com';
+            identifier.setAttribute('autocomplete', 'email');
+            identifier.setAttribute('pattern', '[^@\\s]+@[^@\\s]+\\.[^@\\s]+');
+        }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => setLoginMode(tab.dataset.mode));
+    });
+
+    setLoginMode(modeInput.value || 'email');
+
+    form.addEventListener('submit', function(e) {
+        const mode = modeInput.value;
+        const value = identifier.value.trim();
+
+        if (mode === 'phone') {
+            if (typeof isPhoneComplete === 'function' && !isPhoneComplete(value)) {
+                e.preventDefault();
+                showToast('Введите корректный номер телефона', 'warning');
+                identifier.focus();
+            }
+        } else if (!value.includes('@') || !value.split('@')[1]?.includes('.')) {
+            e.preventDefault();
+            showToast('Введите корректный email (должен содержать @ и домен)', 'warning');
+            identifier.focus();
+        }
+    });
+});
+</script>
 {% endblock %}

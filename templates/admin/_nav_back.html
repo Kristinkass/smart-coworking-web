@@ -1,0 +1,3 @@
+<a href="{{ url_for('admin_dashboard') if current_user.is_admin() else url_for('dashboard') }}" class="btn-back" title="Назад">
+  <i class="fas fa-arrow-left"></i> Назад
+</a>

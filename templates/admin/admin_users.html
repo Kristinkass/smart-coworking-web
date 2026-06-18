@@ -5,18 +5,45 @@
 {% block content %}
 <div class="admin-container">
     <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
         <h1><i class="fas fa-users-cog"></i> Управление пользователями</h1>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Назад
-        </a>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-success" onclick="openQuickRegister()">
+                <i class="fas fa-user-plus"></i> Быстрая регистрация
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно быстрой регистрации -->
+    <div id="quick-register-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:12px; padding:24px; width:400px; max-width:90%; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom:16px;"><i class="fas fa-user-plus"></i> Быстрая регистрация клиента</h3>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Имя <span style="color:#ef4444">*</span></label>
+                <input type="text" id="qr-username" class="form-control" placeholder="Иван Иванов">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Телефон <span style="color:#ef4444">*</span></label>
+                <input type="tel" id="qr-phone" class="form-control phone-mask" placeholder="+7 999 123 45 67">
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+                <label>Почта</label>
+                <input type="email" id="qr-email" class="form-control" placeholder="optional@email.com">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-outline-secondary" onclick="closeQuickRegister()">Отмена</button>
+                <button class="btn btn-primary" onclick="submitQuickRegister()">Создать</button>
+            </div>
+            <div id="qr-result" style="margin-top:12px; font-size:13px; color:#475569; display:none;"></div>
+        </div>
     </div>
 
     <div class="table-responsive">
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Email</th>
+                    <th>№</th>
+                    <th>Почта</th>
                     <th>Имя</th>
                     <th>Телефон</th>
                     <th>Роль</th>
@@ -28,33 +55,38 @@
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.email }}</td>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ user.email or '—' }}</td>
                     <td>{{ user.username }}</td>
-                    <td>{{ user.phone or '-' }}</td>
+                    <td>{{ format_phone(user.phone) or '-' }}</td>
                     <td>
                         <span class="role-badge role-{{ user.role }}">
                             {% if user.role == 'admin' %}Администратор
+                            {% elif user.role == 'manager' %}Менеджер
                             {% else %}Клиент{% endif %}
                         </span>
                     </td>
                     <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
                     <td>
-                        <span class="status-badge {% if user.is_active %}status-active{% else %}status-cancelled{% endif %}">
-                            {% if user.is_active %}Активен{% else %}Неактивен{% endif %}
+                        <span class="status-badge {% if user.active %}status-active{% else %}status-cancelled{% endif %}">
+                            {% if user.active %}Активен{% else %}Заблокирован{% endif %}
                         </span>
                     </td>
                     <td>
                         <div style="display: flex; gap: 5px;">
                             <form action="{{ url_for('admin_toggle_user_status', user_id=user.id) }}" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-sm {% if user.is_active %}btn-warning{% else %}btn-success{% endif %}">
-                                    {% if user.is_active %}Деактивировать{% else %}Активировать{% endif %}
+                                <button type="submit" class="btn btn-sm {% if user.active %}btn-warning{% else %}btn-success{% endif %}">
+                                    {% if user.active %}Заблокировать{% else %}Активировать{% endif %}
                                 </button>
                             </form>
-                            <form action="{{ url_for('admin_make_admin', user_id=user.id) }}" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-sm {% if user.role == 'admin' %}btn-secondary{% else %}btn-primary{% endif %}">
-                                    {% if user.role == 'admin' %}Убрать админ{% else %}Сделать админом{% endif %}
-                                </button>
+                            <form action="{{ url_for('admin_set_user_role', user_id=user.id, role='admin') }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm {% if user.role == 'admin' %}btn-secondary{% else %}btn-primary{% endif %}" {% if user.role == 'admin' %}disabled{% endif %}>Администратор</button>
+                            </form>
+                            <form action="{{ url_for('admin_set_user_role', user_id=user.id, role='manager') }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm {% if user.role == 'manager' %}btn-secondary{% else %}btn-primary{% endif %}" {% if user.role == 'manager' %}disabled{% endif %}>Менеджер</button>
+                            </form>
+                            <form action="{{ url_for('admin_set_user_role', user_id=user.id, role='client') }}" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm {% if user.role == 'client' %}btn-secondary{% else %}btn-primary{% endif %}" {% if user.role == 'client' %}disabled{% endif %}>Клиент</button>
                             </form>
                         </div>
                     </td>
@@ -82,5 +114,56 @@
     background: #D1FAE5;
     color: #065F46;
 }
+
+.role-manager {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
 </style>
+
+<script>
+function openQuickRegister() {
+    document.getElementById('quick-register-modal').style.display = 'flex';
+    document.getElementById('qr-result').style.display = 'none';
+    document.getElementById('qr-username').value = '';
+    document.getElementById('qr-phone').value = '';
+    document.getElementById('qr-email').value = '';
+}
+function closeQuickRegister() {
+    document.getElementById('quick-register-modal').style.display = 'none';
+}
+async function submitQuickRegister() {
+    const username = document.getElementById('qr-username').value.trim();
+    const phone = document.getElementById('qr-phone').value.trim();
+    const email = document.getElementById('qr-email').value.trim();
+
+    if (!username || !phone) {
+        showToast('Имя и телефон обязательны', 'warning');
+        return;
+    }
+
+    if (typeof isPhoneComplete === 'function' && !isPhoneComplete(phone)) {
+        showToast('Введите корректный номер телефона', 'warning');
+        return;
+    }
+
+    try {
+        const r = await fetch('/api/admin/quick_register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, phone, email })
+        });
+        const d = await r.json();
+        const resEl = document.getElementById('qr-result');
+        resEl.style.display = 'block';
+        if (d.success) {
+            resEl.innerHTML = `<div style="color:#4d8f5f; font-weight:600;"><i class="fas fa-check-circle"></i> ${d.message}</div>`;
+        } else {
+            resEl.innerHTML = `<div style="color:#c75050;"><i class="fas fa-times-circle"></i> ${d.error || 'Ошибка'}</div>`;
+        }
+    } catch (e) {
+        showToast('Ошибка: ' + e.message, 'error');
+    }
+}
+</script>
 {% endblock %}

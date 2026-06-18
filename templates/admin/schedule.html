@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Управление расписанием{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
+        <h1><i class="fas fa-clock"></i> Управление расписанием</h1>
+        <p class="text-muted">Настройка режима работы коворкинга по дням недели. Время закрытия <strong>00:00</strong> означает <strong>24:00</strong> (конец рабочего дня). Полный выходной – снимите «Рабочий день» и «Доступно для бронирования».</p>
+    </div>
+
+    <div class="admin-toolbar">
+        <button class="btn btn-primary" onclick="applyToAll()">
+            <i class="fas fa-copy"></i> Применить ко всем дням
+        </button>
+        <button class="btn btn-secondary" onclick="resetSchedule()">
+            <i class="fas fa-undo"></i> Сбросить по умолчанию
+        </button>
+    </div>
+
+    <div class="admin-card">
+        <div class="card-header">
+            <h3><i class="fas fa-calendar-week"></i> Расписание по дням недели</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table" id="schedule-table">
+                <thead>
+                    <tr>
+                        <th>День недели</th>
+                        <th>Статус</th>
+                        <th>Открытие</th>
+                        <th>Закрытие</th>
+                        <th>Доступно для бронирования</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
+                    <!-- Загружается через JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal" id="edit-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактирование расписания</h3>
+                <button class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>День недели</label>
+                    <input type="text" id="edit-day-name" class="form-control" disabled>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Время открытия</label>
+                        <input type="time" id="edit-open" class="form-control" step="900">
+                    </div>
+                    <div class="form-group">
+                        <label>Время закрытия</label>
+                        <input type="time" id="edit-close" class="form-control" step="900">
+                        <small class="text-muted">00:00 = 24:00 (полночь, конец дня)</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" id="edit-active">
+                        <span>Рабочий день</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" id="edit-bookable">
+                        <span>Доступно для бронирования</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveSchedule()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно "Применить ко всем" -->
+<div class="modal" id="apply-all-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Применить расписание ко всем дням</h3>
+                <button class="btn-close" onclick="closeApplyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Копировать настройки из дня:</label>
+                    <select id="source-day" class="form-control">
+                        <option value="0">Понедельник</option>
+                        <option value="1">Вторник</option>
+                        <option value="2">Среда</option>
+                        <option value="3">Четверг</option>
+                        <option value="4">Пятница</option>
+                        <option value="5">Суббота</option>
+                        <option value="6">Воскресенье</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Применить к:</label>
+                    <div class="checkbox-group">
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="0" checked>
+                            <span>Пн</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="1" checked>
+                            <span>Вт</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="2" checked>
+                            <span>Ср</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="3" checked>
+                            <span>Чт</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="4" checked>
+                            <span>Пт</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="5">
+                            <span>Сб</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="target-day" value="6">
+                            <span>Вс</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeApplyModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="confirmApplyToAll()">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.checkbox-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.checkbox-group .form-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.btn-close:hover {
+    color: #374151;
+}
+</style>
+
+<script>
+let scheduleData = [];
+
+// Загрузка расписания
+async function loadSchedule() {
+    try {
+        const response = await fetch('/api/admin/schedule');
+        const data = await response.json();
+        if (data.success) {
+            scheduleData = data.schedule;
+            renderSchedule();
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки расписания:', error);
+        alert('Не удалось загрузить расписание');
+    }
+}
+
+// Отображение расписания
+function renderSchedule() {
+    const tbody = document.getElementById('schedule-body');
+    tbody.innerHTML = '';
+    
+    scheduleData.forEach(day => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${day.day_name}</strong></td>
+            <td>
+                <span class="status-badge ${day.is_active ? 'status-active' : 'status-inactive'}">
+                    ${day.is_active ? 'Рабочий' : 'Выходной'}
+                </span>
+            </td>
+            <td>${day.open_time || '-'}</td>
+            <td>${day.close_time || '-'}</td>
+            <td>
+                ${day.is_bookable ? 
+                    '<i class="fas fa-check" style="color: #16a34a;"></i> Да' : 
+                    '<i class="fas fa-times" style="color: #dc2626;"></i> Нет'}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editSchedule(${day.id})">
+                    <i class="fas fa-edit"></i> Изменить
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Редактирование расписания
+function editSchedule(id) {
+    const day = scheduleData.find(s => s.id === id);
+    if (!day) return;
+    
+    document.getElementById('edit-id').value = day.id;
+    document.getElementById('edit-day-name').value = day.day_name;
+    document.getElementById('edit-open').value = day.open_time || '08:00';
+    const closeRaw = day.close_time_raw || day.close_time || '22:00';
+    document.getElementById('edit-close').value = (day.close_time === '24:00') ? '00:00' : closeRaw;
+    document.getElementById('edit-active').checked = day.is_active;
+    document.getElementById('edit-bookable').checked = day.is_bookable;
+    
+    document.getElementById('edit-modal').classList.add('active');
+}
+
+// Сохранение расписания
+async function saveSchedule() {
+    const id = document.getElementById('edit-id').value;
+    const data = {
+        open_time: document.getElementById('edit-open').value,
+        close_time: document.getElementById('edit-close').value,
+        is_active: document.getElementById('edit-active').checked,
+        is_bookable: document.getElementById('edit-bookable').checked
+    };
+    
+    try {
+        const response = await fetch(`/api/admin/schedule/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            closeModal();
+            loadSchedule();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Ошибка сохранения:', error);
+        alert('Не удалось сохранить изменения');
+    }
+}
+
+// Закрытие модального окна
+function closeModal() {
+    document.getElementById('edit-modal').classList.remove('active');
+}
+
+// Применить ко всем дням
+function applyToAll() {
+    document.getElementById('apply-all-modal').classList.add('active');
+}
+
+// Закрытие модального окна "Применить ко всем"
+function closeApplyModal() {
+    document.getElementById('apply-all-modal').classList.remove('active');
+}
+
+// Подтверждение применения ко всем дням
+async function confirmApplyToAll() {
+    const sourceDay = parseInt(document.getElementById('source-day').value);
+    const targetDays = Array.from(document.querySelectorAll('.target-day:checked'))
+        .map(cb => parseInt(cb.value));
+    
+    if (targetDays.length === 0) {
+        alert('Выберите хотя бы один день');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/schedule/apply-to-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_day: sourceDay, target_days: targetDays })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            closeApplyModal();
+            loadSchedule();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Ошибка применения:', error);
+        alert('Не удалось применить расписание');
+    }
+}
+
+// Сброс расписания
+async function resetSchedule() {
+    if (!confirm('Сбросить расписание к значениям по умолчанию?')) return;
+    
+    try {
+        const response = await fetch('/api/admin/schedule/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            loadSchedule();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Ошибка сброса:', error);
+        alert('Не удалось сбросить расписание');
+    }
+}
+
+// Загрузка при старте
+loadSchedule();
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+<mxfile host="Electron" agent="design-export">
+  <diagram id="bpmn-tariff" name="Управление тарифом">
+    <mxGraphModel dx="1373" dy="835" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1740" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lane_actor" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;fontSize=14;" value="Администратор" vertex="1">
+          <mxGeometry height="210" width="1450" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" parent="lane_actor" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Просмотр обновлённых&amp;nbsp;&lt;div&gt;тарифов&lt;/div&gt;" vertex="1">
+          <mxGeometry height="55" width="150" x="1160" y="72.5" as="geometry" />
+        </mxCell>
+        <mxCell id="end_ok" parent="lane_actor" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;fontSize=14;" value="Тариф сохранён" vertex="1">
+          <mxGeometry height="36" width="36" x="1380" y="82" as="geometry" />
+        </mxCell>
+        <mxCell id="ec6" edge="1" parent="lane_actor" source="t5" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="end_ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_system" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;fontSize=14;" value="Система" vertex="1">
+          <mxGeometry height="310" width="1450" x="40" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Проверить корректность значений цен" vertex="1">
+          <mxGeometry height="60" width="150" x="580" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="g1" parent="lane_system" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Значения корректны?" vertex="1">
+          <mxGeometry height="77.5" width="117.5" x="770" y="81.25" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Сохранить тариф" vertex="1">
+          <mxGeometry height="70" width="170" x="950" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="lane_system" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Обновить отображение цен при бронировании" vertex="1">
+          <mxGeometry height="70" width="170" x="1150" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="err1" parent="lane_system" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;fontSize=14;" value="Отказ: неверные цены" vertex="1">
+          <mxGeometry height="36" width="36" x="810.75" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="es1" edge="1" parent="lane_system" source="s1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="g1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es2" edge="1" parent="lane_system" source="g1" style="endArrow=block;html=1;rounded=0;fontSize=14;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s2" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es3" edge="1" parent="lane_system" source="g1" style="endArrow=block;html=1;rounded=0;fontSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="err1" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es4" edge="1" parent="lane_system" source="s2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;fontSize=14;" value="Начало" vertex="1">
+          <mxGeometry height="36" width="36" x="80" y="142" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Открыть раздел тарифов" vertex="1">
+          <mxGeometry height="55" width="130" x="135" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Выбрать&amp;nbsp;&lt;div&gt;категорию места&lt;/div&gt;" vertex="1">
+          <mxGeometry height="55" width="130" x="300" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Задать цены (час / неделя / месяц)" vertex="1">
+          <mxGeometry height="55" width="130" x="465" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;fontSize=14;" value="Нажать «Сохранить»" vertex="1">
+          <mxGeometry height="55" width="130" x="630" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="ec0" edge="1" parent="1" source="start" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="t1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec1" edge="1" parent="1" source="t1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="t2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec2" edge="1" parent="1" source="t2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="t3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec3" edge="1" parent="1" source="t3" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" target="t4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec4" edge="1" parent="1" source="t4" style="endArrow=block;html=1;rounded=0;fontSize=14;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="s1" value="Данные тарифа">
+          <mxGeometry relative="1" x="-0.3536" y="62" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="es5" edge="1" parent="1" source="s3" style="endArrow=block;html=1;rounded=0;fontSize=14;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="t5" value="Тарифы обновлены">
+          <mxGeometry relative="1" x="0.2537" y="-75" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

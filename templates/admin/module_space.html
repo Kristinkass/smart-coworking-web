@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Пространство – Умный Коворкинг{% endblock %}
+{% block content %}
+{% include "admin/module_hub_styles.html" %}
+<div class="module-page">
+  <div class="module-header">
+    <a href="{{ url_for('admin_dashboard') if current_user.is_admin() else url_for('dashboard') }}" class="module-back"><i class="fas fa-arrow-left"></i> Назад</a>
+    <div>
+      <h1><i class="fas fa-building"></i> Управление пространством</h1>
+      <p>Редактор планировки, категории мест, расписание и техобслуживание</p>
+    </div>
+  </div>
+  <div class="module-grid">
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin_editor') }}" class="module-card">
+      <i class="fas fa-pencil-ruler"></i><span>Редактор планировки</span>
+      <small>1) Создайте помещение → 2) Добавьте столы внутрь</small>
+    </a>
+    <a href="{{ url_for('admin_categories') }}" class="module-card">
+      <i class="fas fa-tags"></i><span>Категории мест</span>
+      <small>Шаблоны помещений и столов + тарифы</small>
+    </a>
+    {% endif %}
+    <a href="{{ url_for('map_view') }}" class="module-card">
+      <i class="fas fa-map"></i><span>Карта и обслуживание</span>
+      <small>Режим техобслуживания на карте (менеджер)</small>
+    </a>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('admin_schedule') }}" class="module-card">
+      <i class="fas fa-clock"></i><span>Расписание</span>
+      <small>Часы работы коворкинга по дням</small>
+    </a>
+    {% endif %}
+  </div>
+  <div class="module-note">Администратор – полный доступ. Менеджер – карта и режим обслуживания.</div>
+</div>
+{% endblock %}

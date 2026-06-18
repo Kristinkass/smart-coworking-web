@@ -5,11 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет - Умный Коворкинг</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="{{ url_for('static', filename='js/notify.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/phone-mask.js') }}"></script>
     <style>
+        :root {
+            --primary-color: #8fa67a;
+            --primary-dark: #6f855c;
+            --primary-light: #b5c9a4;
+            --secondary-color: #a8b89a;
+            --success-color: #4d8f5f;
+            --success-light: #7ab88a;
+            --danger-color: #c75050;
+            --danger-light: #e07a7a;
+            --warning-color: #c9a84c;
+            --info-color: #6b8f9e;
+            --bg-color: #f6f7f2;
+            --card-bg: #fdfdf9;
+            --text-primary: #2f3428;
+            --text-secondary: #5c6554;
+            --border-color: #dde3d4;
+        }
+
         /* Стили для вкладок */
         .dashboard-container {
-            padding: 20px;
+            padding: 30px;
+            background: var(--bg-color);
+            min-height: 100vh;
         }
 
         .dashboard-header {
@@ -24,107 +46,177 @@
         .user-welcome {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
         }
 
         .user-avatar {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            width: 64px;
+            height: 64px;
+            background: var(--primary-color);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 26px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(111, 133, 92, 0.25);
         }
 
         .user-info h1 {
             margin: 0;
-            color: #1f2937;
+            color: var(--text-primary);
+            font-size: 24px;
         }
 
         .user-info p {
             margin: 5px 0 0;
-            color: #6b7280;
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
         .dashboard-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            gap: 15px;
-            transition: transform 0.3s ease;
+            gap: 16px;
+            transition: all 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 26px;
             color: white;
         }
 
-        .stat-booking { background: #3B82F6; }
-        .stat-spent { background: #10B981; }
-        .stat-today { background: #F59E0B; }
-        .stat-active { background: #8B5CF6; }
+        .stat-booking { background: var(--primary-color); }
+        .stat-success { background: var(--success-color); }
+        .stat-cancelled { background: var(--danger-color); }
+        .stat-spent { background: var(--warning-color); }
+        .stat-active { background: var(--info-color); }
 
         .stat-info h3 {
             margin: 0;
-            font-size: 24px;
-            color: #1f2937;
+            font-size: 28px;
+            color: var(--text-primary);
         }
 
         .stat-info p {
             margin: 5px 0 0;
-            color: #6b7280;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
         /* Вкладки */
         .tabs-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid var(--border-color);
+            overflow: visible;
             margin-bottom: 30px;
         }
 
         .tabs-header {
             display: flex;
-            border-bottom: 1px solid #e5e7eb;
-            background: #f9fafb;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color);
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .tabs-header::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tabs-mobile-picker {
+            display: none;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color);
+        }
+
+        .tabs-mobile-picker label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .tabs-mobile-picker select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: white;
+            font-family: inherit;
+        }
+
+        @media (max-width: 1024px) {
+            .tabs-header {
+                display: none;
+            }
+
+            .tabs-mobile-picker {
+                display: block;
+            }
+
+            .dashboard-container {
+                padding: 16px 12px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .tab-content.active {
+                padding: 20px 16px;
+            }
         }
 
         .tab-btn {
-            padding: 15px 25px;
+            padding: 16px 24px;
             background: none;
             border: none;
             border-bottom: 3px solid transparent;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            color: #6b7280;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
             white-space: nowrap;
             display: flex;
             align-items: center;
@@ -133,14 +225,14 @@
         }
 
         .tab-btn:hover {
-            color: #3B82F6;
-            background: #f3f4f6;
+            color: var(--primary-color);
+            background: rgba(143, 166, 122, 0.1);
         }
 
         .tab-btn.active {
-            color: #3B82F6;
-            border-bottom-color: #3B82F6;
-            background: white;
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: var(--card-bg);
         }
 
         .tab-content {
@@ -151,6 +243,7 @@
         .tab-content.active {
             display: block;
             padding: 30px;
+            overflow: visible;
         }
 
         /* Контент вкладок */
@@ -161,14 +254,14 @@
         }
 
         .booking-card {
-            background: white;
-            border-radius: 8px;
+            background: var(--card-bg);
+            border-radius: 12px;
             padding: 20px;
-            border: 1px solid #e5e7eb;
+            border: 2px solid var(--border-color);
             transition: all 0.3s ease;
             display: grid;
             grid-template-columns: 2fr 1fr 1fr auto;
-            gap: 15px;
+            gap: 16px;
             align-items: center;
         }
 
@@ -179,20 +272,21 @@
         }
 
         .booking-card:hover {
-            border-color: #3B82F6;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
         }
 
         .booking-info h4 {
-            margin: 0 0 5px;
-            color: #1f2937;
+            margin: 0 0 8px;
+            color: var(--text-primary);
+            font-size: 16px;
         }
 
         .booking-details {
             display: flex;
-            gap: 15px;
+            gap: 16px;
             font-size: 14px;
-            color: #6b7280;
+            color: var(--text-secondary);
         }
 
         .booking-time {
@@ -201,25 +295,63 @@
 
         .booking-time .date {
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             font-size: 16px;
         }
 
         .booking-time .time {
             font-size: 14px;
-            color: #6b7280;
+            color: var(--text-secondary);
         }
 
         .booking-price {
             font-weight: 600;
-            color: #059669;
+            color: var(--success-color);
             font-size: 18px;
             text-align: right;
         }
 
         .booking-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
+            position: relative;
+            z-index: 30;
+            overflow: visible;
+        }
+
+        .extend-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 6px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.12);
+            min-width: 140px;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .extend-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            background: #fff;
+            text-align: left;
+            font-size: 13px;
+            cursor: pointer;
+            color: #374151;
+        }
+        .extend-menu button:hover { background: #f3f4f6; }
+        .extend-wrap { position: relative; display: inline-block; }
+
+        .booking-actions .btn {
+            pointer-events: auto;
+            cursor: pointer;
+            position: relative;
+            z-index: 6;
         }
 
         .status-badge {
@@ -231,35 +363,38 @@
             text-transform: uppercase;
         }
 
-        .status-active { background: #DBEAFE; color: #1E40AF; }
-        .status-completed { background: #D1FAE5; color: #065F46; }
-        .status-cancelled { background: #FEE2E2; color: #991B1B; }
+        .status-active { background: var(--info-color); color: white; }
+        .status-completed { background: var(--success-color); color: white; }
+        .status-cancelled { background: var(--danger-color); color: white; }
 
         /* История */
         .history-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: var(--card-bg);
         }
 
         .history-table th,
         .history-table td {
-            padding: 12px 15px;
+            padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .history-table th {
-            background: #f9fafb;
-            color: #6b7280;
-            font-weight: 500;
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .history-table tbody tr:hover {
-            background: #f9fafb;
+            background: rgba(143, 166, 122, 0.08);
         }
 
-        /* Пагинация — теперь показывается ТОЛЬКО если больше 10 записей */
+        /* Пагинация – теперь показывается ТОЛЬКО если больше 10 записей */
         .pagination {
             display: flex;
             justify-content: center;
@@ -277,19 +412,139 @@
         }
 
         .page-btn:hover {
-            border-color: #3B82F6;
-            color: #3B82F6;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
 
         .page-btn.active {
-            background: #3B82F6;
+            background: var(--primary-color);
             color: white;
-            border-color: #3B82F6;
+            border-color: var(--primary-color);
+        }
+
+        /* Абонементы – ровная сетка */
+        .subscription-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .subscription-card {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(110px, 1fr) minmax(100px, 0.9fr) minmax(120px, 1fr);
+            gap: 16px;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 2px solid var(--border-color);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .subscription-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: 0 4px 14px rgba(111, 133, 92, 0.12);
+        }
+
+        .subscription-card--available {
+            border-style: dashed;
+            border-color: #c5cfb8;
+        }
+
+        .subscription-list-header {
+            background: var(--bg-color);
+            border: none;
+            padding: 8px 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .subscription-list-header .sub-col-price,
+        .subscription-list-header .sub-col-status {
+            text-align: center;
+        }
+
+        .subscription-list-header .sub-col-extra {
+            text-align: right;
+        }
+
+        .sub-col-main h4 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .sub-col-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .sub-col-price {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .sub-col-price .sub-usage {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .sub-col-status {
+            text-align: center;
+        }
+
+        .sub-col-extra {
+            text-align: right;
+            font-weight: 600;
+            color: var(--success-color);
+            font-size: 15px;
+        }
+
+        .sub-col-action {
+            text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .subscription-card {
+                grid-template-columns: 1fr;
+            }
+            .subscription-list-header {
+                display: none;
+            }
+            .sub-col-price, .sub-col-status, .sub-col-extra, .sub-col-action {
+                text-align: left;
+            }
         }
 
         /* Настройки */
         .settings-form, .coming-soon {
-            max-width: 600px;
+            max-width: 720px;
+        }
+
+        .profile-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+        }
+
+        .profile-form-grid .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 640px) {
+            .profile-form-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .form-section {
@@ -364,24 +619,7 @@
             display: block;
         }
 
-        /* Пустые состояния */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            color: #d1d5db;
-            margin-bottom: 20px;
-            display: block;
-        }
-
-        .empty-state h3 {
-            margin: 0 0 10px;
-            color: #6b7280;
-        }
+        /* Пустые состояния – см. style.css (.empty-state) */
 
         /* Модальное окно для оценки */
         .modal {
@@ -450,35 +688,118 @@
             color: #1f2937;
         }
     </style>
+    <script>
+    let _bookingActionBusy = false;
+
+    window.cancelBooking = async function(bookingId) {
+        if (!bookingId || _bookingActionBusy) return;
+        if (!(await showConfirm('Отменить это бронирование?'))) return;
+        _bookingActionBusy = true;
+        try {
+            const response = await fetch('/api/cancel_booking/' + parseInt(bookingId, 10), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: '{}'
+            });
+            const text = await response.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (e) {
+                showToast('Ошибка сервера', 'error');
+                return;
+            }
+            if (response.ok && data.success) {
+                location.reload();
+            } else if (response.status === 401) {
+                location.href = '/login?next=' + encodeURIComponent('/dashboard');
+            } else {
+                showToast(data.error || 'Не удалось отменить', 'error');
+            }
+        } catch (e) {
+            showToast('Ошибка сети', 'error');
+            console.error(e);
+        } finally {
+            _bookingActionBusy = false;
+        }
+    };
+
+    let _openExtendMenu = null;
+
+    function closeExtendMenus() {
+        document.querySelectorAll('.extend-menu').forEach(m => m.remove());
+        _openExtendMenu = null;
+    }
+
+    window.extendBooking = async function(bookingId, hours) {
+        if (!bookingId || _bookingActionBusy) return;
+        const label = (hours === 1) ? '1 час' : (hours + ' ч');
+        if (!(await showConfirm('Продлить бронирование на ' + label + '?'))) return;
+        closeExtendMenus();
+        _bookingActionBusy = true;
+        try {
+            const response = await fetch('/api/extend_booking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ booking_id: parseInt(bookingId, 10), hours: hours || 1 })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.success) {
+                location.reload();
+            } else {
+                showToast(data.error || 'Не удалось продлить', 'error');
+            }
+        } catch (e) {
+            showToast('Ошибка сети', 'error');
+            console.error(e);
+        } finally {
+            _bookingActionBusy = false;
+        }
+    };
+
+    window.showExtendMenu = async function(btn, bookingId) {
+        if (_bookingActionBusy) return;
+        closeExtendMenus();
+        if (_openExtendMenu === bookingId) {
+            _openExtendMenu = null;
+            return;
+        }
+        try {
+            const r = await fetch('/api/booking/' + parseInt(bookingId, 10) + '/extend_options', {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await r.json().catch(() => ({}));
+            const options = (data.success && data.options) ? data.options : [];
+            if (!options.length) {
+                const reason = data.reason || 'Нет доступных слотов для продления (место занято или достигнут максимум 8 ч)';
+                showToast(reason, 'error');
+                return;
+            }
+            const menu = document.createElement('div');
+            menu.className = 'extend-menu';
+            options.forEach(opt => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = '+ ' + opt.label;
+                b.onclick = () => extendBooking(bookingId, opt.hours);
+                menu.appendChild(b);
+            });
+            const wrap = btn.closest('.extend-wrap');
+            if (wrap) {
+                wrap.appendChild(menu);
+                _openExtendMenu = bookingId;
+            }
+        } catch (e) {
+            showToast('Ошибка загрузки вариантов', 'error');
+        }
+    };
+
+    </script>
 </head>
 <body>
-    <!-- Навигация -->
-    <nav class="navbar">
-        <div class="container">
-            <a href="{{ url_for('index') }}" class="logo">
-                <i class="fas fa-building"></i>
-                <span>Умный Коворкинг</span>
-            </a>
-
-            <div class="nav-menu">
-                {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('dashboard') }}" class="active"><i class="fas fa-user"></i> Кабинет</a>
-                    <a href="{{ url_for('map_view') }}"><i class="fas fa-map"></i> Карта</a>
-                    {% if current_user.is_admin() %}
-                        <a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-cog"></i> Админ</a>
-                    {% endif %}
-                    <a href="{{ url_for('logout') }}" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Выйти
-                    </a>
-                {% else %}
-                    <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Вход</a>
-                    <a href="{{ url_for('register') }}" class="register-btn">
-                        <i class="fas fa-user-plus"></i> Регистрация
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
+    {% set active_page = 'dashboard' %}
+    {% include '_navbar.html' %}
     <div class="container">
         <!-- Сообщения -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -504,7 +825,7 @@
                     </div>
                     <div class="user-info">
                         <h1>Добро пожаловать, {{ current_user.username }}!</h1>
-                        <p>{{ current_user.email }}</p>
+                        <p>{{ current_user.login_label }}</p>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -514,25 +835,35 @@
                 </div>
             </div>
 
-            <!-- Статистика (считается только по завершенным бронированиям) -->
+            <!-- Статистика бронирований -->
             <div class="dashboard-stats">
                 <div class="stat-card">
                     <div class="stat-icon stat-booking">
-                        <i class="fas fa-calendar-check"></i>
+                        <i class="fas fa-calendar-alt"></i>
                     </div>
                     <div class="stat-info">
                         <h3>{{ total_bookings }}</h3>
-                        <p>Всего бронирований</p>
+                        <p>Бронирований</p>
                     </div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-icon stat-spent">
-                        <i class="fas fa-ruble-sign"></i>
+                    <div class="stat-icon stat-success">
+                        <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>{{ "%.2f"|format(total_spent) }} ₽</h3>
-                        <p>Общий расход</p>
+                        <h3>{{ total_bookings_completed }}</h3>
+                        <p>Успешных</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon stat-cancelled">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ total_bookings_cancelled }}</h3>
+                        <p>Отмененных</p>
                     </div>
                 </div>
 
@@ -545,10 +876,30 @@
                         <p>Активных бронирований</p>
                     </div>
                 </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon stat-spent">
+                        <i class="fas fa-ruble-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ "%.2f"|format(total_spent) }} ₽</h3>
+                        <p>Общий расход</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Вкладки -->
             <div class="tabs-container">
+                <div class="tabs-mobile-picker">
+                    <label for="tab-mobile-select">Раздел кабинета</label>
+                    <select id="tab-mobile-select" onchange="switchTab(this.value, null)">
+                        <option value="bookings">Мои бронирования</option>
+                        <option value="history">История</option>
+                        <option value="abonement">Абонемент</option>
+                        <option value="notifications">Уведомления</option>
+                        <option value="settings">Настройки</option>
+                    </select>
+                </div>
                 <div class="tabs-header">
                     <button class="tab-btn active" onclick="switchTab('bookings', event)">
                         <i class="fas fa-calendar-check"></i> Мои бронирования
@@ -557,7 +908,7 @@
                         <i class="fas fa-history"></i> История
                     </button>
                     <button class="tab-btn" onclick="switchTab('abonement', event)">
-                        <i class="fas fa-ticket-alt"></i> Абонимент
+                        <i class="fas fa-ticket-alt"></i> Абонемент
                     </button>
                     <button class="tab-btn" onclick="switchTab('notifications', event)">
                         <i class="fas fa-bell"></i> Уведомления
@@ -576,16 +927,29 @@
                         {% for booking in active_bookings %}
                         <div class="booking-card">
                             <div class="booking-info">
-                                <h4>{{ booking.place.name if booking.place else 'Неизвестное место' }}</h4>
+                                <h4>{{ booking.place.name if booking.place else 'Неизвестное место' }} ({{ format_place_code(booking.place) if booking.place else '' }})</h4>
+                                {% if booking.place and format_place_container(booking.place) %}
+                                <p class="booking-location-hint">{{ format_place_container(booking.place) }}</p>
+                                {% endif %}
                                 <div class="booking-details">
+                                    <span><i class="fas fa-layer-group"></i> Этаж {{ booking.place.floor.number if booking.place and booking.place.floor else (booking.place.floor_id or '?') }}</span>
+                                    {% set container = booking.place.get_container_place() if booking.place else None %}
+                                    {% if container %}
+                                    <span><i class="fas fa-door-open"></i> {{ container.name }}</span>
+                                    {% endif %}
+                                    <span><i class="fas fa-map-marker-alt"></i> {{ booking.location_label }}</span>
                                     <span><i class="fas fa-tag"></i> {{ get_type_name(booking.place.type) if booking.place else '' }}</span>
-                                    <span><i class="fas fa-map-marker-alt"></i> {{ booking.place.x }},{{ booking.place.y }}</span>
                                 </div>
                             </div>
 
                             <div class="booking-time">
+                                {% if booking.tariff_type in ('weekly', 'monthly') %}
+                                <div class="date">{{ booking.booking_date.strftime('%d.%m.%Y') }} - {{ booking.period_end_date.strftime('%d.%m.%Y') }}</div>
+                                <div class="time">{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }} · {{ 'неделя' if booking.tariff_type == 'weekly' else 'месяц' }}</div>
+                                {% else %}
                                 <div class="date">{{ booking.booking_date.strftime('%d.%m.%Y') }}</div>
                                 <div class="time">{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</div>
+                                {% endif %}
                             </div>
 
                             <div class="booking-status">
@@ -599,12 +963,20 @@
                             </div>
 
                             <div class="booking-actions">
-                                <button class="btn btn-sm btn-danger" onclick="cancelBooking({{ booking.id }})">
+                                {% if booking.id in cancellable_ids %}
+                                <button type="button" class="btn btn-sm btn-danger cancel-btn" data-booking-id="{{ booking.id }}">
                                     <i class="fas fa-times"></i> Отменить
                                 </button>
-                                <button class="btn btn-sm btn-secondary" onclick="extendBooking({{ booking.id }})">
-                                    <i class="fas fa-plus"></i> Продлить
-                                </button>
+                                {% else %}
+                                <span class="text-muted" style="font-size:12px;">Отмена недоступна</span>
+                                {% endif %}
+                                {% if booking.tariff_type == 'hourly' %}
+                                <div class="extend-wrap">
+                                    <button type="button" class="btn btn-sm btn-secondary extend-btn" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-clock"></i> Продлить
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -651,12 +1023,21 @@
                                 {% for booking in history_bookings %}
                                 <tr>
                                     <td>
-                                        <strong>{{ booking.place.name if booking.place else 'Неизвестно' }}</strong>
+                                        <strong>{{ booking.place.name if booking.place else 'Неизвестно' }} ({{ format_place_code(booking.place) if booking.place else '' }})</strong>
+                                        {% if booking.place and format_place_container(booking.place) %}
+                                        <br><small class="text-muted">{{ format_place_container(booking.place) }}</small>
+                                        {% endif %}
                                         <div style="font-size: 12px; color: #6b7280;">
                                             {{ get_type_name(booking.place.type) if booking.place else '' }}
                                         </div>
                                     </td>
-                                    <td>{{ booking.booking_date.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        {% if booking.tariff_type in ('weekly', 'monthly') %}
+                                        {{ booking.booking_date.strftime('%d.%m.%Y') }} - {{ booking.period_end_date.strftime('%d.%m.%Y') }}
+                                        {% else %}
+                                        {{ booking.booking_date.strftime('%d.%m.%Y') }}
+                                        {% endif %}
+                                    </td>
                                     <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
                                     <td><strong>{{ booking.total_price }} ₽</strong></td>
                                     <td>
@@ -673,7 +1054,7 @@
                                     </td>
                                     <td>
                                         {% if booking.status == 'completed' and not booking.user_rating %}
-                                        <button class="btn btn-sm btn-primary" onclick="openRatingModal({{ booking.id }}, '{{ booking.place.name if booking.place else 'Место' }}')">
+                                        <button class="btn btn-sm btn-primary rating-btn" data-booking-id="{{ booking.id }}" data-place-name="{{ booking.place.name if booking.place else 'Место' }}">
                                             <i class="fas fa-star"></i> Оценить
                                         </button>
                                         {% endif %}
@@ -694,31 +1075,6 @@
                         <button class="page-btn">10</button>
                     </div>
                     {% endif %}
-
-                    <!-- Модальное окно оценки -->
-                    <div id="rating-modal" class="modal">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2 id="rating-title">Оцените место</h2>
-                                <button class="modal-close" onclick="closeRatingModal()">×</button>
-                            </div>
-                            <form id="rating-form">
-                                <div class="star-rating" id="star-rating">
-                                    <i class="fas fa-star" data-value="1"></i>
-                                    <i class="fas fa-star" data-value="2"></i>
-                                    <i class="fas fa-star" data-value="3"></i>
-                                    <i class="fas fa-star" data-value="4"></i>
-                                    <i class="fas fa-star" data-value="5"></i>
-                                </div>
-                                <div class="rating-value">Оценка: <span id="current-rating">0</span>/5</div>
-
-                                <div style="display:flex; gap:10px; margin-top:20px;">
-                                    <button type="submit" class="btn btn-primary" style="flex:1;">Отправить оценку</button>
-                                    <button type="button" class="btn btn-secondary" onclick="closeRatingModal()" style="flex:1;">Отмена</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                     {% else %}
                     <div class="empty-state">
                         <i class="fas fa-history"></i>
@@ -728,21 +1084,424 @@
                     {% endif %}
                 </div>
 
-                <div id="tab-abonement" class="tab-content">
-                    <div class="coming-soon">
-                        <i class="fas fa-ticket-alt"></i>
-                        <h3>Абонимент</h3>
-                        <p>Функция абонементов находится в разработке.<br>Скоро вы сможете покупать и управлять абонементами здесь.</p>
+                <!-- Модальное окно оценки (всегда в DOM – иначе ломается JS) -->
+                <div id="rating-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 id="rating-title">Оцените место</h2>
+                            <button type="button" class="modal-close" onclick="closeRatingModal()">×</button>
+                        </div>
+                        <form id="rating-form">
+                            <div class="star-rating" id="star-rating">
+                                <i class="fas fa-star" data-value="1"></i>
+                                <i class="fas fa-star" data-value="2"></i>
+                                <i class="fas fa-star" data-value="3"></i>
+                                <i class="fas fa-star" data-value="4"></i>
+                                <i class="fas fa-star" data-value="5"></i>
+                            </div>
+                            <div class="rating-value">Оценка: <span id="current-rating">0</span>/5</div>
+                            <div style="display:flex; gap:10px; margin-top:20px;">
+                                <button type="submit" class="btn btn-primary" style="flex:1;">Отправить оценку</button>
+                                <button type="button" class="btn btn-secondary" onclick="closeRatingModal()" style="flex:1;">Отмена</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
+                <div id="tab-abonement" class="tab-content">
+                    <h2><i class="fas fa-ticket-alt"></i> Мои абонементы</h2>
+                    
+                    {% if user_subscriptions %}
+                    <div class="subscription-list">
+                        <div class="subscription-card subscription-list-header">
+                            <div class="sub-col-main">Абонемент</div>
+                            <div class="sub-col-price">Стоимость</div>
+                            <div class="sub-col-status">Статус</div>
+                            <div class="sub-col-extra">Остаток</div>
+                        </div>
+                        {% for sub in user_subscriptions %}
+                        <div class="subscription-card">
+                            <div class="sub-col-main">
+                                <h4>{{ sub.name }}</h4>
+                                <div class="sub-col-details">
+                                    <span><i class="fas fa-calendar"></i> {{ sub.start_date.strftime('%d.%m.%Y') }} - {{ sub.end_date.strftime('%d.%m.%Y') }}</span>
+                                </div>
+                            </div>
+                            <div class="sub-col-price">
+                                <div>{{ sub.price }} ₽</div>
+                                <div class="sub-usage">
+                                    {% if sub.hours_limit %}
+                                    {{ sub.hours_used }} / {{ sub.hours_limit }} ч
+                                    {% else %}
+                                    Безлимит
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="sub-col-status">
+                                <span class="status-badge status-{{ 'active' if sub.is_active else 'cancelled' }}">
+                                    {{ 'Активен' if sub.is_active else 'Истёк' }}
+                                </span>
+                            </div>
+                            <div class="sub-col-extra">
+                                {% if sub.hours_remaining is not none and sub.hours_remaining > 0 %}
+                                {{ sub.hours_remaining }} ч осталось
+                                {% elif sub.hours_limit %}
+                                Исчерпан
+                                {% else %}
+                                Безлимит
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <h3>Нет абонементов</h3>
+                        <p>У вас пока нет абонементов. Оформите один из доступных ниже.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if subscription_templates %}
+                    <div style="margin-top:28px;">
+                        <h3 class="subsection-title"><i class="fas fa-store"></i> Доступные абонементы</h3>
+                        <div class="subscription-list">
+                            <div class="subscription-card subscription-list-header">
+                                <div class="sub-col-main">Абонемент</div>
+                                <div class="sub-col-price">Цена</div>
+                                <div class="sub-col-status">Условия</div>
+                                <div class="sub-col-action">Действие</div>
+                            </div>
+                            {% for tpl in subscription_templates %}
+                            <div class="subscription-card subscription-card--available">
+                                <div class="sub-col-main">
+                                    <h4>{{ tpl.name }}</h4>
+                                    <div class="sub-col-details">
+                                        <span><i class="fas fa-calendar"></i> {{ tpl.duration_days or 30 }} дн.</span>
+                                        {% if tpl.hours_limit %}
+                                        <span><i class="fas fa-clock"></i> до {{ tpl.hours_limit }} ч</span>
+                                        {% else %}
+                                        <span><i class="fas fa-infinity"></i> Безлимит</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="sub-col-price"><strong>{{ tpl.price }} ₽</strong></div>
+                                <div class="sub-col-status">
+                                    <span class="status-badge status-active">Доступен</span>
+                                </div>
+                                <div class="sub-col-action">
+                                    <button type="button" class="btn btn-primary btn-sm"
+                                            onclick="purchaseSubscription({{ tpl.id }}, '{{ tpl.name|e }}')">
+                                        Оформить
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
                 <div id="tab-notifications" class="tab-content">
-                    <div class="coming-soon">
-                        <i class="fas fa-bell"></i>
-                        <h3>Уведомления</h3>
-                        <p>Раздел уведомлений в разработке.<br>Здесь будут важные оповещения о бронированиях, акциях и изменениях.</p>
+                    <h2><i class="fas fa-bell"></i> Уведомления и обратная связь</h2>
+
+                    <div class="notify-section-tabs">
+                        <button type="button" class="notify-section-btn active" data-notify-section="system" onclick="switchNotifySection('system', this)">
+                            <i class="fas fa-bell"></i> Системные уведомления
+                        </button>
+                        <button type="button" class="notify-section-btn" data-notify-section="feedback" onclick="switchNotifySection('feedback', this)">
+                            <i class="fas fa-comment-dots"></i> Обратная связь
+                        </button>
+                    </div>
+
+                    <div id="notify-section-system" class="notify-section-panel active">
+                        <div id="notifications-system-container">
+                            <div class="empty-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <h3>Загрузка уведомлений...</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="notify-section-feedback" class="notify-section-panel">
+                        {% if current_user.role == 'client' %}
+                        <div class="settings-form" style="margin-bottom: 24px;">
+                            <div class="form-section">
+                                <h3><i class="fas fa-paper-plane"></i> Направить обращение</h3>
+                                <p style="color:#64748b; font-size:14px; margin-bottom:16px;">
+                                    Если во время аренды возникла проблема, отправьте обращение менеджеру или администратору.
+                                </p>
+                                <form id="feedback-form" onsubmit="submitFeedback(event)">
+                                    <div class="profile-form-grid">
+                                        <div class="form-group">
+                                            <label for="feedback-recipient">Кому направить</label>
+                                            <select id="feedback-recipient" class="form-control" required>
+                                                <option value="manager">Менеджеру (ресепшен)</option>
+                                                <option value="admin">Администратору</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="feedback-booking">Связанное бронирование (необязательно)</label>
+                                            <select id="feedback-booking" class="form-control">
+                                                <option value="">Без привязки к брони</option>
+                                                {% for booking in feedback_bookings %}
+                                                <option value="{{ booking.id }}">
+                                                    №{{ booking.id }} – {{ booking.place.name if booking.place else 'Место' }},
+                                                    {{ booking.booking_date.strftime('%d.%m.%Y') }}
+                                                    ({{ 'активно' if booking.status == 'active' else 'завершено' }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedback-title">Тема</label>
+                                        <input type="text" id="feedback-title" class="form-control"
+                                               maxlength="200" placeholder="Например: Проблема с рабочим местом">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedback-message">Текст обращения</label>
+                                        <textarea id="feedback-message" class="form-control" rows="4" required
+                                                  minlength="10" maxlength="2000"
+                                                  placeholder="Опишите, что произошло"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i> Отправить обращение
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <h3 class="subsection-title">Мои отправленные обращения</h3>
+                        <div id="notifications-sent-feedback-container">
+                            <div class="empty-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <h3>Загрузка...</h3>
+                            </div>
+                        </div>
+                        {% else %}
+                        <h3 class="subsection-title">Входящие обращения клиентов</h3>
+                        <div id="notifications-feedback-container">
+                            <div class="empty-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <h3>Загрузка...</h3>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+                <script>
+                function escapeHtml(text) {
+                    return String(text || '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                }
+
+                function switchNotifySection(section, btn) {
+                    document.querySelectorAll('.notify-section-btn').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.notify-section-panel').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('notify-section-' + section).classList.add('active');
+                }
+
+                function toggleFeedbackCard(button) {
+                    const card = button.closest('.feedback-card');
+                    card.classList.toggle('open');
+                }
+
+                function renderSystemNotifications(items, container) {
+                    if (!items.length) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-bell-slash"></i>
+                                <h3>Нет системных уведомлений</h3>
+                                <p>Здесь будут сообщения от администрации и общие объявления.</p>
+                            </div>`;
+                        return;
+                    }
+                    container.innerHTML = items.map(n => {
+                        const unreadBadge = !n.is_read ? '<span style="background:#c75050;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">Новое</span>' : '';
+                        const readBtn = !n.is_read ? `<button class="btn btn-sm btn-outline-primary" onclick="markRead(${n.id}, this)" style="font-size:12px;white-space:nowrap;"><i class="fas fa-check"></i> Прочитано</button>` : '';
+                        return `
+                            <div class="notify-card">
+                                <div style="display:flex;justify-content:space-between;align-items:start;gap:16px;">
+                                    <div style="flex:1;">
+                                        <div style="font-weight:700;font-size:15px;color:#1e293b;margin-bottom:6px;">
+                                            <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}${unreadBadge}
+                                        </div>
+                                        <div style="font-size:14px;color:#64748b;margin-bottom:4px;">${escapeHtml(n.message)}</div>
+                                        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">${escapeHtml(n.created_at)}</div>
+                                    </div>
+                                    ${readBtn}
+                                </div>
+                            </div>`;
+                    }).join('');
+                }
+
+                function formatFeedbackBookingPreview(booking) {
+                    if (!booking) {
+                        return '<div class="feedback-booking-preview feedback-booking-empty">Без привязки к бронированию</div>';
+                    }
+                    if (booking.location?.path) {
+                        return `<div class="feedback-booking-preview"><i class="fas fa-map-marker-alt"></i>${escapeHtml(booking.location.path)}</div>`;
+                    }
+                    if (booking.detail_lines?.length) {
+                        return `<div class="feedback-booking-preview"><i class="fas fa-link"></i>${escapeHtml(booking.detail_lines.join(' · '))}</div>`;
+                    }
+                    if (booking.label) {
+                        return `<div class="feedback-booking-preview"><i class="fas fa-calendar-alt"></i>${escapeHtml(booking.label)}</div>`;
+                    }
+                    return '';
+                }
+
+                function formatFeedbackBookingBlock(booking) {
+                    if (!booking) return '';
+                    const path = booking.location?.path
+                        ? `<div class="feedback-location-path"><strong>Где:</strong> ${escapeHtml(booking.location.path)}</div>`
+                        : '';
+                    const lines = (booking.detail_lines || []).map(line =>
+                        `<div>${escapeHtml(line)}</div>`
+                    ).join('');
+                    const details = lines
+                        ? `<div class="feedback-booking-details">${lines}</div>`
+                        : `<div>${escapeHtml(booking.label || '')}</div>`;
+                    return `<div class="feedback-booking"><strong>Привязка:</strong>${path}${details}</div>`;
+                }
+
+                function renderFeedbackNotifications(items, container, emptyText) {
+                    if (!items.length) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-comment-slash"></i>
+                                <h3>${emptyText}</h3>
+                            </div>`;
+                        return;
+                    }
+                    container.innerHTML = items.map(n => {
+                        const unreadClass = !n.is_read ? ' unread' : '';
+                        const bookingBlock = formatFeedbackBookingBlock(n.booking);
+                        const bookingPreview = formatFeedbackBookingPreview(n.booking);
+                        const metaParts = [escapeHtml(n.created_at)];
+                        if (n.sender_name) metaParts.unshift(escapeHtml(n.sender_name));
+                        if (n.recipient_label) metaParts.push(escapeHtml(n.recipient_label));
+                        return `
+                            <div class="feedback-card${unreadClass}" data-feedback-id="${n.id}">
+                                <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
+                                    <div class="feedback-head-main">
+                                        <div class="feedback-title">${escapeHtml(n.title)}</div>
+                                        <div class="feedback-preview">${escapeHtml(n.message)}</div>
+                                        ${bookingPreview}
+                                    </div>
+                                    <div class="feedback-actions">
+                                        <span class="feedback-meta">${metaParts.join(' · ')}</span>
+                                        <button type="button" class="feedback-delete-btn" title="Удалить из истории"
+                                                onclick="deleteFeedback(${n.id}, event)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <i class="fas fa-chevron-down feedback-chevron"></i>
+                                    </div>
+                                </button>
+                                <div class="feedback-booking-visible">
+                                    ${bookingBlock || '<div class="feedback-booking-empty">Без привязки к бронированию</div>'}
+                                </div>
+                                <div class="feedback-body">
+                                    <div class="feedback-text">${escapeHtml(n.message)}</div>
+                                </div>
+                            </div>`;
+                    }).join('');
+                }
+
+                async function loadNotifications() {
+                    try {
+                        const response = await fetch('/api/notifications');
+                        const data = await response.json();
+                        if (!response.ok || data.error) {
+                            const errText = data.error || 'Не удалось загрузить уведомления';
+                            const errHtml = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>${escapeHtml(errText)}</h3></div>`;
+                            document.getElementById('notifications-system-container').innerHTML = errHtml;
+                            {% if current_user.role == 'client' %}
+                            document.getElementById('notifications-sent-feedback-container').innerHTML = errHtml;
+                            {% else %}
+                            document.getElementById('notifications-feedback-container').innerHTML = errHtml;
+                            {% endif %}
+                            return;
+                        }
+                        renderSystemNotifications(data.system || [], document.getElementById('notifications-system-container'));
+                        {% if current_user.role == 'client' %}
+                        renderFeedbackNotifications(
+                            data.sent_feedback || [],
+                            document.getElementById('notifications-sent-feedback-container'),
+                            'Вы ещё не отправляли обращений'
+                        );
+                        {% else %}
+                        renderFeedbackNotifications(
+                            data.feedback || [],
+                            document.getElementById('notifications-feedback-container'),
+                            'Нет входящих обращений'
+                        );
+                        {% endif %}
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+                async function deleteFeedback(id, event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (!confirm('Удалить это обращение из истории?')) return;
+                    try {
+                        const res = await fetch('/api/notifications/' + id, { method: 'DELETE' });
+                        const data = await res.json();
+                        if (!data.success) {
+                            alert(data.error || 'Не удалось удалить обращение');
+                            return;
+                        }
+                        await loadNotifications();
+                    } catch (e) {
+                        console.error(e);
+                        alert('Ошибка при удалении обращения');
+                    }
+                }
+                async function markRead(id, btn) {
+                    try {
+                        await fetch('/api/notifications/' + id + '/read', {method: 'POST'});
+                        btn.remove();
+                        loadNotifications();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+                async function submitFeedback(event) {
+                    event.preventDefault();
+                    const payload = {
+                        recipient: document.getElementById('feedback-recipient').value,
+                        title: document.getElementById('feedback-title').value.trim(),
+                        message: document.getElementById('feedback-message').value.trim(),
+                    };
+                    const bookingId = document.getElementById('feedback-booking').value;
+                    if (bookingId) payload.booking_id = parseInt(bookingId, 10);
+                    try {
+                        const res = await fetch('/api/feedback', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(payload),
+                        });
+                        const data = await res.json();
+                        if (!data.success) {
+                            alert(data.error || 'Не удалось отправить обращение');
+                            return;
+                        }
+                        document.getElementById('feedback-form').reset();
+                        await loadNotifications();
+                        switchNotifySection('feedback', document.querySelector('[data-notify-section="feedback"]'));
+                        alert(data.message || 'Обращение отправлено');
+                    } catch (e) {
+                        console.error(e);
+                        alert('Ошибка при отправке обращения');
+                    }
+                }
+                document.addEventListener('DOMContentLoaded', loadNotifications);
+                </script>
 
                 <!-- Вкладка: Настройки -->
                 <div id="tab-settings" class="tab-content">
@@ -752,54 +1511,51 @@
                         <div class="form-section">
                             <h3>Личная информация</h3>
                             <form id="profile-form" onsubmit="updateProfile(event)">
-                                <div class="form-group">
-                                    <label for="username">Имя пользователя</label>
-                                    <input type="text" id="username" name="username"
-                                           value="{{ current_user.username }}" class="form-control">
+                                <div class="profile-form-grid">
+                                    <div class="form-group">
+                                        <label for="username">Имя пользователя</label>
+                                        <input type="text" id="username" name="username"
+                                               value="{{ current_user.username }}" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="phone">Телефон</label>
+                                        <input type="tel" id="phone" name="phone" class="form-control phone-mask"
+                                               value="{{ format_phone(current_user.phone) }}"
+                                               placeholder="+7 999 123 45 67">
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label for="email">Почта</label>
+                                        <input type="email" id="email" name="email"
+                                               value="{{ current_user.email }}" class="form-control" readonly disabled>
+                                        <small style="color: #6b7280;">Почта не может быть изменена (используется для входа)</small>
+                                    </div>
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" name="email"
-                                           value="{{ current_user.email }}" class="form-control" disabled>
-                                    <small style="color: #6b7280;">Email нельзя изменить</small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="phone">Телефон</label>
-                                    <input type="tel" id="phone" name="phone"
-                                           value="{{ current_user.phone or '' }}" class="form-control">
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" style="margin-top: 8px;">
                                     <i class="fas fa-save"></i> Сохранить изменения
                                 </button>
                             </form>
                         </div>
 
-                        <div class="form-section">
-                            <h3>Безопасность</h3>
+                        <div class="form-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                            <h3>Смена пароля</h3>
                             <form id="password-form" onsubmit="changePassword(event)">
                                 <div class="form-group">
-                                    <label for="current-password">Текущий пароль</label>
-                                    <input type="password" id="current-password" name="current_password"
-                                           class="form-control" required>
+                                    <label for="current_password">Текущий пароль</label>
+                                    <input type="password" id="current_password" class="form-control" required>
                                 </div>
-
                                 <div class="form-group">
-                                    <label for="new-password">Новый пароль</label>
-                                    <input type="password" id="new-password" name="new_password"
-                                           class="form-control" required>
+                                    <label for="new_password">Новый пароль</label>
+                                    <input type="password" id="new_password" class="form-control" required minlength="6">
                                 </div>
-
                                 <div class="form-group">
-                                    <label for="confirm-password">Подтвердите пароль</label>
-                                    <input type="password" id="confirm-password" name="confirm_password"
-                                           class="form-control" required>
+                                    <label for="confirm_new_password">Подтвердите пароль</label>
+                                    <input type="password" id="confirm_new_password" class="form-control" required>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-key"></i> Сменить пароль
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="fas fa-key"></i> Изменить пароль
                                 </button>
                             </form>
                         </div>
@@ -818,7 +1574,20 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    const onclick = btn.getAttribute('onclick') || '';
+                    if (onclick.includes(`'${tabName}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+            const mobileSelect = document.getElementById('tab-mobile-select');
+            if (mobileSelect && mobileSelect.value !== tabName) {
+                mobileSelect.value = tabName;
+            }
         }
 
         function openRatingModal(bookingId, placeName) {
@@ -852,9 +1621,10 @@
             });
         }
 
-        document.getElementById('rating-form').addEventListener('submit', async function(e) {
+        const ratingForm = document.getElementById('rating-form');
+        if (ratingForm) ratingForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            if (currentRating === 0) { alert('Выберите оценку!'); return; }
+            if (currentRating === 0) { showToast('Выберите оценку!', 'warning'); return; }
 
             try {
                 const res = await fetch('/api/submit_rating', {
@@ -864,24 +1634,55 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('Спасибо за оценку!');
+                    showToast('Спасибо за оценку!', 'success');
                     closeRatingModal();
                     location.reload();
                 } else {
-                    alert(data.error || 'Ошибка');
+                    showToast(data.error || 'Ошибка', 'error');
                 }
             } catch (err) {
-                alert('Ошибка соединения');
+                showToast('Ошибка соединения', 'error');
             }
         });
+
+        async function changePassword(event) {
+            event.preventDefault();
+            const current = document.getElementById('current_password').value;
+            const newPw = document.getElementById('new_password').value;
+            const confirm = document.getElementById('confirm_new_password').value;
+            if (newPw !== confirm) { showToast('Пароли не совпадают', 'warning'); return; }
+            if (newPw.length < 6) { showToast('Пароль: минимум 6 символов', 'warning'); return; }
+            try {
+                const r = await fetch('/api/change_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password: current, new_password: newPw })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    showToast('Пароль изменён', 'success');
+                    document.getElementById('password-form').reset();
+                } else {
+                    showToast(d.error || 'Ошибка', 'error');
+                }
+            } catch {
+                showToast('Ошибка соединения', 'error');
+            }
+        }
 
         // Обновление профиля
         async function updateProfile(event) {
             event.preventDefault();
 
+            const phoneVal = document.getElementById('phone').value.trim();
+            if (phoneVal && typeof isPhoneComplete === 'function' && !isPhoneComplete(phoneVal)) {
+                showToast('Введите корректный номер телефона', 'warning');
+                return;
+            }
+
             const formData = {
                 username: document.getElementById('username').value,
-                phone: document.getElementById('phone').value
+                phone: phoneVal
             };
 
             try {
@@ -896,112 +1697,18 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Профиль успешно обновлен');
+                    showToast('Профиль успешно обновлен', 'success');
                     location.reload();
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    showToast('Ошибка: ' + data.error, 'error');
                 }
             } catch (error) {
                 console.error('Ошибка обновления профиля:', error);
-                alert('Произошла ошибка при обновлении профиля');
+                showToast('Произошла ошибка при обновлении профиля', 'error');
             }
         }
 
-        // Смена пароля
-        async function changePassword(event) {
-            event.preventDefault();
-
-            const currentPassword = document.getElementById('current-password').value;
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-
-            if (newPassword !== confirmPassword) {
-                alert('Новые пароли не совпадают');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/change_password', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        current_password: currentPassword,
-                        new_password: newPassword
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert('Пароль успешно изменен');
-                    document.getElementById('password-form').reset();
-                } else {
-                    alert('Ошибка: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Ошибка смены пароля:', error);
-                alert('Произошла ошибка при смене пароля');
-            }
-        }
-
-        // Отмена бронирования
-        async function cancelBooking(bookingId) {
-            if (!confirm('Вы уверены, что хотите отменить это бронирование?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/cancel_booking/${bookingId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert('Бронирование успешно отменено');
-                    location.reload();
-                } else {
-                    alert('Ошибка: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Ошибка отмены бронирования:', error);
-                alert('Произошла ошибка при отмене бронирования');
-            }
-        }
-
-        // Продление бронирования
-        async function extendBooking(bookingId) {
-            try {
-                const response = await fetch('/api/extend_booking', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        booking_id: bookingId
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    alert(data.message + '\n' +
-                          `Дополнительная стоимость: ${data.additional_cost} ₽\n` +
-                          `Общая стоимость: ${data.new_total_price} ₽`);
-                    location.reload();
-                } else {
-                    alert('Ошибка: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Ошибка продления бронирования:', error);
-                alert('Произошла ошибка при продлении бронирования');
-            }
-        }
+        // cancelBooking / extendBooking объявлены в <head>
 
         // Вспомогательная функция для рендеринга звезд
         function renderStars(rating) {
@@ -1021,16 +1728,65 @@
             const types = {
                 'desk': 'Рабочий стол',
                 'room': 'Переговорная',
-                'office': 'Приватный офис',
-                'lounge': 'Диванная зона'
+                'space': 'Переговорная',
             };
             return types[type] || type;
+        }
+
+        async function purchaseSubscription(templateId, name) {
+            if (!(await showConfirm('Оформить абонемент «' + name + '»?'))) return;
+            try {
+                const r = await fetch('/api/user/subscriptions/purchase', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ template_id: templateId }),
+                });
+                const d = await r.json();
+                if (d.success) {
+                    showToast('Абонемент оформлен', 'success');
+                    location.reload();
+                } else {
+                    showToast(d.error || 'Ошибка оформления', 'error');
+                }
+            } catch (e) {
+                showToast('Ошибка сети', 'error');
+            }
         }
 
         // Запуск при загрузке страницы
         document.addEventListener('DOMContentLoaded', () => {
             initStars();
+            if (typeof initPhoneMasks === 'function') initPhoneMasks();
+
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.extend-wrap')) closeExtendMenus();
+            });
+
+            document.body.addEventListener('click', e => {
+                const cancelBtn = e.target.closest('.cancel-btn');
+                if (cancelBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cancelBooking(cancelBtn.getAttribute('data-booking-id'));
+                    return;
+                }
+                const extendBtn = e.target.closest('.extend-btn');
+                if (extendBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showExtendMenu(extendBtn, extendBtn.getAttribute('data-booking-id'));
+                    return;
+                }
+                const ratingBtn = e.target.closest('.rating-btn');
+                if (ratingBtn) {
+                    openRatingModal(
+                        ratingBtn.getAttribute('data-booking-id'),
+                        ratingBtn.getAttribute('data-place-name')
+                    );
+                }
+            });
         });
     </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Управление тарифами{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
+        <h1><i class="fas fa-dollar-sign"></i> Управление тарифами</h1>
+        <p class="text-muted">Настройка цен для категорий мест: часовой, недельный и месячный тарифы</p>
+        <div style="margin-top: 12px;">
+            <a href="/admin/categories" class="btn btn-secondary">
+                <i class="fas fa-tags"></i> Вернуться к категориям
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div class="card-header">
+            <h3><i class="fas fa-list"></i> Тарифы по категориям</h3>
+        </div>
+        <div id="tariffs-container">
+            <div class="loading">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.admin-header { margin-bottom: 30px; }
+.admin-header h1 { font-size: 28px; color: #1e293b; margin-bottom: 8px; }
+
+.admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+.card-header { background: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+.card-header h3 { margin: 0; font-size: 16px; color: #334155; }
+
+.btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.btn-primary { background: #8fa67a; color: white; }
+.btn-secondary { background: #e2e8f0; color: #475569; }
+.btn-success { background: #4d8f5f; color: white; }
+.btn-danger { background: #c75050; color: white; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+
+.text-muted { color: #64748b; }
+.loading { text-align: center; padding: 40px; color: #64748b; }
+
+.tariff-category { border-bottom: 1px solid #e2e8f0; }
+.tariff-category:last-child { border-bottom: none; }
+
+.category-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 20px; background: #f8fafc;
+    font-weight: 600; color: #1e293b;
+}
+
+.badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;
+}
+.badge-desk { background: #d1fae5; color: #16a34a; }
+.badge-room { background: #dbeafe; color: #2563eb; }
+
+.tariff-list { padding: 12px 20px; }
+
+.tariff-item {
+    display: grid; grid-template-columns: 1fr 150px 100px auto;
+    gap: 16px; align-items: center; padding: 12px; border: 1px solid #e2e8f0;
+    border-radius: 8px; margin-bottom: 8px; background: white;
+}
+
+.tariff-info { flex: 1; }
+.tariff-type { font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+.tariff-type-icon { font-size: 18px; }
+
+.tariff-price { display: flex; align-items: center; gap: 8px; }
+.tariff-price input {
+    width: 100px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 14px; text-align: right;
+}
+
+.tariff-status { display: flex; align-items: center; justify-content: center; }
+.tariff-status .badge-active { background: #d1fae5; color: #16a34a; }
+.tariff-status .badge-inactive { background: #f8e8e8; color: #c75050; }
+
+.tariff-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.no-tariffs { text-align: center; color: #94a3b8; padding: 20px; }
+
+.add-tariff-form {
+    display: grid; grid-template-columns: 150px 150px 1fr;
+    gap: 12px; padding: 16px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0;
+    align-items: end;
+}
+
+.form-group { margin-bottom: 0; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #475569; font-size: 13px; }
+.form-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+
+.mt-3 { margin-top: 12px; }
+</style>
+
+<script>
+let categories = [];
+let tariffs = [];
+
+const tariffLabels = {
+    'hourly': { name: 'Часовой', icon: 'fa-clock', desc: 'Оплата за каждый час' },
+    'weekly': { name: 'Недельный', icon: 'fa-calendar-week', desc: 'Фиксированная цена на неделю' },
+    'monthly': { name: 'Месячный', icon: 'fa-calendar-alt', desc: 'Фиксированная цена на месяц' }
+};
+
+function formatCodeList(codes, max = 8) {
+    if (!codes || !codes.length) return '–';
+    if (codes.length <= max) return codes.join(', ');
+    return codes.slice(0, max).join(', ') + ` …+${codes.length - max}`;
+}
+
+// Загрузка данных
+async function loadData() {
+    try {
+        // Загружаем категории
+        const catRes = await fetch('/api/admin/categories');
+        const catData = await catRes.json();
+        if (catData.success) {
+            categories = catData.categories;
+        }
+
+        // Загружаем тарифы
+        const tarRes = await fetch('/api/admin/tariffs');
+        const tarData = await tarRes.json();
+        if (tarData.success) {
+            tariffs = tarData.tariffs;
+        }
+
+        renderTariffs();
+    } catch (e) {
+        console.error('Ошибка загрузки:', e);
+        document.getElementById('tariffs-container').innerHTML = '<div class="loading">Ошибка загрузки данных</div>';
+    }
+}
+
+function categoryKindLabel(kind) {
+    if (kind === 'desk') return 'Стол';
+    if (kind === 'zone') return 'Устаревший тип';
+    if (kind === 'room') return 'Переговорная';
+    return 'Категория';
+}
+
+// Отрисовка тарифов
+function renderTariffs() {
+    const container = document.getElementById('tariffs-container');
+    if (!categories.length) {
+        container.innerHTML = '<div class="loading">Нет категорий. Сначала создайте категории.</div>';
+        return;
+    }
+
+    container.innerHTML = categories.map(cat => {
+        const catTariffs = tariffs.filter(t => t.category_id === cat.id);
+        const hasHourly = catTariffs.some(t => t.tariff_type === 'hourly');
+        const hasWeekly = catTariffs.some(t => t.tariff_type === 'weekly');
+        const hasMonthly = catTariffs.some(t => t.tariff_type === 'monthly');
+
+        let tariffsHtml = '';
+        if (catTariffs.length > 0) {
+            tariffsHtml = catTariffs.map(t => {
+                const label = tariffLabels[t.tariff_type] || { name: t.tariff_type, icon: 'fa-tag', desc: '' };
+                return `
+                <div class="tariff-item">
+                    <div class="tariff-info">
+                        <div class="tariff-type">
+                            <i class="fas ${label.icon} tariff-type-icon" style="color: #8fa67a;"></i>
+                            ${label.name}
+                            <small style="color: #64748b; font-weight: normal;">${label.desc}</small>
+                        </div>
+                    </div>
+                    <div class="tariff-price">
+                        <input type="number" id="price-${t.id}" value="${t.price}" min="0" step="50">
+                        <span>₽</span>
+                    </div>
+                    <div class="tariff-status">
+                        <span class="badge badge-${t.active ? 'active' : 'inactive'}">${t.active ? 'Активен' : 'Неактивен'}</span>
+                    </div>
+                    <div class="tariff-actions">
+                        <button class="btn btn-sm btn-success" onclick="updateTariffPrice(${t.id})">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="toggleTariffActive(${t.id}, ${!t.active})">
+                            <i class="fas fa-${t.active ? 'pause' : 'play'}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTariff(${t.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        } else {
+            tariffsHtml = '<div class="no-tariffs">Нет настроенных тарифов</div>';
+        }
+
+        const allTariffsSet = hasHourly && hasWeekly && hasMonthly;
+        let addFormHtml = '';
+        if (!allTariffsSet) {
+            addFormHtml = '<div class="add-tariff-form">';
+            addFormHtml += '<div class="form-group"><label>Тип тарифа</label><select id="new-type-' + cat.id + '" class="form-control">';
+            if (!hasHourly) addFormHtml += '<option value="hourly">Часовой</option>';
+            if (!hasWeekly) addFormHtml += '<option value="weekly">Недельный</option>';
+            if (!hasMonthly) addFormHtml += '<option value="monthly">Месячный</option>';
+            addFormHtml += '</select></div>';
+            addFormHtml += '<div class="form-group"><label>Цена (₽)</label><input type="number" id="new-price-' + cat.id + '" class="form-control" min="0" step="50" placeholder="Введите цену"></div>';
+            addFormHtml += '<button class="btn btn-primary" onclick="addTariff(' + cat.id + ')"><i class="fas fa-plus"></i> Добавить тариф</button>';
+            addFormHtml += '</div>';
+        }
+
+        const seats = cat.seat_count_display || cat.capacity;
+        const floorsLine = (cat.floor_labels && cat.floor_labels.length)
+            ? cat.floor_labels.join(', ')
+            : '–';
+        const sizePart = cat.display_size_m ? ` · ${cat.display_size_m}` : '';
+
+        const usageLine = `<div style="font-size:12px;font-weight:400;color:#64748b;margin-top:4px;">
+            <i class="fas fa-chair"></i> ${cat.places_count || 0} шт.
+            · <i class="fas fa-layer-group"></i> ${floorsLine}${sizePart}
+        </div>`;
+
+        return `
+        <div class="tariff-category">
+            <div class="category-header" style="flex-direction:column;align-items:flex-start;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="badge badge-${cat.kind}">${categoryKindLabel(cat.kind)}</span>
+                    ${cat.name} – ${seats} мест
+                </div>
+                ${usageLine}
+            </div>
+            <div class="tariff-list">
+                ${tariffsHtml}
+            </div>
+            ${addFormHtml}
+        </div>
+        `;
+    }).join('');
+}
+
+// Обновление цены тарифа
+async function updateTariffPrice(tariffId) {
+    const priceInput = document.getElementById(`price-${tariffId}`);
+    const price = parseFloat(priceInput.value);
+
+    if (isNaN(price) || price < 0) {
+        showAlert('Введите корректную цену', 'error');
+        return;
+    }
+
+    try {
+        const r = await fetch(`/api/admin/tariffs/${tariffId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ price: price })
+        });
+        const d = await r.json();
+        if (d.success) {
+            showAlert('Цена обновлена', 'success');
+            loadData();
+        } else {
+            showAlert(d.error || 'Ошибка', 'error');
+        }
+    } catch (e) {
+        showAlert('Ошибка сохранения', 'error');
+    }
+}
+
+// Переключение активности тарифа
+async function toggleTariffActive(tariffId, active) {
+    try {
+        const r = await fetch(`/api/admin/tariffs/${tariffId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: active })
+        });
+        const d = await r.json();
+        if (d.success) {
+            showAlert(active ? 'Тариф активирован' : 'Тариф деактивирован', 'success');
+            loadData();
+        } else {
+            showAlert(d.error || 'Ошибка', 'error');
+        }
+    } catch (e) {
+        showAlert('Ошибка', 'error');
+    }
+}
+
+// Удаление тарифа
+async function deleteTariff(tariffId) {
+    showConfirm('Вы уверены, что хотите удалить этот тариф?', async () => {
+        try {
+            const r = await fetch(`/api/admin/tariffs/${tariffId}`, { method: 'DELETE' });
+            const d = await r.json();
+            if (d.success) {
+                showAlert('Тариф удален', 'success');
+                loadData();
+            } else {
+                showAlert(d.error || 'Ошибка', 'error');
+            }
+        } catch (e) {
+            showAlert('Ошибка удаления', 'error');
+        }
+    }, 'Удаление тарифа');
+}
+
+// Добавление нового тарифа
+async function addTariff(categoryId) {
+    const typeSelect = document.getElementById(`new-type-${categoryId}`);
+    const priceInput = document.getElementById(`new-price-${categoryId}`);
+
+    const tariffType = typeSelect.value;
+    const price = parseFloat(priceInput.value);
+
+    if (!tariffType) {
+        showAlert('Выберите тип тарифа', 'error');
+        return;
+    }
+    if (isNaN(price) || price <= 0) {
+        showAlert('Введите корректную цену', 'error');
+        return;
+    }
+
+    try {
+        const r = await fetch(`/api/admin/categories/${categoryId}/tariffs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tariff_type: tariffType, price: price })
+        });
+        const d = await r.json();
+        if (d.success) {
+            showAlert('Тариф добавлен', 'success');
+            priceInput.value = '';
+            loadData();
+        } else {
+            showAlert(d.error || 'Ошибка', 'error');
+        }
+    } catch (e) {
+        showAlert('Ошибка создания', 'error');
+    }
+}
+
+// Уведомления
+function showAlert(message, type) {
+    const container = document.getElementById('flashes-container') || document.body;
+    const el = document.createElement('div');
+    el.className = `alert alert-${type}`;
+    el.style.cssText = 'position:fixed;top:20px;right:20px;padding:16px 20px;border-radius:8px;z-index:9999;max-width:400px;';
+    el.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+    el.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+
+// Модальное окно подтверждения
+let modalCallback = null;
+
+function showConfirm(message, callback, title = 'Подтверждение') {
+    let modal = document.getElementById('confirm-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'confirm-modal';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
+        modal.innerHTML = `
+            <div style="background:white; border-radius:16px; width:90%; max-width:400px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3); animation:modalIn 0.3s ease;">
+                <div style="width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px; background:#fef3c7; color:#f59e0b;"><i class="fas fa-question-circle"></i></div>
+                <h3 id="modal-title" style="margin:0 0 12px; font-size:18px; color:#1e293b;">${title}</h3>
+                <p id="modal-message" style="margin:0 0 20px; color:#64748b; font-size:14px; line-height:1.5;">${message}</p>
+                <div style="display:flex; gap:12px;">
+                    <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; background:#f1f5f9; color:#64748b;">Отмена</button>
+                    <button onclick="confirmModalAction()" style="flex:1; padding:12px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; background:#8fa67a; color:white;">Подтвердить</button>
+                </div>
+            </div>
+            <style>@keyframes modalIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }</style>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.querySelector('h3').textContent = title;
+        modal.querySelector('p').textContent = message;
+    }
+
+    modalCallback = callback;
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) modal.style.display = 'none';
+    modalCallback = null;
+}
+
+function confirmModalAction() {
+    if (modalCallback) {
+        modalCallback();
+        modalCallback = null;
+    }
+    closeModal();
+}
+
+// Закрытие по клику вне окна
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('confirm-modal');
+    if (e.target === modal) closeModal();
+});
+
+// Инициализация
+loadData();
+</script>
+{% endblock %}

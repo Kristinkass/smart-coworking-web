@@ -1,0 +1,70 @@
+<mxfile host="app.diagrams.net" agent="design-export" version="22.1.0" type="device">
+  <diagram id="bpmn-subscription" name="Оформление абонемента">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1760" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Процесс «Оформление абонемента клиентом»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="10" width="900" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lane_actor" value="Клиент" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1680" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane_system" value="Система" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="1680" height="290" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="start" value="Начало" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="t1" value="Открыть раздел «Тарифы и абонементы»" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="135" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t2" value="Выбрать абонемент (период, места, лимит часов)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="300" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t3" value="Нажать «Оформить абонемент»" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="465" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t4" value="Просмотр активного абонемента" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="133" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="end_ok" value="Абонемент оформлен" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="s1" value="Проверить параметры абонемента" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="465" y="360" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="g1" value="Параметры корректны?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="650" y="357" width="100" height="68" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2" value="Создать абонемент (даты действия, лимит часов)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="790" y="355" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3" value="Перевести клиента в режим «по абонементу»" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="990" y="355" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s4" value="Сохранить абонемент в хранилище данных" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="355" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="err1" value="Отказ: неверные параметры" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="682" y="480" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ec0" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="start" target="t1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t1" target="t2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t2" target="t3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec3" value="параметры абонемента" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="t3" target="s1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s1" target="g1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es2" value="Да" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="g1" target="s2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es3" value="Нет" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="g1" target="err1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es4" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es5" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es6" value="абонемент активен" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="s4" target="t4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t4" target="end_ok"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

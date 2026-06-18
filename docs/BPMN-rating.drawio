@@ -1,0 +1,88 @@
+<mxfile host="Electron" agent="cursor">
+  <diagram id="bpmn-rating" name="BPMN Оценка места">
+    <mxGraphModel dx="1144" dy="696" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1850" pageHeight="560" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lane_system" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" value="Система" vertex="1">
+          <mxGeometry height="210" width="1740" x="40" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" value="BPMN: процесс «Пост-арендная оценка места и обновление рейтинга»" vertex="1">
+          <mxGeometry height="28" width="980" x="280" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_client" parent="1" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" value="Клиент" vertex="1">
+          <mxGeometry height="190" width="1740" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Нажать «Оценить»" vertex="1">
+          <mxGeometry height="55" width="130" x="605" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Просмотр обновлённого рейтинга места" vertex="1">
+          <mxGeometry height="55" width="160" x="1200" y="65.5" as="geometry" />
+        </mxCell>
+        <mxCell id="end_ok" parent="lane_client" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" value="Оценка сохранена" vertex="1">
+          <mxGeometry height="36" width="36" x="1460" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="ec6" edge="1" parent="lane_client" source="t6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="end_ok">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Обновить отображение рейтинга на карте" vertex="1">
+          <mxGeometry height="60" width="160" x="1200" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Обновить rating и rating_count места" vertex="1">
+          <mxGeometry height="60" width="150" x="1000" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="es3" edge="1" parent="lane_client" source="s3" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Пересчитать средний рейтинг" vertex="1">
+          <mxGeometry height="60" width="160" x="790" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="es2" edge="1" parent="lane_client" source="s2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="lane_client" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Сохранить оценку в БД (ratings, bookings.user_rating)" vertex="1">
+          <mxGeometry height="60" width="150" x="595" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="ec4" edge="1" parent="lane_client" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="560" y="92.5" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ec5" edge="1" parent="lane_client" source="t5" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="s1" value="Оценка">
+          <mxGeometry relative="1" x="-0.1765" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="es1" edge="1" parent="lane_client" source="s1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="es4" edge="1" parent="lane_client" source="s4" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="t6" value="Обновлённый рейтинг">
+          <mxGeometry relative="1" x="0.1799" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;" value="Начало" vertex="1">
+          <mxGeometry height="36" width="36" x="80" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Открыть «История бронирований»" vertex="1">
+          <mxGeometry height="55" width="130" x="135" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Выбрать завершённое бронирование" vertex="1">
+          <mxGeometry height="55" width="130" x="300" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" value="Установить оценку (1–5)" vertex="1">
+          <mxGeometry height="55" width="130" x="465" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="ec0" edge="1" parent="1" source="start" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec1" edge="1" parent="1" source="t1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ec2" edge="1" parent="1" source="t2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="t3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

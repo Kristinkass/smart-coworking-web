@@ -18,10 +18,10 @@
             {% if not current_user.is_authenticated %}
             <div class="auth-buttons">
                 <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-user-plus"></i> Забронировать
+                    <i class="fas fa-user-plus"></i> Регистрация
                 </a>
                 <a href="{{ url_for('login') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-sign-in-alt"></i> Уже есть аккаунт
+                    <i class="fas fa-sign-in-alt"></i> Вход
                 </a>
             </div>
             {% else %}
@@ -48,7 +48,7 @@
                 <div class="step-number">1</div>
                 <div class="step-content">
                     <h3>Зарегистрируйтесь</h3>
-                    <p>Создайте аккаунт за 1 минуту. Укажите только email и пароль</p>
+                    <p>Создайте аккаунт</p>
                 </div>
             </div>
             <div class="step">
@@ -69,7 +69,7 @@
                 <div class="step-number">4</div>
                 <div class="step-content">
                     <h3>Наслаждайтесь работой</h3>
-                    <p>Приходите в указанное время и занимайте свое место</p>
+                    <p>Приходите немного раньше, оплатите бронь на ресепшене и занимайте свое место</p>
                 </div>
             </div>
         </div>
@@ -85,7 +85,7 @@
 
 /* Welcome section */
 .welcome-section {
-    background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    background: #8fa67a;
     border-radius: 20px;
     padding: 60px 40px;
     color: white;
@@ -93,7 +93,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 60px;
-    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 12px 28px rgba(111, 133, 92, 0.25);
 }
 
 .welcome-content {
@@ -135,7 +135,7 @@
 
 .btn-primary {
     background: white;
-    color: #3B82F6;
+    color: #8fa67a;
     border: none;
 }
 
@@ -196,7 +196,7 @@
 .step-number {
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+    background: #8fa67a;
     border-radius: 50%;
     display: flex;
     align-items: center;

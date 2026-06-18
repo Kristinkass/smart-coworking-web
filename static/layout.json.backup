@@ -1,0 +1,1369 @@
+{
+  "coworking": {
+    "name": "Умный Коворкинг",
+    "address": "г. Пример, ул. Примерная, д. 1"
+  },
+  "floors": [
+    {
+      "id": 1,
+      "number": 1,
+      "name": "1-й этаж",
+      "width": 2240,
+      "height": 1344
+    },
+    {
+      "id": 2,
+      "number": 2,
+      "name": "2-й этаж",
+      "width": 2240,
+      "height": 1344
+    },
+    {
+      "id": 3,
+      "number": 3,
+      "name": "3-й этаж",
+      "width": 2240,
+      "height": 1344
+    }
+  ],
+  "grid": {
+    "cols": 80,
+    "rows": 48,
+    "cell": 28
+  },
+  "places": [
+    {
+      "code": "1Б-04",
+      "name": "Переговорная (20 мест)",
+      "location": "1Б",
+      "kind": "room",
+      "x": 77.3333740234375,
+      "y": 991.9998779296875,
+      "width": 450,
+      "height": 240,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 8
+    },
+    {
+      "code": "1Б-05",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1312.0,
+      "y": 1078.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 5
+    },
+    {
+      "code": "1Б-06",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1085.0,
+      "y": 1289.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-07",
+      "name": "Стол на 2 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 2135.9998779296875,
+      "y": 1040.0,
+      "width": 100,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 8
+    },
+    {
+      "code": "1Б-08",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1775.0001220703125,
+      "y": 1187.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 5
+    },
+    {
+      "code": "1Б-09",
+      "name": "Стол на 4 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 2113.9998779296875,
+      "y": 1238.0,
+      "width": 120,
+      "height": 100,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 3
+    },
+    {
+      "code": "1Б-10",
+      "name": "Переговорная (14 мест)",
+      "location": "1Б",
+      "kind": "room",
+      "x": 1835.0,
+      "y": 126.0,
+      "width": 350,
+      "height": 120,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 20
+    },
+    {
+      "code": "1Б-12",
+      "name": "Переговорная (14 мест)",
+      "location": "1Б",
+      "kind": "room",
+      "x": 61.0,
+      "y": 116.0,
+      "width": 350,
+      "height": 120,
+      "rotation": 0.0,
+      "floor": 2,
+      "category_id": 20
+    },
+    {
+      "code": "1Б-13",
+      "name": "Стол на 6 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1580.0,
+      "y": 44.999996185302734,
+      "width": 180,
+      "height": 100,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 4
+    },
+    {
+      "code": "1Б-15",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1958.9998779296875,
+      "y": 45.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 5
+    },
+    {
+      "code": "1Б-16",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1957.9998779296875,
+      "y": 259.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 5
+    },
+    {
+      "code": "1Б-19",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1399.0,
+      "y": 191.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-20",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1400.0,
+      "y": 278.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-21",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1400.0,
+      "y": 360.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-22",
+      "name": "Стол на 6 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1625.0,
+      "y": 874.0,
+      "width": 180,
+      "height": 100,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 4
+    },
+    {
+      "code": "1Б-23",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1624.0,
+      "y": 1218.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 11
+    },
+    {
+      "code": "1Б-24",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1986.9998779296875,
+      "y": 1220.9999389648438,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 11
+    },
+    {
+      "code": "1Б-26",
+      "name": "Стол на 4 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 2116.9998779296875,
+      "y": 995.0000610351562,
+      "width": 120,
+      "height": 100,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-27",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1230.0,
+      "y": 1289.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-28",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1442.0,
+      "y": 1289.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-31",
+      "name": "Стол на 4 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 3.0,
+      "y": 1156.0,
+      "width": 120,
+      "height": 100,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-32",
+      "name": "Стол на 4 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 382.0,
+      "y": 1162.0,
+      "width": 120,
+      "height": 100,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-33",
+      "name": "Переговорная (20 мест)",
+      "location": "1Б",
+      "kind": "room",
+      "x": 81.0,
+      "y": 99.0,
+      "width": 450,
+      "height": 240,
+      "rotation": 0.0,
+      "floor": 3,
+      "category_id": 22
+    },
+    {
+      "code": "1Б-34",
+      "name": "Стол на 6 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 3.0,
+      "y": 903.0,
+      "width": 180,
+      "height": 100,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 10
+    },
+    {
+      "code": "1Б-35",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 5.0,
+      "y": 1220.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 11
+    },
+    {
+      "code": "1Б-36",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 592.0,
+      "y": 904.0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 11
+    },
+    {
+      "code": "1Б-38",
+      "name": "Стол на 6 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 662.0,
+      "y": 1131.0,
+      "width": 180,
+      "height": 100,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 10
+    },
+    {
+      "code": "1Б-39",
+      "name": "Стол складной",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 5.0,
+      "y": 1042.0,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 7
+    },
+    {
+      "code": "1Б-40",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 340.0,
+      "y": 1291.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-41",
+      "name": "Стол статичный",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 559.0,
+      "y": 1291.0,
+      "width": 100,
+      "height": 50,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-42",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1080,
+      "y": 0,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-43",
+      "name": "Стол на 8 мест",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1280,
+      "y": 0,
+      "width": 250,
+      "height": 120,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 5
+    },
+    {
+      "code": "1Б-44",
+      "name": "Стол на 4 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1084.9998779296875,
+      "y": 203.99998474121094,
+      "width": 120,
+      "height": 100,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 3
+    },
+    {
+      "code": "1Б-45",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1551.666748046875,
+      "y": 173.33334350585938,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 3,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-46",
+      "name": "Дрочильня",
+      "location": "1Б",
+      "kind": "space",
+      "x": 849.0,
+      "y": 5.0,
+      "width": 500,
+      "height": 500,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-47",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 914,
+      "y": 60,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-48",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 994,
+      "y": 60,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-49",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1074,
+      "y": 60,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-50",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1154,
+      "y": 60,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-51",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1234,
+      "y": 60,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-52",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 914,
+      "y": 165,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-53",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 994,
+      "y": 165,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-54",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1074,
+      "y": 165,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-55",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1154,
+      "y": 165,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-56",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1234,
+      "y": 165,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-60",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1154,
+      "y": 270,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-61",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1234,
+      "y": 270,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-62",
+      "name": "Дима",
+      "location": "1Б",
+      "kind": "space",
+      "x": 231.00003051757812,
+      "y": 44.00001525878906,
+      "width": 400,
+      "height": 300,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-63",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 356.0,
+      "y": 189.0,
+      "width": 50,
+      "height": 75,
+      "rotation": 0.0,
+      "floor": 1
+    },
+    {
+      "code": "1Б-64",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 193,
+      "y": 1047,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-65",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 157,
+      "y": 1070,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-66",
+      "name": "Дрочильня",
+      "location": "1Б",
+      "kind": "space",
+      "x": 621.0,
+      "y": 561.0,
+      "width": 500,
+      "height": 500,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-67",
+      "name": "Лютая VIP дрочильня",
+      "location": "1Б",
+      "kind": "space",
+      "x": 676.0,
+      "y": 333.0,
+      "width": 400,
+      "height": 300,
+      "rotation": 0.0,
+      "floor": 2,
+      "category_id": 9
+    },
+    {
+      "code": "1Б-68",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 800,
+      "y": 386,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-69",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 969,
+      "y": 421,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-70",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 803,
+      "y": 498,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-71",
+      "name": "Стол на 2 места",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 900,
+      "y": 502,
+      "width": 100,
+      "height": 75,
+      "rotation": 0,
+      "floor": 2,
+      "category_id": 2
+    },
+    {
+      "code": "1Б-72",
+      "name": "Дрочильня стол",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 796,
+      "y": 748,
+      "width": 100,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 10
+    },
+    {
+      "code": "1Б-73",
+      "name": "Дрочильня стол",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 646,
+      "y": 682,
+      "width": 100,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 10
+    },
+    {
+      "code": "1Б-74",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 975,
+      "y": 734,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-75",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 902,
+      "y": 935,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-76",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 764.0,
+      "y": 859.0,
+      "width": 50,
+      "height": 75,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-77",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 1017.0,
+      "y": 846.0,
+      "width": 50,
+      "height": 75,
+      "rotation": 0.0,
+      "floor": 1,
+      "category_id": 1
+    },
+    {
+      "code": "1Б-78",
+      "name": "Стол складной (1 место)",
+      "location": "1Б",
+      "kind": "desk",
+      "x": 822,
+      "y": 593,
+      "width": 50,
+      "height": 75,
+      "rotation": 0,
+      "floor": 1,
+      "category_id": 1
+    }
+  ],
+  "walls": [
+    {
+      "id": 1,
+      "x1": 0,
+      "y1": 0,
+      "x2": 2240,
+      "y2": 0,
+      "protected": true,
+      "floor": 1
+    },
+    {
+      "id": 2,
+      "x1": 2240,
+      "y1": 0,
+      "x2": 2240,
+      "y2": 1344,
+      "protected": true,
+      "floor": 1
+    },
+    {
+      "id": 3,
+      "x1": 2240,
+      "y1": 1344,
+      "x2": 0,
+      "y2": 1344,
+      "protected": true,
+      "floor": 1
+    },
+    {
+      "id": 4,
+      "x1": 0,
+      "y1": 1344,
+      "x2": 0,
+      "y2": 0,
+      "protected": true,
+      "floor": 1
+    },
+    {
+      "id": 5,
+      "x1": 0,
+      "y1": 445,
+      "x2": 845,
+      "y2": 445,
+      "floor": 1
+    },
+    {
+      "id": 6,
+      "x1": 845,
+      "y1": 0,
+      "x2": 845,
+      "y2": 445,
+      "floor": 1
+    },
+    {
+      "id": 7,
+      "x1": 1750,
+      "y1": 0,
+      "x2": 1750,
+      "y2": 385,
+      "floor": 1
+    },
+    {
+      "id": 8,
+      "x1": 1750,
+      "y1": 385,
+      "x2": 2240,
+      "y2": 385,
+      "floor": 1
+    },
+    {
+      "id": 9,
+      "x1": 0,
+      "y1": 870,
+      "x2": 620,
+      "y2": 870,
+      "floor": 1
+    },
+    {
+      "id": 10,
+      "x1": 620,
+      "y1": 870,
+      "x2": 620,
+      "y2": 1344,
+      "floor": 1
+    },
+    {
+      "id": 11,
+      "x1": 1080,
+      "y1": 1035,
+      "x2": 1605,
+      "y2": 1035,
+      "floor": 1
+    },
+    {
+      "id": 12,
+      "x1": 1080,
+      "y1": 1035,
+      "x2": 1080,
+      "y2": 1344,
+      "floor": 1
+    },
+    {
+      "id": 13,
+      "x1": 1605,
+      "y1": 1035,
+      "x2": 1605,
+      "y2": 1344,
+      "floor": 1
+    },
+    {
+      "id": 14,
+      "x1": 1735,
+      "y1": 1035,
+      "x2": 2240,
+      "y2": 1035,
+      "floor": 1
+    },
+    {
+      "id": 15,
+      "x1": 1735,
+      "y1": 1035,
+      "x2": 1735,
+      "y2": 1344,
+      "floor": 1
+    },
+    {
+      "id": 16,
+      "x1": 2240,
+      "y1": 0,
+      "x2": 0,
+      "y2": 0,
+      "protected": true,
+      "floor": 2
+    },
+    {
+      "id": 17,
+      "x1": 0,
+      "y1": 0,
+      "x2": 0,
+      "y2": 1344,
+      "protected": true,
+      "floor": 2
+    },
+    {
+      "id": 18,
+      "x1": 0,
+      "y1": 1344,
+      "x2": 2240,
+      "y2": 1344,
+      "protected": true,
+      "floor": 2
+    },
+    {
+      "id": 19,
+      "x1": 2240,
+      "y1": 1344,
+      "x2": 2240,
+      "y2": 0,
+      "protected": true,
+      "floor": 2
+    },
+    {
+      "id": 20,
+      "x1": 2240,
+      "y1": 445,
+      "x2": 1395,
+      "y2": 445,
+      "floor": 2
+    },
+    {
+      "id": 21,
+      "x1": 1395,
+      "y1": 0,
+      "x2": 1395,
+      "y2": 445,
+      "floor": 2
+    },
+    {
+      "id": 22,
+      "x1": 490,
+      "y1": 0,
+      "x2": 490,
+      "y2": 385,
+      "floor": 2
+    },
+    {
+      "id": 23,
+      "x1": 490,
+      "y1": 385,
+      "x2": 0,
+      "y2": 385,
+      "floor": 2
+    },
+    {
+      "id": 24,
+      "x1": 2240,
+      "y1": 870,
+      "x2": 1620,
+      "y2": 870,
+      "floor": 2
+    },
+    {
+      "id": 25,
+      "x1": 1620,
+      "y1": 870,
+      "x2": 1620,
+      "y2": 1344,
+      "floor": 2
+    },
+    {
+      "id": 26,
+      "x1": 1160,
+      "y1": 1035,
+      "x2": 635,
+      "y2": 1035,
+      "floor": 2
+    },
+    {
+      "id": 27,
+      "x1": 1160,
+      "y1": 1035,
+      "x2": 1160,
+      "y2": 1344,
+      "floor": 2
+    },
+    {
+      "id": 28,
+      "x1": 635,
+      "y1": 1035,
+      "x2": 635,
+      "y2": 1344,
+      "floor": 2
+    },
+    {
+      "id": 29,
+      "x1": 505,
+      "y1": 1035,
+      "x2": 0,
+      "y2": 1035,
+      "floor": 2
+    },
+    {
+      "id": 30,
+      "x1": 505,
+      "y1": 1035,
+      "x2": 505,
+      "y2": 1344,
+      "floor": 2
+    },
+    {
+      "id": 31,
+      "x1": 0,
+      "y1": 1344,
+      "x2": 2240,
+      "y2": 1344,
+      "protected": true,
+      "floor": 3
+    },
+    {
+      "id": 32,
+      "x1": 2240,
+      "y1": 1344,
+      "x2": 2240,
+      "y2": 0,
+      "protected": true,
+      "floor": 3
+    },
+    {
+      "id": 33,
+      "x1": 2240,
+      "y1": 0,
+      "x2": 0,
+      "y2": 0,
+      "protected": true,
+      "floor": 3
+    },
+    {
+      "id": 34,
+      "x1": 0,
+      "y1": 0,
+      "x2": 0,
+      "y2": 1344,
+      "protected": true,
+      "floor": 3
+    },
+    {
+      "id": 35,
+      "x1": 0,
+      "y1": 899,
+      "x2": 845,
+      "y2": 899,
+      "floor": 3
+    },
+    {
+      "id": 36,
+      "x1": 845,
+      "y1": 1344,
+      "x2": 845,
+      "y2": 899,
+      "floor": 3
+    },
+    {
+      "id": 37,
+      "x1": 1750,
+      "y1": 1344,
+      "x2": 1750,
+      "y2": 959,
+      "floor": 3
+    },
+    {
+      "id": 38,
+      "x1": 1750,
+      "y1": 959,
+      "x2": 2240,
+      "y2": 959,
+      "floor": 3
+    },
+    {
+      "id": 39,
+      "x1": 0,
+      "y1": 474,
+      "x2": 620,
+      "y2": 474,
+      "floor": 3
+    },
+    {
+      "id": 40,
+      "x1": 620,
+      "y1": 474,
+      "x2": 620,
+      "y2": 0,
+      "floor": 3
+    },
+    {
+      "id": 41,
+      "x1": 1080,
+      "y1": 309,
+      "x2": 1605,
+      "y2": 309,
+      "floor": 3
+    },
+    {
+      "id": 42,
+      "x1": 1080,
+      "y1": 309,
+      "x2": 1080,
+      "y2": 0,
+      "floor": 3
+    },
+    {
+      "id": 43,
+      "x1": 1605,
+      "y1": 309,
+      "x2": 1605,
+      "y2": 0,
+      "floor": 3
+    },
+    {
+      "id": 44,
+      "x1": 1735,
+      "y1": 309,
+      "x2": 2240,
+      "y2": 309,
+      "floor": 3
+    },
+    {
+      "id": 45,
+      "x1": 1735,
+      "y1": 309,
+      "x2": 1735,
+      "y2": 0,
+      "floor": 3
+    }
+  ],
+  "doors": [
+    {
+      "id": 1,
+      "wall_id": 5,
+      "position": 0.4863905325443787,
+      "width": 170,
+      "floor": 1
+    },
+    {
+      "id": 2,
+      "wall_id": 9,
+      "position": 0.78,
+      "width": 170,
+      "floor": 1
+    },
+    {
+      "id": 3,
+      "wall_id": 11,
+      "position": 0.18,
+      "width": 170,
+      "floor": 1
+    },
+    {
+      "id": 4,
+      "wall_id": 14,
+      "position": 0.2,
+      "width": 170,
+      "floor": 1
+    },
+    {
+      "id": 5,
+      "wall_id": 7,
+      "position": 0.72,
+      "width": 150,
+      "floor": 1
+    },
+    {
+      "id": 6,
+      "wall_id": 4,
+      "position": 0.5,
+      "width": 180,
+      "floor": 1
+    },
+    {
+      "id": 7,
+      "wall_id": 20,
+      "position": 0.42000000000000004,
+      "width": 170,
+      "floor": 2
+    },
+    {
+      "id": 8,
+      "wall_id": 24,
+      "position": 0.21999999999999997,
+      "width": 170,
+      "floor": 2
+    },
+    {
+      "id": 9,
+      "wall_id": 26,
+      "position": 0.8200000000000001,
+      "width": 170,
+      "floor": 2
+    },
+    {
+      "id": 10,
+      "wall_id": 29,
+      "position": 0.8,
+      "width": 170,
+      "floor": 2
+    },
+    {
+      "id": 11,
+      "wall_id": 22,
+      "position": 0.28,
+      "width": 150,
+      "floor": 2
+    },
+    {
+      "id": 12,
+      "wall_id": 17,
+      "position": 0.5,
+      "width": 180,
+      "floor": 2
+    },
+    {
+      "id": 13,
+      "wall_id": 35,
+      "position": 0.42000000000000004,
+      "width": 170,
+      "floor": 3
+    },
+    {
+      "id": 14,
+      "wall_id": 39,
+      "position": 0.21999999999999997,
+      "width": 170,
+      "floor": 3
+    },
+    {
+      "id": 15,
+      "wall_id": 41,
+      "position": 0.8200000000000001,
+      "width": 170,
+      "floor": 3
+    },
+    {
+      "id": 16,
+      "wall_id": 44,
+      "position": 0.8,
+      "width": 170,
+      "floor": 3
+    },
+    {
+      "id": 17,
+      "wall_id": 37,
+      "position": 0.28,
+      "width": 150,
+      "floor": 3
+    },
+    {
+      "id": 18,
+      "wall_id": 34,
+      "position": 0.5,
+      "width": 180,
+      "floor": 3
+    }
+  ]
+}

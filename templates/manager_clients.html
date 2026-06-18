@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Клиенты – Умный Коворкинг{% endblock %}
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <a href="{{ url_for('booking_module_hub.hub') if current_user.is_manager() else url_for('admin_dashboard') }}" class="btn btn-outline-secondary" style="margin-right:12px;">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+        <h1><i class="fas fa-users"></i> Клиенты</h1>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-success" onclick="openQuickRegister()">
+                <i class="fas fa-user-plus"></i> Быстрая регистрация
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно быстрой регистрации -->
+    <div id="quick-register-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:12px; padding:24px; width:400px; max-width:90%; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom:16px;"><i class="fas fa-user-plus"></i> Быстрая регистрация клиента</h3>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Имя <span style="color:#ef4444">*</span></label>
+                <input type="text" id="qr-username" class="form-control" placeholder="Иван Иванов">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Телефон <span style="color:#ef4444">*</span></label>
+                <input type="tel" id="qr-phone" class="form-control phone-mask" placeholder="+7 999 123 45 67">
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+                <label>Почта</label>
+                <input type="email" id="qr-email" class="form-control" placeholder="optional@email.com">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-outline-secondary" onclick="closeQuickRegister()">Отмена</button>
+                <button class="btn btn-primary" onclick="submitQuickRegister()">Создать</button>
+            </div>
+            <div id="qr-result" style="margin-top:12px; font-size:13px; color:#475569; display:none;"></div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Имя</th>
+                    <th>Почта</th>
+                    <th>Телефон</th>
+                    <th>Дата регистрации</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email or '—' }}</td>
+                    <td>{{ format_phone(user.phone) or '-' }}</td>
+                    <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td>
+                        <span class="status-badge {% if user.active %}status-active{% else %}status-cancelled{% endif %}">
+                            {% if user.active %}Активен{% else %}Заблокирован{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center; color:#6b7280; padding:24px;">Клиентов пока нет</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function openQuickRegister() {
+    document.getElementById('quick-register-modal').style.display = 'flex';
+    document.getElementById('qr-result').style.display = 'none';
+    document.getElementById('qr-username').value = '';
+    document.getElementById('qr-phone').value = '';
+    document.getElementById('qr-email').value = '';
+}
+function closeQuickRegister() {
+    document.getElementById('quick-register-modal').style.display = 'none';
+}
+async function submitQuickRegister() {
+    const username = document.getElementById('qr-username').value.trim();
+    const phone = document.getElementById('qr-phone').value.trim();
+    const email = document.getElementById('qr-email').value.trim();
+
+    if (!username || !phone) {
+        showToast('Имя и телефон обязательны', 'warning');
+        return;
+    }
+    try {
+        const r = await fetch('/api/admin/quick_register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, phone, email })
+        });
+        const d = await r.json();
+        const resEl = document.getElementById('qr-result');
+        resEl.style.display = 'block';
+        if (d.success) {
+            resEl.innerHTML = `<div style="color:#4d8f5f; font-weight:600;"><i class="fas fa-check-circle"></i> ${d.message}</div>`;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            resEl.innerHTML = `<div style="color:#c75050;"><i class="fas fa-times-circle"></i> ${d.error || 'Ошибка'}</div>`;
+        }
+    } catch (e) {
+        showToast('Ошибка: ' + e.message, 'error');
+    }
+}
+</script>
+{% endblock %}

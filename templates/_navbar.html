@@ -1,0 +1,69 @@
+{# active_page: dashboard | map | admin | manager | home (optional, auto from request.endpoint) #}
+{% set ep = request.endpoint or '' %}
+{% set active = active_page|default('') %}
+{% if not active %}
+    {% if ep == 'dashboard' %}{% set active = 'dashboard' %}
+    {% elif ep == 'map_view' %}{% set active = 'map' %}
+    {% elif ep and (ep.startswith('admin_') or ep == 'admin_dashboard') %}{% set active = 'admin' %}
+    {% elif ep and ('manager' in ep or ep.endswith('module_hub.hub')) %}{% set active = 'manager' %}
+    {% elif ep == 'index' %}{% set active = 'home' %}
+    {% endif %}
+{% endif %}
+
+<nav class="navbar" id="site-navbar">
+    <div class="container navbar-inner">
+        <a href="{{ url_for('index') }}" class="logo">
+            <i class="fas fa-building"></i>
+            <span>Умный Коворкинг</span>
+        </a>
+
+        <button type="button" class="nav-toggle" id="nav-toggle"
+                aria-label="Открыть меню" aria-expanded="false" aria-controls="nav-drawer">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+        </button>
+
+        <div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+
+        <div class="nav-drawer" id="nav-drawer">
+            <div class="nav-drawer-head">
+                <span class="nav-drawer-title">Меню</span>
+                <button type="button" class="nav-drawer-close" id="nav-close" aria-label="Закрыть меню">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="nav-menu">
+                {% if current_user.is_authenticated %}
+                    <span class="nav-user-chip">
+                        <i class="fas fa-user-circle"></i>
+                        {{ current_user.username }}
+                    </span>
+                    <a href="{{ url_for('dashboard') }}" class="{% if active == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-user"></i> Личный кабинет
+                    </a>
+                    <a href="{{ url_for('map_view') }}" class="{% if active == 'map' %}active{% endif %}">
+                        <i class="fas fa-map"></i> Карта
+                    </a>
+                    {% if current_user.is_admin() %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="{% if active == 'admin' %}active{% endif %}">
+                            <i class="fas fa-cog"></i> Админ-панель
+                        </a>
+                    {% elif current_user.is_manager() %}
+                        <a href="{{ url_for('booking_module_hub.hub') }}" class="{% if active == 'manager' %}active{% endif %}">
+                            <i class="fas fa-briefcase"></i> Менеджер
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Вход</a>
+                    <a href="{{ url_for('register') }}" class="register-btn">
+                        <i class="fas fa-user-plus"></i> Регистрация
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

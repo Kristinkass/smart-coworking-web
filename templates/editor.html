@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Редактор планировки – Умный Коворкинг</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif; background:#0f172a; color:#e2e8f0; }
+  .topbar { background:#1e293b; padding:10px 20px; display:flex; align-items:center; gap:14px; border-bottom:2px solid #334155; flex-wrap:wrap; }
+  .topbar h1 { margin:0; font-size:18px; }
+  .topbar .spacer { flex:1; }
+  .topbar a, .topbar button { color:#e2e8f0; text-decoration:none; padding:6px 12px; border-radius:6px; background:#334155; border:none; cursor:pointer; font-size:13px; }
+  .topbar a:hover, .topbar button:hover { background:#475569; }
+  .topbar button.active { background:#f59e0b; color:#1e293b; }
+
+  .layout { display:flex; height: calc(100vh - 50px); }
+  .sidebar { width: 220px; background:#1e293b; border-right:2px solid #334155; padding:12px; overflow-y:auto; }
+  .sidebar h3 { font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin:14px 0 8px; }
+  .tpl { background:#334155; border:2px solid #475569; border-radius:8px; padding:8px; margin-bottom:8px; cursor:grab; user-select:none; transition: all .15s; }
+  .tpl:hover { border-color:#f59e0b; background:#3d4a5e; }
+  .tpl-name { font-size:12px; font-weight:600; text-align:center; }
+  .tpl-meta { font-size:10px; color:#94a3b8; text-align:center; }
+
+  .canvas-wrap { flex:1; position:relative; overflow:auto; background:#0f172a; }
+  #canvas { display:block; background:#f1f5f9; }
+
+  .props { width: 280px; background:#1e293b; border-left:2px solid #334155; padding:12px; overflow-y:auto; }
+  .props h3 { font-size:13px; color:#f1f5f9; margin:0 0 10px; }
+  .props .field { margin-bottom:10px; }
+  .props label { display:block; font-size:11px; color:#94a3b8; margin-bottom:3px; }
+  .props input, .props select { width:100%; padding:6px 8px; background:#0f172a; border:1px solid #334155; border-radius:6px; color:#e2e8f0; font-size:13px; }
+  .props .row { display:flex; gap:8px; }
+  .props .row > * { flex:1; }
+  .props .empty { color:#64748b; font-size:12px; text-align:center; padding:20px 10px; }
+  .btn-block { display:block; width:100%; padding:8px; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:6px; font-size:13px; }
+  .btn-block.del { background:#c75050; color:white; }
+  .suggestions { margin-top:14px; padding-top:12px; border-top:1px solid #334155; }
+  .suggestions .metric { background:#0f172a; border:1px solid #334155; border-radius:8px; padding:8px; margin-bottom:8px; font-size:12px; color:#cbd5e1; }
+  .suggestion-card { background:#334155; border:1px solid #475569; border-radius:8px; padding:8px; margin-bottom:8px; }
+  .suggestion-card.fits { border-color:#22c55e; background:#1e3a2f; }
+  .suggestion-card strong { display:block; color:#f8fafc; font-size:12px; margin-bottom:3px; }
+  .suggestion-card span { display:block; color:#94a3b8; font-size:11px; line-height:1.35; }
+  .suggestion-card button { width:100%; margin-top:8px; border:none; border-radius:6px; padding:6px; background:#22c55e; color:white; font-weight:700; cursor:pointer; font-size:12px; }
+
+  .toast { position:fixed; top:60px; right:20px; padding:10px 16px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.4); z-index:1000; font-size:13px; font-weight:500; }
+  .toast.success { background:#4d8f5f; color:white; }
+  .toast.error { background:#c75050; color:white; }
+  .toast.info { background:#8fa67a; color:white; }
+
+  .confirm-toast {
+    position:fixed; top:60px; right:20px; z-index:1100;
+    background:#1e293b; border:2px solid #c75050; border-radius:10px;
+    padding:12px 14px; max-width:280px; box-shadow:0 8px 24px rgba(0,0,0,.45);
+    display:flex; flex-direction:column; gap:10px; font-size:13px; color:#e2e8f0;
+  }
+  .confirm-toast .confirm-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .confirm-toast button { border:none; border-radius:6px; padding:6px 12px; font-weight:600; cursor:pointer; font-size:12px; }
+  .confirm-toast .confirm-yes { background:#c75050; color:white; }
+  .confirm-toast .confirm-no { background:#334155; color:#cbd5e1; }
+
+  /* Стили модального окна */
+  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.6); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+  .modal-overlay.active { display:flex; }
+  .modal-box { background:#1e293b; border:1px solid #334155; border-radius:12px; width:100%; max-width:400px; padding:24px; color:white; box-shadow:0 10px 25px -5px rgba(0,0,0,0.3); }
+  .modal-box h3 { margin-top:0; color:#f59e0b; margin-bottom:16px; font-size:16px; display:flex; align-items:center; gap:8px; }
+  .modal-box .field { margin-bottom:12px; }
+  .modal-box .field label { display:block; font-size:11px; color:#94a3b8; text-transform:uppercase; margin-bottom:4px; font-weight:600; }
+  .modal-box .field input, .modal-box .field select { width:100%; padding:8px 12px; background:#0f172a; border:1px solid #334155; border-radius:6px; color:white; font-size:13px; }
+  .modal-box .field input:focus, .modal-box .field select:focus { border-color:#8fa67a; outline:none; }
+  .modal-box .row { display:flex; gap:12px; }
+  .modal-box .row .field { flex:1; }
+  .modal-box .actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+  .modal-box .actions button { padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; }
+  .modal-box .actions .btn-cancel { background:#334155; color:#cbd5e1; }
+  .modal-box .actions .btn-cancel:hover { background:#475569; }
+  .modal-box .actions .btn-save { background:#22c55e; color:white; }
+  .modal-box .actions .btn-save:hover { background:#16a34a; }
+
+  .zoombar { position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:4px; z-index:1000; }
+  .zoombar button { width:36px; height:36px; border-radius:8px; border:none; background:#1e293b; color:white; cursor:pointer; font-size:16px; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+
+  .place-rect { cursor:move; }
+  .place-rect:hover { filter: brightness(1.08); }
+  .place-rect.selected { stroke:#f59e0b !important; stroke-width:4 !important; stroke-dasharray:6,3; }
+  .wall-line { stroke:#1e293b; stroke-width:8; stroke-linecap:butt; cursor:pointer; }
+  body.wall-move-mode .wall-line:not(.protected) { cursor:grab; }
+  body.wall-move-mode .wall-line:not(.protected):active { cursor:grabbing; }
+  .wall-line:hover { stroke:#dc2626; }
+  .wall-line.protected { stroke:#475569; cursor: not-allowed; }
+  .wall-line.protected:hover { stroke:#475569; }
+  .door-arc { fill:none; stroke:#b45309; stroke-width:3; stroke-dasharray:5,4; pointer-events:none; }
+  .door-group.selected .door-arc { stroke:#dc2626; stroke-width:4; }
+  .door-frame { stroke:#92400e; stroke-width:5; stroke-linecap:round; pointer-events:none; }
+  .door-group.selected .door-frame { stroke:#dc2626; }
+  .door-gap { stroke:#e2e8f0; stroke-width:12; stroke-linecap:round; pointer-events:none; }
+  .door-hit { stroke:transparent; stroke-width:24; stroke-linecap:round; cursor:pointer; }
+  .door-hit.selected { stroke:rgba(245,158,11,0.35); }
+  .door-orphan { pointer-events:none; }
+
+  .hint { background:#8fa67a; color:white; padding:8px 12px; border-radius:6px; font-size:11px; margin-bottom:10px; line-height:1.4; }
+  .mode-indicator { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; background:#8fa67a; color:white; }
+
+  #rooms-layer rect { pointer-events: all; }
+  #rooms-layer text { user-select: none; -webkit-user-select: none; }
+  #spaces-layer text, #desks-layer text, #canvas text {
+    user-select: none; -webkit-user-select: none; pointer-events: none;
+  }
+  #canvas text::selection, #spaces-layer text::selection, #desks-layer text::selection {
+    fill: currentColor; background: transparent;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1><i class="fas fa-pencil-ruler"></i> Редактор планировки</h1>
+  <span id="mode-label" class="mode-indicator" style="display:none;">Режим стен</span>
+  <div class="spacer"></div>
+  <button onclick="setFloor(1)" id="floor-btn-1">Этаж 1</button>
+  <button onclick="setFloor(2)" id="floor-btn-2">Этаж 2</button>
+  <button onclick="setFloor(3)" id="floor-btn-3">Этаж 3</button>
+  <button onclick="toggleWallMode()" id="btn-wall-mode">Стены</button>
+  <button onclick="toggleWallMoveMode()" id="btn-wall-move">Двигать стены</button>
+  <button onclick="toggleDoorMode()" id="btn-door-mode">Двери</button>
+  <span id="door-width-bar" style="display:none;">
+    <select id="door-width-select" style="padding:6px;border-radius:6px;background:#334155;color:#e2e8f0;border:1px solid #475569;">
+      <option value="100">Дверь 1 м</option>
+      <option value="150">Дверь 1.5 м</option>
+    </select>
+  </span>
+  <button onclick="loadAll()"><i class="fas fa-sync"></i> Обновить</button>
+  <a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-arrow-left"></i> В админку</a>
+  <a href="{{ url_for('map_view') }}"><i class="fas fa-map"></i> На карту</a>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div id="locations-list-panel" style="margin-bottom:14px;">
+      <h3 style="margin-top:0;">Локации на этаже</h3>
+      <div id="locations-list" style="font-size:12px; color:#94a3b8;">Загрузка...</div>
+    </div>
+
+    <div style="margin-bottom:12px; display:flex; gap:8px;">
+      <button onclick="loadCategories()" style="flex:1; padding:8px; background:#8fa67a; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer;">
+        <i class="fas fa-sync"></i> Обновить
+      </button>
+      <a href="{{ url_for('admin_categories') }}" target="_blank" style="flex:1; padding:8px; background:#f59e0b; color:white; border:none; border-radius:6px; font-size:12px; cursor:pointer; text-align:center; text-decoration:none;">
+        <i class="fas fa-cog"></i> Категории
+      </a>
+    </div>
+    <div style="margin-bottom:12px;">
+      <a href="{{ url_for('admin_location_zones') }}" target="_blank" style="display:block; padding:8px; background:#a8b89a; color:white; border-radius:6px; font-size:12px; text-align:center; text-decoration:none;">
+        <i class="fas fa-map-signs"></i> Зоны локаций (A, B, C…)
+      </a>
+    </div>
+    <div id="templates-list">
+      <div class="loading" style="color:#94a3b8; text-align:center; padding:20px;">Загрузка категорий...</div>
+    </div>
+  </aside>
+
+  <div class="canvas-wrap">
+    <svg id="canvas" width="2240" height="1344" viewBox="0 0 2240 1344">
+      <rect x="0" y="0" width="2240" height="1344" fill="#f1f5f9"/>
+      <g id="walls-layer"></g>
+      <g id="rooms-layer"></g>
+      <g id="spaces-layer"></g>
+      <g id="desks-layer"></g>
+      <g id="doors-layer"></g>
+    </svg>
+    <div class="zoombar">
+      <button onclick="zoom(0.2)">+</button>
+      <button onclick="zoomReset()" style="font-size:11px;">1:1</button>
+      <button onclick="zoom(-0.2)">−</button>
+    </div>
+  </div>
+
+  <aside class="props">
+    <div id="props-empty" class="empty">
+      <i class="fas fa-mouse-pointer" style="font-size:32px; color:#475569;"></i>
+      <p>Кликните комнату на карте<br>или перетащите стол в помещение / коридор</p>
+    </div>
+    <div id="props-form" style="display:none;">
+      <div id="draft-banner" style="display:none; background:#422006; border:1px solid #f59e0b; border-radius:8px; padding:8px; margin-bottom:10px; font-size:11px; color:#fcd34d;">
+        <i class="fas fa-exclamation-triangle"></i> Черновик – зафиксируйте локацию
+      </div>
+      <h3 id="prop-title">–</h3>
+      <small id="prop-code-hint" style="display:block;color:#64748b;font-size:11px;margin-bottom:10px;">Код: –</small>
+
+      <div id="location-fields">
+        <div class="field">
+          <label>Зона (буква в коде)</label>
+          <select id="prop-location-zone"></select>
+          <small id="prop-zone-hint" style="display:block;color:#64748b;font-size:11px;margin-top:4px;">
+            A – рабочие столы · B – переговорные. Локация: 1A-L1, стол: 1A-T1
+          </small>
+        </div>
+        <div class="field" id="prop-category-row" style="display:none;">
+          <label>Тип переговорной</label>
+          <select id="prop-category"></select>
+        </div>
+        <p id="prop-desk-zone-hint" style="display:none;font-size:11px;color:#86efac;margin:0 0 10px;">
+          Для зоны столов тип столов выбирается ниже в «Вариантах размещения».
+        </p>
+        <p id="prop-amenity-hint" style="display:none;font-size:11px;color:#94a3b8;margin:0 0 10px;">
+          Служебная зона (отдых, кухня, санузел) – только для карты, без бронирования.
+        </p>
+        <p id="prop-wall-bound-hint" style="display:none;font-size:11px;color:#fcd34d;margin:0 0 10px;">
+          <i class="fas fa-vector-square"></i> Комната задана стенами – двигайте контур через «Двигать стены». Столы внутри можно перетаскивать отдельно.
+        </p>
+        <div class="field" id="prop-enclosed-row" style="display:none;">
+          <input type="checkbox" id="prop-enclosed" checked style="display:none;">
+        </div>
+        <div class="field"><label>Название локации</label><input id="prop-name" type="text" placeholder="Например: Зона столов"></div>
+        <div class="row">
+          <div class="field"><label>Размер (м)</label>
+            <input id="prop-size-m" type="text" readonly style="background:#334155; color:#94a3b8;">
+          </div>
+          <div class="field"><label>Вместимость</label>
+            <input id="prop-cap-display" type="text" readonly style="background:#334155; color:#94a3b8;">
+          </div>
+        </div>
+        <button id="btn-fix-location" class="btn-block" style="display:none; background:#22c55e; color:#0f172a;" onclick="fixLocation()">
+          <i class="fas fa-map-pin"></i> Зафиксировать локацию
+        </button>
+        <button id="btn-save-location" class="btn-block" style="background:#8fa67a; color:white;" onclick="saveLocation()">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button id="btn-delete-location" class="btn-block del" style="display:none;" onclick="deleteLocation()">
+          <i class="fas fa-trash"></i> Удалить локацию
+        </button>
+      </div>
+
+      <div id="desk-multi-fields" style="display:none;"></div>
+
+      <div id="desk-only-fields" style="display:none;">
+        <div class="field"><label>Координаты</label>
+          <div class="row">
+            <input id="prop-x" type="number" readonly style="background:#334155;">
+            <input id="prop-y" type="number" readonly style="background:#334155;">
+          </div>
+        </div>
+        <div class="field"><label>Поворот (°)</label>
+          <input id="prop-rotation" type="number" min="0" max="359" step="90" value="0">
+        </div>
+        <div class="row">
+          <button class="btn-block" style="background:#475569;color:white;" onclick="rotateDesk(-90)">−90°</button>
+          <button class="btn-block" style="background:#475569;color:white;" onclick="rotateDesk(90)">+90°</button>
+        </div>
+        <button class="btn-block" style="background:#8fa67a;color:white;" onclick="saveDesk()">
+          <i class="fas fa-save"></i> Сохранить стол
+        </button>
+
+        <button class="btn-block del" onclick="deleteDesk()">
+          <i class="fas fa-trash"></i> Удалить стол
+        </button>
+      </div>
+
+      <div id="door-only-fields" style="display:none;">
+        <div class="field">
+          <label>Ширина проёма</label>
+          <select id="door-width-edit">
+            <option value="100">1 м – обычная</option>
+            <option value="150">1.5 м – двустворчатая</option>
+          </select>
+        </div>
+        <p style="font-size:11px;color:#94a3b8;margin:0 0 10px;">Перетащите дверь вдоль стены мышью</p>
+        <button class="btn-block del" onclick="deleteDoor()">
+          <i class="fas fa-trash"></i> Удалить дверь
+        </button>
+      </div>
+
+      <div id="layout-helper" class="suggestions" style="display:none;">
+        <h3 id="layout-helper-title">Варианты размещения</h3>
+        <div id="helper-metrics" class="metric"></div>
+        <div id="helper-options"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script src="{{ url_for('static', filename='js/editor/geometry.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/editor/app.js') }}?v=6"></script>
+</body>
+</html>

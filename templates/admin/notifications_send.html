@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Отправка уведомлений – Умный Коворкинг{% endblock %}
+{% block content %}
+{% include "admin/module_hub_styles.html" %}
+<div class="module-page">
+  <div class="module-header">
+    {% include "admin/_nav_back.html" %}
+    <div>
+      <h1><i class="fas fa-bell"></i> Отправка уведомлений</h1>
+      <p>Менеджер и администратор могут отправлять сообщения клиентам. Обращения клиентов из личного кабинета также отображаются в истории ниже.</p>
+    </div>
+  </div>
+
+  <div class="module-stack">
+    <div class="module-section notify-form">
+      <div class="form-group">
+        <label for="notify-title">Заголовок</label>
+        <input type="text" id="notify-title" placeholder="Например: Изменение режима работы">
+      </div>
+      <div class="form-group">
+        <label for="notify-message">Текст уведомления</label>
+        <textarea id="notify-message" placeholder="Введите текст уведомления..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Кому отправить</label>
+        <div class="radio-group">
+          <label class="radio-item checked" onclick="selectAudience(this, 'all')">
+            <input type="radio" name="audience" value="all" checked>
+            <span>Всем</span>
+          </label>
+          <label class="radio-item" onclick="selectAudience(this, 'clients')">
+            <input type="radio" name="audience" value="clients">
+            <span>Всем клиентам</span>
+          </label>
+          <label class="radio-item" onclick="selectAudience(this, 'managers')">
+            <input type="radio" name="audience" value="managers">
+            <span>Менеджерам</span>
+          </label>
+          <label class="radio-item" onclick="selectAudience(this, 'user')">
+            <input type="radio" name="audience" value="user">
+            <span>Конкретному клиенту</span>
+          </label>
+        </div>
+        <p class="notify-hint">Массовые рассылки – для объявлений. Персональное – для напоминаний о брони, абонементе и т.п.</p>
+      </div>
+      <div class="form-group" id="user-select-wrap">
+        <label for="notify-user">Клиент</label>
+        <select id="notify-user">
+          <option value="">– выберите клиента –</option>
+          {% for client in clients %}
+          <option value="{{ client.id }}">{{ client.email }} – {{ client.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="button" class="send-btn" onclick="sendNotification()" id="notify-btn">
+        <i class="fas fa-paper-plane"></i> Отправить уведомление
+      </button>
+      <div class="notify-result" id="notify-result"></div>
+    </div>
+
+    <div class="module-section">
+      <h3 class="module-section-title"><i class="fas fa-history"></i> Системные уведомления</h3>
+      <div class="table-responsive">
+        <table class="module-data-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Заголовок</th>
+              <th>Текст</th>
+              <th>Кому</th>
+              <th>Отправитель</th>
+            </tr>
+          </thead>
+          <tbody id="history-system-tbody">
+            <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="module-section">
+      <h3 class="module-section-title"><i class="fas fa-comment-dots"></i> Обратная связь от клиентов</h3>
+      <div class="table-responsive">
+        <table class="module-data-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Тема</th>
+              <th>Детали</th>
+              <th>Кому</th>
+              <th>Клиент</th>
+            </tr>
+          </thead>
+          <tbody id="history-feedback-tbody">
+            <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectAudience(el, value) {
+      document.querySelectorAll('.radio-item').forEach(r => r.classList.remove('checked'));
+      el.classList.add('checked');
+      el.querySelector('input').checked = true;
+      document.getElementById('user-select-wrap').style.display = value === 'user' ? 'block' : 'none';
+    }
+
+    async function loadHistory() {
+      const systemBody = document.getElementById('history-system-tbody');
+      const feedbackBody = document.getElementById('history-feedback-tbody');
+      if (!systemBody || !feedbackBody) return;
+      systemBody.innerHTML = '<tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>';
+      feedbackBody.innerHTML = '<tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>';
+      try {
+        const r = await fetch('/api/admin/notifications/history?limit=50');
+        const d = await r.json();
+        if (!d.success) throw new Error('load failed');
+        const system = (d.history || []).filter(n => n.kind !== 'feedback');
+        const feedback = (d.history || []).filter(n => n.kind === 'feedback');
+        const audienceMap = { all: 'Все', clients: 'Клиенты', managers: 'Менеджеры', admins: 'Администраторы' };
+        const renderSystemRow = n => `
+          <tr>
+            <td class="cell-date">${n.created_at}</td>
+            <td class="cell-title">${n.title}</td>
+            <td class="cell-text">${n.message}</td>
+            <td>${n.audience_label || audienceMap[n.target_audience] || n.target_audience}</td>
+            <td class="cell-muted">${n.sender_name || '–'}</td>
+          </tr>`;
+        systemBody.innerHTML = system.length
+          ? system.map(renderSystemRow).join('')
+          : '<tr><td colspan="5" class="cell-empty">Системных уведомлений пока нет</td></tr>';
+        feedbackBody.innerHTML = feedback.length
+          ? feedback.map(n => {
+              const bookingDetails = (n.booking?.detail_lines || []).map(line =>
+                `<div class="cell-sub">${line}</div>`
+              ).join('');
+              const path = n.booking?.location?.path
+                ? `<div class="cell-sub"><strong>Где:</strong> ${n.booking.location.path}</div>`
+                : '';
+              return `
+              <tr>
+                <td class="cell-date">${n.created_at}</td>
+                <td class="cell-title">${n.title}</td>
+                <td class="cell-text">
+                  <div class="cell-muted">${n.message}</div>
+                  ${n.booking ? `<div class="cell-sub">${path}${bookingDetails || n.booking.label}</div>` : ''}
+                </td>
+                <td>${n.audience_label || audienceMap[n.target_audience] || n.target_audience}</td>
+                <td>
+                  <div class="cell-muted">${n.sender_name || '–'}</div>
+                  <button type="button" class="feedback-delete-btn" onclick="deleteFeedbackHistory(${n.id})"><i class="fas fa-trash"></i></button>
+                </td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="5" class="cell-empty">Обращений клиентов пока нет</td></tr>';
+      } catch (e) {
+        systemBody.innerHTML = '<tr><td colspan="5" class="cell-error">Ошибка загрузки</td></tr>';
+        feedbackBody.innerHTML = '<tr><td colspan="5" class="cell-error">Ошибка загрузки</td></tr>';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    async function deleteFeedbackHistory(id) {
+      if (!confirm('Удалить обращение из истории?')) return;
+      try {
+        const r = await fetch('/api/notifications/' + id, { method: 'DELETE' });
+        const d = await r.json();
+        if (!d.success) {
+          alert(d.error || 'Не удалось удалить');
+          return;
+        }
+        loadHistory();
+      } catch (e) {
+        alert('Ошибка удаления: ' + e.message);
+      }
+    }
+
+    async function sendNotification() {
+      const title = document.getElementById('notify-title').value.trim();
+      const message = document.getElementById('notify-message').value.trim();
+      const audience = document.querySelector('input[name="audience"]:checked').value;
+      const userId = document.getElementById('notify-user').value;
+      const result = document.getElementById('notify-result');
+      const btn = document.getElementById('notify-btn');
+      if (!title || !message) {
+        result.className = 'notify-result error';
+        result.textContent = 'Заполните заголовок и текст уведомления';
+        return;
+      }
+      if (audience === 'user' && !userId) {
+        result.className = 'notify-result error';
+        result.textContent = 'Выберите клиента для персонального уведомления';
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+      const payload = { title, message };
+      if (audience === 'user') {
+        payload.user_id = parseInt(userId, 10);
+      } else {
+        payload.target_audience = audience;
+      }
+      try {
+        const response = await fetch('/api/admin/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success) {
+          result.className = 'notify-result success';
+          result.textContent = audience === 'user'
+            ? 'Персональное уведомление отправлено!'
+            : 'Уведомление успешно отправлено!';
+          document.getElementById('notify-title').value = '';
+          document.getElementById('notify-message').value = '';
+        } else {
+          result.className = 'notify-result error';
+          result.textContent = 'Ошибка: ' + (data.error || 'Неизвестная ошибка');
+        }
+      } catch (e) {
+        result.className = 'notify-result error';
+        result.textContent = 'Ошибка отправки: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить уведомление';
+        if (document.getElementById('notify-result').classList.contains('success')) loadHistory();
+      }
+    }
+  </script>
+</div>
+{% endblock %}

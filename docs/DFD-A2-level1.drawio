@@ -1,0 +1,169 @@
+<mxfile host="Electron" agent="cursor">
+  <diagram id="dfd-a2-l1" name="DFD A2 Уровень 1">
+    <mxGraphModel dx="1272" dy="736" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" value="DFD уровень 1: A2 «Бронирование рабочих мест и переговорных комнат»" vertex="1">
+          <mxGeometry height="28" width="1000" x="220" y="12" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="50" width="130" x="36" y="64" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Клиент" vertex="1">
+          <mxGeometry height="50" width="130" x="30" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e_client_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="20" width="26" x="30" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="50" width="130" x="36" y="154" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Менеджер" vertex="1">
+          <mxGeometry height="50" width="130" x="30" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e_manager_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="2" vertex="1">
+          <mxGeometry height="20" width="26" x="30" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="55" width="160" x="36" y="304" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Карта и статусы мест" vertex="1">
+          <mxGeometry height="55" width="160" x="30" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A1" vertex="1">
+          <mxGeometry height="20" width="34" x="30" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a3_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="55" width="160" x="36" y="444" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Тарифы и абонементы" vertex="1">
+          <mxGeometry height="55" width="160" x="30" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a3_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A3" vertex="1">
+          <mxGeometry height="20" width="34" x="30" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a4_sh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" value="" vertex="1">
+          <mxGeometry height="55" width="150" x="1296" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" value="Формирование отчётности" vertex="1">
+          <mxGeometry height="55" width="150" x="1290" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a4_n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A4" vertex="1">
+          <mxGeometry height="20" width="34" x="1290" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" value="Приём запроса на бронирование" vertex="1">
+          <mxGeometry height="90" width="160" x="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p1n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A21" vertex="1">
+          <mxGeometry height="22" width="40" x="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=14;spacingLeft=4;spacingRight=4;" value="Проверка доступности места (расписание, занятость, техобслуживание, пересечения, вместимость)" vertex="1">
+          <mxGeometry height="130" width="190" x="470" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A22" vertex="1">
+          <mxGeometry height="22" width="40" x="470" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" value="Расчёт стоимости брони (тариф или абонемент)" vertex="1">
+          <mxGeometry height="100" width="190" x="470" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="p3n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A23" vertex="1">
+          <mxGeometry height="22" width="40" x="470" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" value="Создание и подтверждение брони" vertex="1">
+          <mxGeometry height="130" width="180" x="740" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p4n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A24" vertex="1">
+          <mxGeometry height="22" width="40" x="740" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" value="Продление и отмена брони" vertex="1">
+          <mxGeometry height="100" width="180" x="740" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="p5n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A25" vertex="1">
+          <mxGeometry height="22" width="40" x="740" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" parent="1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" value="Обновление истории бронирований" vertex="1">
+          <mxGeometry height="110" width="180" x="1000" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="p6n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" value="A26" vertex="1">
+          <mxGeometry height="22" width="40" x="1000" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" value="Расписание коворкинга" vertex="1">
+          <mxGeometry height="50" width="220" x="240" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d1n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" value="A2.1" vertex="1">
+          <mxGeometry height="50" width="40" x="240" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" value="Бронирования" vertex="1">
+          <mxGeometry height="50" width="240" x="520" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d2n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" value="A2.2" vertex="1">
+          <mxGeometry height="50" width="40" x="520" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" value="История бронирований" vertex="1">
+          <mxGeometry height="50" width="220" x="830" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="d3n" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" value="A2.3" vertex="1">
+          <mxGeometry height="50" width="40" x="830" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="e_client" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.3;entryX=0;entryY=0.4;" target="p1" value="запрос брони (место, дата, время)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="e_manager" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.8;" target="p1" value="бронь за клиента">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" source="p1" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="p2" value="параметры брони">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" source="e_a1" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.2;entryX=0;entryY=0.9;" target="p2" value="доступность и статусы мест">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" source="d1" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.2;exitY=0;entryX=0.2;entryY=1;" target="p2" value="часы работы">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" source="d2" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.4;exitY=0;entryX=0.6;entryY=1;" target="p2" value="существующие брони">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f7" edge="1" parent="1" source="p2" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="p4" value="место свободно">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" edge="1" parent="1" source="e_a3" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="p3" value="тариф, действующий абонемент">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f9" edge="1" parent="1" source="p3" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" target="p4" value="стоимость брони">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f10" edge="1" parent="1" source="p4" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.4;exitY=1;entryX=0.5;entryY=0;" target="d2" value="новая бронь">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f11" edge="1" parent="1" source="p4" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=0;entryX=1;entryY=0.2;" target="e_client" value="подтверждение брони">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f12" edge="1" parent="1" source="p4" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0;exitY=0.8;entryX=1;entryY=0.3;" target="e_a3" value="списание часов абонемента">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f13" edge="1" parent="1" source="e_client" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" target="p5" value="запрос продления / отмены">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f14" edge="1" parent="1" source="p5" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.7;entryY=0;" target="d2" value="обновление брони">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f15" edge="1" parent="1" source="d2" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.2;entryX=0;entryY=0.8;" target="p6" value="изменения броней">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f16" edge="1" parent="1" source="p6" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="d3" value="запись истории">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f17" edge="1" parent="1" source="d3" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" target="e_a4" value="данные о бронированиях">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f18" edge="1" parent="1" source="d2" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=1;exitDx=0;exitDy=0;" target="e_client" value="список активных бронирований">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="text;html=1;strokeColor=#999999;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;" value="Обозначения DFD (Гейн–Сарсон):&#xa;□ — внешняя сущность / смежный процесс&#xa;▭ — процесс (номер в углу)&#xa;═| — хранилище данных" vertex="1">
+          <mxGeometry height="88" width="270" x="1180" y="610" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

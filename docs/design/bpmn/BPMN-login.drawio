@@ -1,0 +1,75 @@
+<mxfile host="app.diagrams.net" agent="design-export" version="22.1.0" type="device">
+  <diagram id="bpmn-login" name="Вход в систему">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1760" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Процесс «Вход в систему (аутентификация)»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="10" width="900" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lane_actor" value="Пользователь" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1680" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="lane_system" value="Система" style="swimlane;horizontal=0;startSize=25;html=1;fillColor=none;swimlaneFillColor=#ffffff;strokeColor=#000000;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="1680" height="300" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="start" value="Начало" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="80" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="t1" value="Открыть экран входа" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="135" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t2" value="Ввести email и пароль" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="300" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t3" value="Нажать «Войти»" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="465" y="133" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="t4" value="Работа в системе" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="133" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="end_ok" value="Вход выполнен" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1590" y="142" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="s1" value="Проверить учётные данные пользователя" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="465" y="390" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="g1" value="Пароль верен и аккаунт активен?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="650" y="385" width="110" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2" value="Создать пользовательскую сессию" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="800" y="385" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="g2" value="Роль = администратор?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="385" width="100" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3" value="Открыть панель администратора" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="300" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s4" value="Открыть личный кабинет / карту" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="470" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="err1" value="Отказ в доступе" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=3;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="687" y="500" width="36" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ec0" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="start" target="t1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t1" target="t2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t2" target="t3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec3" value="учётные данные" style="endArrow=block;html=1;rounded=0;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="t3" target="s1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s1" target="g1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es2" value="Да" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="g1" target="s2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es3" value="Нет" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="g1" target="err1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es4" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s2" target="g2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es5" value="Да" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="g2" target="s3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es6" value="Нет" style="endArrow=block;html=1;rounded=0;fontSize=11;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" edge="1" parent="1" source="g2" target="s4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es7" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="s3" target="t4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="es8" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="s4" target="t4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ec6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t4" target="end_ok"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

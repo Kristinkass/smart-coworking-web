@@ -1,0 +1,122 @@
+<mxfile host="app.diagrams.net" agent="cursor" version="22.1.0" type="device">
+  <diagram id="dfd-a3-l1" name="DFD A3 Уровень 1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="DFD уровень 1: A3 «Управление тарифами, абонементами и оценками»" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=15;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="220" y="12" width="1000" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_admin_sh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" vertex="1" parent="1">
+          <mxGeometry x="36" y="64" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_admin" value="Администратор" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="30" y="70" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_admin_n" value="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="70" width="26" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_client_sh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" vertex="1" parent="1">
+          <mxGeometry x="36" y="184" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_client" value="Клиент" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="30" y="190" width="140" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_client_n" value="2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="190" width="26" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_a2_sh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" vertex="1" parent="1">
+          <mxGeometry x="36" y="354" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_a2" value="Бронирование" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="30" y="360" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_a2_n" value="A2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="360" width="34" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_a4_sh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#3a2a4d;strokeColor=#3a2a4d;" vertex="1" parent="1">
+          <mxGeometry x="1296" y="554" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_a4" value="Формирование отчётности" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=8;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1290" y="560" width="150" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_a4_n" value="A4" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="560" width="34" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1" value="Управление тарифами (цены по категориям)" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="250" y="55" width="170" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1n" value="A31" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="55" width="40" height="22" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p2" value="Управление абонементами (шаблоны, выдача, оформление)" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=14;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="250" y="195" width="170" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2n" value="A32" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="195" width="40" height="22" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p3" value="Проверка и применение абонемента / тарифа при бронировании" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=14;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="580" y="80" width="190" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3n" value="A33" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="80" width="40" height="22" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p4" value="Учёт и пересчёт оценок (рейтинга) мест" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingTop=12;spacingLeft=4;spacingRight=4;" vertex="1" parent="1">
+          <mxGeometry x="580" y="320" width="190" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4n" value="A34" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="320" width="40" height="22" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d1" value="Тарифы" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" vertex="1" parent="1">
+          <mxGeometry x="250" y="600" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1n" value="A3.1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="250" y="600" width="40" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d2" value="Абонементы" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" vertex="1" parent="1">
+          <mxGeometry x="530" y="600" width="230" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2n" value="A3.2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="530" y="600" width="40" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d3" value="Оценки и рейтинг мест" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;spacingLeft=44;" vertex="1" parent="1">
+          <mxGeometry x="830" y="600" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3n" value="A3.3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;align=center;verticalAlign=middle;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="830" y="600" width="40" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="fa1" value="цены за час/неделю/месяц" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="e_admin" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa2" value="шаблоны абонементов" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.8;entryX=0;entryY=0.3;" edge="1" parent="1" source="e_admin" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa3" value="оформление абонемента" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.7;" edge="1" parent="1" source="e_client" target="p2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa4" value="оценка места после визита" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.4;" edge="1" parent="1" source="e_a2" target="p4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa5" value="тарифы" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.4;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="p1" target="d1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa6" value="абонементы" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="p2" target="d2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa7" value="запрос применимости / стоимости" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.2;entryX=0;entryY=0.5;" edge="1" parent="1" source="e_a2" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa8" value="тариф" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.7;exitY=0;entryX=0.4;entryY=1;" edge="1" parent="1" source="d1" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa9" value="данные абонемента" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.6;exitY=0;entryX=0.6;entryY=1;" edge="1" parent="1" source="d2" target="p3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa10" value="тариф, признак абонемента, стоимость" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0;exitY=0.8;entryX=1;entryY=0.2;" edge="1" parent="1" source="p3" target="e_a2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa11" value="списание использованных часов" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.8;entryY=0;" edge="1" parent="1" source="p4" target="d2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa12" value="пересчёт среднего рейтинга" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="p4" target="d3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa13" value="средняя оценка места" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=0;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="d3" target="e_a2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa14" value="данные тарифов" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0.3;entryY=1;" edge="1" parent="1" source="d1" target="e_a4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fa15" value="доход по абонементам" style="endArrow=block;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="d2" target="e_a4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="legend" value="Обозначения DFD (Гейн–Сарсон):&#xa;□ — внешняя сущность / смежный процесс&#xa;▭ — процесс (номер в углу)&#xa;═| — хранилище данных" style="text;html=1;strokeColor=#999999;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="80" width="270" height="88" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

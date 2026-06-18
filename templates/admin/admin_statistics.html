@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика и отчёты - Админ панель{% endblock %}
+
+{% block content %}
+<div class="admin-container admin-statistics-page">
+    <div class="admin-header">
+        {% include "admin/_nav_back.html" %}
+        <div class="admin-title">
+            <h1><i class="fas fa-chart-bar"></i> Статистика</h1>
+            <p class="admin-subtitle">Аналитика использования коворкинг-пространства</p>
+        </div>
+    </div>
+
+    <!-- Фильтры периода -->
+    <div class="filter-section">
+        <form method="GET" class="filter-form">
+            <div class="filter-group">
+                <label>Период:</label>
+                <select name="period" class="form-control">
+                    <option value="week" {% if period == 'week' %}selected{% endif %}>Последние 7 дней</option>
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Последние 30 дней</option>
+                    <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Последние 3 месяца</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>Последний год</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter"></i> Применить
+            </button>
+        </form>
+    </div>
+
+    <!-- Ключевые показатели -->
+    <div class="stats-grid">
+        <div class="stat-card highlight">
+            <div class="stat-icon blue">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_bookings }}</h3>
+                <p>Всего бронирований</p>
+            </div>
+        </div>
+
+
+
+        <div class="stat-card highlight">
+            <div class="stat-icon purple">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_people }}</h3>
+                <p>Посетителей</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="charts-section">
+        <div class="chart-row chart-row--pair">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> Посетители по дням</h3>
+                <div class="chart-wrap">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3><i class="fas fa-clock"></i> Пиковые часы (посетители)</h3>
+                <div class="chart-wrap">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-row chart-row--single">
+            <div class="chart-card chart-card--pie">
+                <h3><i class="fas fa-chart-pie"></i> Распределение по категориям</h3>
+                <div class="chart-wrap chart-wrap--pie">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица популярных мест -->
+    <div class="table-section">
+        <h2><i class="fas fa-trophy"></i> Самые популярные места</h2>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Тип</th>
+                        <th>Бронирований</th>
+                        <th>Часов использования</th>
+                        <th>Выручка</th>
+                        <th>Посетителей</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for place in top_places %}
+                    <tr>
+                        <td><strong>{{ place.code }}</strong> - {{ place.name }}</td>
+                        <td>{{ place.type }}</td>
+                        <td>{{ place.bookings_count }}</td>
+                        <td>{{ place.total_hours_display|default(format_duration(place.total_hours)) }}</td>
+                        <td>{{ format_money(place.revenue) }}</td>
+                        <td>{{ place.total_people }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Статистика по статусам -->
+    <div class="status-stats">
+        <h2><i class="fas fa-info-circle"></i> Распределение по статусам</h2>
+        <div class="status-grid">
+            <div class="status-item success">
+                <span class="status-dot"></span>
+                <span class="status-label">Завершённые:</span>
+                <span class="status-value">{{ stats.completed_bookings }}</span>
+            </div>
+            <div class="status-item active">
+                <span class="status-dot"></span>
+                <span class="status-label">Активные:</span>
+                <span class="status-value">{{ stats.active_bookings }}</span>
+            </div>
+            <div class="status-item cancelled">
+                <span class="status-dot"></span>
+                <span class="status-label">Отменённые:</span>
+                <span class="status-value">{{ stats.cancelled_bookings }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_labels|tojson }},
+            datasets: [{
+                label: 'Число посетителей',
+                data: {{ daily_data|tojson }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_labels|tojson }},
+            datasets: [{
+                data: {{ category_data|tojson }},
+                backgroundColor: ['#8fa67a', '#4d8f5f', '#c9a84c', '#c75050', '#6b8f9e']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ hourly_labels|tojson }},
+            datasets: [{
+                label: 'Число посетителей',
+                data: {{ hourly_data|tojson }},
+                backgroundColor: 'rgba(245, 158, 11, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+
+<style>
+    .filter-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .filter-form { display: flex; gap: 15px; align-items: flex-end; }
+
+    /* Перекрываем глобальные .stat-card из style.css (белый текст на белом фоне) */
+    .admin-statistics-page .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    .admin-statistics-page .stat-card {
+        background: var(--card-bg, #fff);
+        color: var(--text-primary, #2f3428);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color, #dde3d4);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transform: none;
+    }
+    .admin-statistics-page .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .admin-statistics-page .stat-icon {
+        flex-shrink: 0;
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        font-size: 22px;
+        opacity: 1;
+    }
+    .admin-statistics-page .stat-info {
+        min-width: 0;
+    }
+    .admin-statistics-page .stat-info h3 {
+        margin: 0 0 4px;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--text-primary, #2f3428);
+    }
+    .admin-statistics-page .stat-info p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-secondary, #5c6554);
+        opacity: 1;
+    }
+
+    .charts-section { margin: 25px 0; }
+    .chart-row {
+        display: grid;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .chart-row--pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+    .chart-row--single {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+    .chart-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .chart-card h3 { margin: 0 0 12px; font-size: 16px; }
+    .chart-wrap {
+        position: relative;
+        flex: 1;
+        height: 220px;
+        min-height: 220px;
+    }
+    .chart-card--pie { max-width: 480px; width: 100%; }
+    .chart-wrap--pie { height: 260px; min-height: 260px; }
+
+    @media (max-width: 900px) {
+        .chart-row--pair { grid-template-columns: 1fr; }
+    }
+
+    .stat-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .blue { background: #dbeafe; color: #1d4ed8; }
+    .green { background: #d1fae5; color: #047857; }
+    .orange { background: #fef3c7; color: #b45309; }
+    .purple { background: #ede9fe; color: #6d28d9; }
+    .progress-bar { display: flex; align-items: center; gap: 10px; }
+    .progress-fill { height: 8px; min-width: 50px; background: #8fa67a; border-radius: 4px; }
+    .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 15px; }
+    .status-item { display: flex; align-items: center; gap: 10px; padding: 15px; border-radius: 8px; }
+    .success { background: #d1fae5; }
+    .active { background: #dbeafe; }
+    .cancelled { background: #fee2e2; }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .success .status-dot { background: #4d8f5f; }
+    .active .status-dot { background: #6b8f9e; }
+    .cancelled .status-dot { background: #c75050; }
+    .status-value { font-weight: bold; margin-left: auto; }
+</style>
+{% endblock %}

@@ -1,6 +1,8 @@
 // Общие функции для всего сайта
 
 document.addEventListener('DOMContentLoaded', function() {
+    initMobileNav();
+
     // Инициализация главной страницы
     if (document.querySelector('.stats')) {
         loadHomeStats();
@@ -13,31 +15,71 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFlashMessages();
 });
 
+function initMobileNav() {
+    const navbar = document.getElementById('site-navbar');
+    const toggle = document.getElementById('nav-toggle');
+    const closeBtn = document.getElementById('nav-close');
+    const overlay = document.getElementById('nav-overlay');
+    const drawer = document.getElementById('nav-drawer');
+    if (!navbar || !toggle || !overlay || !drawer) return;
+
+    const openNav = () => {
+        navbar.classList.add('nav-open');
+        overlay.classList.add('visible');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeNav = () => {
+        navbar.classList.remove('nav-open');
+        overlay.classList.remove('visible');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    };
+
+    toggle.addEventListener('click', () => {
+        if (navbar.classList.contains('nav-open')) {
+            closeNav();
+        } else {
+            openNav();
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeNav);
+    }
+
+    overlay.addEventListener('click', closeNav);
+
+    drawer.querySelectorAll('.nav-menu a').forEach(link => {
+        link.addEventListener('click', closeNav);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeNav();
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) closeNav();
+    });
+}
+
 function loadHomeStats() {
-    // Загрузка статистики для главной страницы
-    fetch('/api/admin/stats')
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            }
-            // Если нет доступа к API, показываем заглушки
-            return {
-                total_places: 12,
-                active_users: 45,
-                bookings_today: 8
-            };
-        })
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    fetch('/api/public/stats')
+        .then(response => response.ok ? response.json() : Promise.reject())
         .then(data => {
-            document.getElementById('total-places').textContent = data.total_places || 12;
-            document.getElementById('active-users').textContent = data.total_users || 45;
-            document.getElementById('bookings-today').textContent = data.today_bookings || 8;
+            setText('total-places', data.total_places ?? '–');
+            setText('active-users', data.total_users ?? '–');
+            setText('bookings-today', data.today_bookings ?? '–');
         })
-        .catch(error => {
-            console.error('Error loading stats:', error);
-            // Значения по умолчанию
-            document.getElementById('total-places').textContent = 12;
-            document.getElementById('active-users').textContent = 45;
-            document.getElementById('bookings-today').textContent = 8;
+        .catch(() => {
+            setText('total-places', '–');
+            setText('active-users', '–');
+            setText('bookings-today', '–');
         });
 }
 
