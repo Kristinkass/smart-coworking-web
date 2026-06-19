@@ -61,9 +61,8 @@ main {
     box-shadow: var(--box-shadow);
     position: sticky;
     top: 0;
-    z-index: 1100;
+    z-index: 1200;
     padding: 0.75rem 0;
-    isolation: isolate;
 }
 
 .navbar-inner {
@@ -81,7 +80,7 @@ main {
     color: var(--primary-color);
     font-size: 1.25rem;
     font-weight: 700;
-    z-index: 1102;
+    z-index: 1203;
     min-width: 0;
     position: relative;
 }
@@ -111,7 +110,7 @@ main {
     border-radius: 10px;
     background: var(--card-bg);
     cursor: pointer;
-    z-index: 1102;
+    z-index: 1203;
     position: relative;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -149,7 +148,7 @@ main {
     position: fixed;
     inset: 0;
     background: rgba(47, 52, 40, 0.45);
-    z-index: 1099;
+    z-index: 1201;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -1604,19 +1603,19 @@ main {
         height: 100dvh;
         background: var(--card-bg);
         box-shadow: -8px 0 32px rgba(47, 52, 40, 0.15);
-        z-index: 1101;
+        z-index: 1202;
         flex-direction: column;
         align-items: stretch;
         padding: 0;
         transform: translateX(100%);
         transition: transform 0.3s ease;
         overflow-y: auto;
-        pointer-events: none;
+        visibility: hidden;
     }
 
     .navbar.nav-open .nav-drawer {
         transform: translateX(0);
-        pointer-events: auto;
+        visibility: visible;
     }
 
     .nav-drawer-head {

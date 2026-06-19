@@ -47,7 +47,9 @@ function initMobileNav() {
         document.body.style.overflow = '';
     };
 
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (navbar.classList.contains('nav-open')) {
             closeNav();
         } else {
