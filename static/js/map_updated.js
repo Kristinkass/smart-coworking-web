@@ -445,12 +445,21 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const defaultStartM = String(defaultStart % 60).padStart(2, '0');
     const defaultEndM = String(defaultEnd % 60).padStart(2, '0');
 
-    startH.value = prevStart && Array.from(startH.options).some(o => o.value === prevStart && !o.disabled)
-        ? prevStart : String(Math.floor(defaultStart / 60)).padStart(2, '0');
+    const pickHourValue = (selectEl, preferred, fallback) => {
+        if (preferred && Array.from(selectEl.options).some(o => o.value === preferred && !o.disabled)) {
+            return preferred;
+        }
+        const enabled = Array.from(selectEl.options).find(o => !o.disabled);
+        return enabled ? enabled.value : fallback;
+    };
+
+    const defaultStartH = String(Math.floor(defaultStart / 60)).padStart(2, '0');
+    const defaultEndH = String(Math.floor(defaultEnd / 60)).padStart(2, '0');
+
+    startH.value = pickHourValue(startH, prevStart, defaultStartH);
     startM.value = ['00', '15', '30', '45'].includes(startM.value) ? startM.value : defaultStartM;
 
-    endH.value = prevEnd && Array.from(endH.options).some(o => o.value === prevEnd)
-        ? prevEnd : String(Math.floor(defaultEnd / 60)).padStart(2, '0');
+    endH.value = pickHourValue(endH, prevEnd, defaultEndH);
     endM.value = ['00', '15', '30', '45'].includes(endM.value) ? endM.value : defaultEndM;
 
     filterPastMinuteOptions();
@@ -1095,12 +1104,24 @@ function updateBookingPeriodDisplay() {
     if (periodDisplay) periodDisplay.textContent = isFixed ? range : '';
 }
 
+const TARIFF_ORDER = { hourly: 0, weekly: 1, monthly: 2 };
+
+function sortTariffsByDefault(tariffs) {
+    return [...tariffs].sort((a, b) => {
+        const orderA = TARIFF_ORDER[a.tariff_type] ?? 9;
+        const orderB = TARIFF_ORDER[b.tariff_type] ?? 9;
+        return orderA - orderB;
+    });
+}
+
 function updateTariffSelector() {
     const select = document.getElementById('tariff-type');
     if (!select || select.tagName !== 'SELECT') return;
 
     select.innerHTML = '';
-    const availableTariffs = (currentPlaceTariffs || []).filter(t => t.active);
+    const availableTariffs = sortTariffsByDefault(
+        (currentPlaceTariffs || []).filter(t => t.active)
+    );
 
     if (availableTariffs.length === 0) {
         select.innerHTML = '<option value="">Нет доступных тарифов</option>';
@@ -1136,9 +1157,10 @@ function onTariffChange() {
     const timePickerRow = document.getElementById('time-picker-row');
     const fixedHint = document.getElementById('fixed-tariff-hint');
     const hourlyHint = document.getElementById('hourly-hint');
+    const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
     const isHourly = tariffType === 'hourly';
 
-    if (timeSection) timeSection.style.display = isHourly ? 'block' : 'none';
+    if (timeSection) timeSection.style.display = (isHourly && !hideTimeline) ? 'block' : 'none';
     if (durationRow) durationRow.style.display = isHourly ? 'flex' : 'none';
     if (timePickerRow) timePickerRow.style.display = isHourly ? 'block' : 'none';
     if (fixedHint) fixedHint.style.display = isHourly ? 'none' : 'block';
@@ -1173,12 +1195,15 @@ function initTariffsForPlace(place) {
     currentPlaceTariffs = tariffsForPlace(place);
     updateTariffSelector();
 
-    const availableTariffs = currentPlaceTariffs.filter(t => t.active !== false);
+    const availableTariffs = sortTariffsByDefault(
+        currentPlaceTariffs.filter(t => t.active !== false)
+    );
     const bookBtn = document.getElementById('book-btn');
     const noTariffHint = document.getElementById('no-tariff-hint');
 
     if (availableTariffs.length) {
-        document.getElementById('tariff-type').value = availableTariffs[0].tariff_type;
+        const defaultTariff = availableTariffs.find(t => t.tariff_type === 'hourly') || availableTariffs[0];
+        document.getElementById('tariff-type').value = defaultTariff.tariff_type;
         if (bookBtn) {
             bookBtn.disabled = false;
             bookBtn.title = '';
@@ -1268,19 +1293,23 @@ async function selectPlaceForBooking(place) {
     
     initTariffsForPlace(place);
 
-    const timegridContainer = document.getElementById('timegrid-container');
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const payCb = document.getElementById('pay-without-subscription');
     if (payCb) payCb.checked = false;
+    if (tariffType === 'hourly') {
+        const date = document.getElementById('booking-date')?.value;
+        if (date && typeof loadTimegrid === 'function') {
+            loadTimegrid(place.id, date);
+        } else if (typeof rebuildTimeSelects === 'function') {
+            rebuildTimeSelects();
+        }
+    }
+    const timegridContainer = document.getElementById('timegrid-container');
     if (timegridContainer && tariffType === 'hourly' && !(typeof isMobileViewport === 'function' && isMobileViewport())) {
         if (typeof updateTimegridCapacity === 'function') {
             updateTimegridCapacity({ zone_capacity: place.zone_seat_capacity, capacity: displayCapacity(place) });
         } else {
             document.getElementById('timegrid-capacity').textContent = `Вместимость: ${displayCapacity(place)}`;
-        }
-        const date = document.getElementById('booking-date')?.value;
-        if (date && typeof loadTimegrid === 'function') {
-            loadTimegrid(place.id, date);
         }
     }
     selectedDurationSlots = 4;

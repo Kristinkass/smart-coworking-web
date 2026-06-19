@@ -68,10 +68,10 @@ async function loadTimegrid(placeId, date) {
     const timeline = document.getElementById('booking-timeline');
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     if (tariffType !== 'hourly') return;
-    if (typeof isMobileViewport === 'function' && isMobileViewport()) return;
+    const isMobile = typeof isMobileViewport === 'function' && isMobileViewport();
 
     hideScheduleStatus();
-    if (timeline) {
+    if (timeline && !isMobile) {
         timeline.innerHTML = '<div class="timeline-loading">Загрузка расписания…</div>';
     }
 
@@ -83,7 +83,7 @@ async function loadTimegrid(placeId, date) {
             window.currentSchedule = null;
             currentTimegrid = null;
             selectedStartIndex = null;
-            if (timeline) {
+            if (timeline && !isMobile) {
                 timeline.innerHTML = '';
             }
             showScheduleHoursInfo(null, null);
@@ -103,7 +103,7 @@ async function loadTimegrid(placeId, date) {
         if (!data.is_bookable || !data.slots || data.slots.length === 0) {
             currentTimegrid = null;
             selectedStartIndex = null;
-            if (timeline) timeline.innerHTML = '';
+            if (timeline && !isMobile) timeline.innerHTML = '';
             showScheduleStatus(
                 data.schedule_message || 'Бронирование недоступно в этот день',
                 'error',
@@ -118,15 +118,21 @@ async function loadTimegrid(placeId, date) {
         if (typeof rebuildTimeSelects === 'function') {
             rebuildTimeSelects(data.open_time, data.close_time);
         }
-        if (typeof updateTimegridCapacity === 'function') {
-            updateTimegridCapacity(data);
+        if (!isMobile) {
+            if (typeof updateTimegridCapacity === 'function') {
+                updateTimegridCapacity(data);
+            }
+            renderTimegrid(data);
+        } else {
+            currentTimegrid = data.slots;
+            selectedStartIndex = null;
+            if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
         }
-        renderTimegrid(data);
     } catch (err) {
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;
-        if (timeline) timeline.innerHTML = '';
+        if (timeline && !isMobile) timeline.innerHTML = '';
         showScheduleStatus('Не удалось загрузить расписание', 'error');
         setBookingTimeControlsEnabled(false);
     }

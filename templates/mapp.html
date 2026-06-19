@@ -47,7 +47,7 @@
         .edit-mode .place-zone.selected-for-edit rect { stroke: #f59e0b !important; stroke-width: 5px !important; stroke-dasharray: 10,4; }
 
         .booking-panel { background: #fdfdf9; border: 1px solid #dde3d4; border-radius: 12px;
-            padding: 24px; margin-top: 20px; box-shadow: 0 1px 8px rgba(47, 52, 40, 0.06); }
+            padding: 24px; margin-top: 20px; box-shadow: 0 1px 8px rgba(47, 52, 40, 0.06); overflow-x: hidden; }
         .booking-panel h3 { margin: 0 0 16px; font-size: 18px; color: #2f3428; display: flex; align-items: center; gap: 10px; }
         .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .time-info-box { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 16px 0; }
@@ -255,6 +255,55 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .time-picker-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .time-picker-field {
+            flex: 1;
+            min-width: 0;
+            text-align: center;
+        }
+        .time-picker-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .time-picker-selects {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .time-picker-selects select {
+            width: 100%;
+            max-width: 72px;
+            min-width: 56px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 6px 4px;
+        }
+        .time-picker-sep {
+            font-size: 18px;
+            font-weight: 700;
+            color: #64748b;
+            flex-shrink: 0;
+        }
+        .time-picker-arrow {
+            font-size: 18px;
+            color: #94a3b8;
+            flex-shrink: 0;
+            padding: 0 4px;
+        }
         .legend-item { display: flex; align-items: center; gap: 6px; }
         .legend-color { width: 16px; height: 16px; border-radius: 4px; }
         .legend-color.free { background: #86efac; }
@@ -312,6 +361,15 @@
             .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
             .form-row-2 { grid-template-columns: 1fr; }
+            .time-picker-box {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .time-picker-arrow {
+                width: 100%;
+                text-align: center;
+                padding: 2px 0;
+            }
             #timegrid-container,
             #hourly-hint,
             .zoom-controls { display: none !important; }
@@ -515,14 +573,13 @@
                     </div>
                     <div id="time-picker-row">
                         <label class="form-label">Время</label>
-                        <div style="display:flex; align-items:center; gap:6px; background:#f8fafc; padding:8px 12px; border-radius:10px; border:1px solid #e2e8f0;">
-                            <div style="text-align:center;">
-                                <div style="font-size:11px; color:#64748b; margin-bottom:2px;">Начало</div>
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                    <select id="start-hour" class="form-control" aria-label="Час начала" style="width:60px; text-align:center; font-size:16px; font-weight:600; padding:4px;" onchange="onTimeChange()">
-                                    </select>
-                                    <span style="font-size:18px; font-weight:700; color:#64748b;">:</span>
-                                    <select id="start-min" class="form-control" aria-label="Минуты начала" style="width:60px; text-align:center; font-size:16px; font-weight:600; padding:4px;" onchange="onTimeChange()">
+                        <div class="time-picker-box">
+                            <div class="time-picker-field">
+                                <div class="time-picker-label">Начало</div>
+                                <div class="time-picker-selects">
+                                    <select id="start-hour" class="form-control" aria-label="Час начала" onchange="onTimeChange()"></select>
+                                    <span class="time-picker-sep">:</span>
+                                    <select id="start-min" class="form-control" aria-label="Минуты начала" onchange="onTimeChange()">
                                         <option value="00">00</option>
                                         <option value="15">15</option>
                                         <option value="30">30</option>
@@ -530,14 +587,13 @@
                                     </select>
                                 </div>
                             </div>
-                            <span style="font-size:20px; color:#94a3b8; padding:0 8px;">→</span>
-                            <div style="text-align:center;">
-                                <div style="font-size:11px; color:#64748b; margin-bottom:2px;">Конец</div>
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                    <select id="end-hour" class="form-control" aria-label="Час окончания" style="width:60px; text-align:center; font-size:16px; font-weight:600; padding:4px;" onchange="onTimeChange()">
-                                    </select>
-                                    <span style="font-size:18px; font-weight:700; color:#64748b;">:</span>
-                                    <select id="end-min" class="form-control" aria-label="Минуты окончания" style="width:60px; text-align:center; font-size:16px; font-weight:600; padding:4px;" onchange="onTimeChange()">
+                            <span class="time-picker-arrow">→</span>
+                            <div class="time-picker-field">
+                                <div class="time-picker-label">Конец</div>
+                                <div class="time-picker-selects">
+                                    <select id="end-hour" class="form-control" aria-label="Час окончания" onchange="onTimeChange()"></select>
+                                    <span class="time-picker-sep">:</span>
+                                    <select id="end-min" class="form-control" aria-label="Минуты окончания" onchange="onTimeChange()">
                                         <option value="00">00</option>
                                         <option value="15">15</option>
                                         <option value="30">30</option>
