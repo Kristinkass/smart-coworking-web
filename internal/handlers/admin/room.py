@@ -9,8 +9,8 @@ from internal.models import PlaceCategory
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
 from internal.services.room_editor_service import apply_variant, register_wall_room
-from internal.utils.room_geometry import (
 from internal.utils.errors import user_error_message
+from internal.utils.room_geometry import (
     desk_grid_variants,
     dismiss_draft_room,
     link_rooms_with_places,

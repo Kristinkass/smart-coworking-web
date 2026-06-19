@@ -7,8 +7,8 @@ from flask import jsonify, request, send_file
 from sqlalchemy.orm import joinedload
 
 from internal.handlers.deps import admin_required, models
-from internal.utils.formatters import (
 from internal.utils.errors import user_error_message
+from internal.utils.formatters import (
     REPORT_SECTIONS,
     build_report_stats,
     format_booking_duration_display,
