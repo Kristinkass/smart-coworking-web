@@ -1,6 +1,14 @@
 // Общие функции для всего сайта
 
-document.addEventListener('DOMContentLoaded', function() {
+function onReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
+    } else {
+        fn();
+    }
+}
+
+onReady(function() {
     initMobileNav();
 
     // Инициализация главной страницы
@@ -22,6 +30,8 @@ function initMobileNav() {
     const overlay = document.getElementById('nav-overlay');
     const drawer = document.getElementById('nav-drawer');
     if (!navbar || !toggle || !overlay || !drawer) return;
+    if (navbar.dataset.navBound === '1') return;
+    navbar.dataset.navBound = '1';
 
     const openNav = () => {
         navbar.classList.add('nav-open');
