@@ -26,7 +26,7 @@
 </div>
 
 <style>
-.admin-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.admin-container { max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; box-sizing: border-box; }
 .admin-header { margin-bottom: 30px; }
 .admin-header h1 { font-size: 28px; color: #1e293b; margin-bottom: 8px; }
 
@@ -96,6 +96,45 @@
 .form-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
 
 .mt-3 { margin-top: 12px; }
+
+@media (max-width: 768px) {
+    .admin-container { padding: 10px; overflow-x: hidden; }
+    .admin-header h1 { font-size: 20px; }
+    .admin-card { border-radius: 8px; }
+    .category-header { flex-wrap: wrap; padding: 12px; font-size: 14px; }
+    .tariff-list { padding: 10px; }
+    .tariff-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 10px;
+    }
+    .tariff-type {
+        flex-wrap: wrap;
+        font-size: 14px;
+    }
+    .tariff-type small {
+        display: block;
+        width: 100%;
+        margin-top: 2px;
+    }
+    .tariff-price {
+        justify-content: flex-start;
+    }
+    .tariff-price input {
+        width: 100%;
+        max-width: none;
+        flex: 1;
+    }
+    .tariff-status { justify-content: flex-start; }
+    .tariff-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    .add-tariff-form {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+}
 </style>
 
 <script>

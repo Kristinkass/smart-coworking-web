@@ -1676,6 +1676,8 @@ main {
 
     .admin-container {
         padding: 1.25rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .admin-header {
@@ -1734,12 +1736,27 @@ main {
     }
 
     .admin-table {
+        width: max-content;
+        min-width: 100%;
+        table-layout: auto;
         font-size: 0.85rem;
     }
 
     .admin-table th,
     .admin-table td {
         padding: 0.65rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    .admin-table td:first-child {
+        white-space: normal;
+    }
+
+    .table-responsive,
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
     }
 
     .module-data-table th,

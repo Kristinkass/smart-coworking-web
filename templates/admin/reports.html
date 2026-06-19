@@ -5,16 +5,22 @@
 {% block content %}
 <style>
 :root {
+    --report-green: #8fa67a;
+    --report-green-dark: #6f855c;
+    --report-green-soft: #eef2e8;
     --report-border: #111;
     --report-bg: #fff;
-    --report-muted: #444;
-    --report-soft: #f7f7f7;
+    --report-muted: #5c6554;
+    --report-soft: #f6f7f2;
 }
 
 .admin-reports-container {
     padding: 20px;
-    background: #f0f0f0;
+    background: var(--report-soft);
     min-height: 100vh;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .page-header {
@@ -29,9 +35,11 @@
 .page-title {
     font-size: 20px;
     font-weight: 700;
-    color: #111;
+    color: #2f3428;
     margin: 0;
     line-height: 1.3;
+    padding-left: 10px;
+    border-left: 4px solid var(--report-green);
 }
 
 .filter-card,
@@ -39,6 +47,7 @@
 .tariff-summary-block {
     background: var(--report-bg);
     border: 1px solid var(--report-border);
+    border-top: 3px solid var(--report-green);
     padding: 14px 16px;
     margin-bottom: 14px;
 }
@@ -48,8 +57,10 @@
 .tariff-summary-block h3 {
     font-size: 14px;
     font-weight: 700;
-    color: #111;
+    color: #2f3428;
     margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--report-green);
 }
 
 .filter-row {
@@ -78,16 +89,16 @@
 }
 
 .form-control:focus, .form-select:focus {
-    outline: 1px solid #111;
-    border-color: #111;
-    box-shadow: none;
+    outline: none;
+    border-color: var(--report-green);
+    box-shadow: 0 0 0 1px var(--report-green);
 }
 
 .btn-generate,
 .btn-download {
-    background: #fff;
-    color: #111;
-    border: 1px solid var(--report-border);
+    background: var(--report-green);
+    color: #fff;
+    border: 1px solid var(--report-green-dark);
     padding: 7px 14px;
     border-radius: 0;
     font-weight: 600;
@@ -97,7 +108,7 @@
 
 .btn-generate:hover,
 .btn-download:hover {
-    background: #f3f3f3;
+    background: var(--report-green-dark);
 }
 
 .stats-grid {
@@ -110,6 +121,7 @@
 .stat-card {
     background: #fff;
     border: 1px solid var(--report-border);
+    border-top: 3px solid var(--report-green);
     padding: 10px 12px;
 }
 
@@ -175,8 +187,8 @@
 }
 
 .reports-table th {
-    background: #fff;
-    color: #111;
+    background: var(--report-green-soft);
+    color: #2f3428;
     font-weight: 700;
     font-size: 10px;
     white-space: nowrap;
@@ -224,10 +236,10 @@
 .section-title {
     font-size: 13px;
     font-weight: 700;
-    color: #111;
+    color: #2f3428;
     margin: 0 0 8px 0;
     padding-bottom: 4px;
-    border-bottom: 1px solid var(--report-border);
+    border-bottom: 2px solid var(--report-green);
 }
 
 .section-empty {
@@ -351,6 +363,14 @@
 
     .stat-value {
         font-size: 14px;
+    }
+
+    .table-scroll {
+        max-width: 100%;
+    }
+
+    .reports-table {
+        font-size: 10px;
     }
 
     .reports-table th {

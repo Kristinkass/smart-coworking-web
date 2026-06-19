@@ -85,8 +85,8 @@
     <!-- Таблица популярных мест -->
     <div class="table-section">
         <h2><i class="fas fa-trophy"></i> Самые популярные места</h2>
-        <div class="table-responsive">
-            <table class="admin-table">
+        <div class="table-scroll">
+            <table class="admin-table stats-table">
                 <thead>
                     <tr>
                         <th>Место</th>
@@ -305,5 +305,118 @@
     .active .status-dot { background: #6b8f9e; }
     .cancelled .status-dot { background: #c75050; }
     .status-value { font-weight: bold; margin-left: auto; }
+
+    .admin-statistics-page {
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
+    .table-section {
+        background: #fff;
+        border: 1px solid #111;
+        padding: 14px;
+        margin-bottom: 16px;
+    }
+
+    .table-section h2,
+    .status-stats h2 {
+        font-size: 15px;
+        margin: 0 0 10px;
+        color: var(--text-primary, #2f3428);
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--primary-color, #8fa67a);
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #111;
+        max-width: 100%;
+    }
+
+    .stats-table {
+        width: max-content;
+        min-width: 100%;
+        border-collapse: collapse;
+        box-shadow: none;
+        border-radius: 0;
+        font-size: 12px;
+    }
+
+    .stats-table thead {
+        background: #eef2e8;
+        color: #2f3428;
+    }
+
+    .stats-table th,
+    .stats-table td {
+        border: 1px solid #111;
+        padding: 6px 8px;
+        white-space: nowrap;
+        vertical-align: top;
+    }
+
+    .stats-table td:first-child {
+        white-space: normal;
+        min-width: 120px;
+        max-width: 180px;
+    }
+
+    .status-stats {
+        background: #fff;
+        border: 1px solid #111;
+        padding: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .admin-statistics-page.admin-container {
+            padding: 10px;
+        }
+
+        .filter-section { padding: 12px; margin-bottom: 14px; }
+        .filter-form { flex-direction: column; align-items: stretch; }
+
+        .admin-statistics-page .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .admin-statistics-page .stat-card {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .admin-statistics-page .stat-info h3 {
+            font-size: 20px;
+        }
+
+        .admin-statistics-page .stat-info p {
+            font-size: 11px;
+        }
+
+        .chart-card { padding: 12px; }
+        .chart-card h3 { font-size: 13px; }
+        .chart-wrap { height: 180px; min-height: 180px; }
+
+        .status-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .status-item {
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .stats-table {
+            font-size: 10px;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 4px 6px;
+        }
+    }
 </style>
 {% endblock %}
