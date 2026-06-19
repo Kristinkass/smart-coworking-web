@@ -55,7 +55,24 @@ python cmd/app/main.py
 | http://127.0.0.1:5000/docs/ | Swagger UI |
 | http://127.0.0.1:5000/openapi.json | OpenAPI 3.0 |
 
-## Запуск через Docker
+## Запуск на VPS (production)
+
+На сервере используйте **один** файл — без merge:
+
+```bash
+cp .env.example .env   # один раз, заполнить
+docker compose -f docker-compose.vps.yml up -d --build
+```
+
+Остановка: `docker compose -f docker-compose.vps.yml down`
+
+Обновление после `git pull`:
+
+```bash
+docker compose -f docker-compose.vps.yml up -d --build
+```
+
+## Запуск через Docker (локально)
 
 ```bash
 cp .env.example .env   # Windows: copy .env.example .env
