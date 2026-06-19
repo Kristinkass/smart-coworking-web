@@ -32,6 +32,13 @@
             padding: 30px;
             background: var(--bg-color);
             min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dashboard-page-wrap {
+            position: relative;
+            z-index: 1;
         }
 
         .dashboard-header {
@@ -862,7 +869,7 @@
 <body>
     {% set active_page = 'dashboard' %}
     {% include '_navbar.html' %}
-    <div class="container">
+    <div class="container dashboard-page-wrap">
         <!-- Сообщения -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}

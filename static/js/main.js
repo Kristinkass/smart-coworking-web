@@ -9,7 +9,9 @@ function onReady(fn) {
 }
 
 onReady(function() {
-    initMobileNav();
+    if (typeof window.initMobileNav === 'function') {
+        window.initMobileNav();
+    }
 
     // Инициализация главной страницы
     if (document.querySelector('.stats')) {
@@ -22,59 +24,6 @@ onReady(function() {
     // Обработка флеш-сообщений
     setupFlashMessages();
 });
-
-function initMobileNav() {
-    const navbar = document.getElementById('site-navbar');
-    const toggle = document.getElementById('nav-toggle');
-    const closeBtn = document.getElementById('nav-close');
-    const overlay = document.getElementById('nav-overlay');
-    const drawer = document.getElementById('nav-drawer');
-    if (!navbar || !toggle || !overlay || !drawer) return;
-    if (navbar.dataset.navBound === '1') return;
-    navbar.dataset.navBound = '1';
-
-    const openNav = () => {
-        navbar.classList.add('nav-open');
-        overlay.classList.add('visible');
-        toggle.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-    };
-
-    const closeNav = () => {
-        navbar.classList.remove('nav-open');
-        overlay.classList.remove('visible');
-        toggle.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-    };
-
-    toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (navbar.classList.contains('nav-open')) {
-            closeNav();
-        } else {
-            openNav();
-        }
-    });
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeNav);
-    }
-
-    overlay.addEventListener('click', closeNav);
-
-    drawer.querySelectorAll('.nav-menu a').forEach(link => {
-        link.addEventListener('click', closeNav);
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeNav();
-    });
-
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 1024) closeNav();
-    });
-}
 
 function loadHomeStats() {
     const setText = (id, value) => {
