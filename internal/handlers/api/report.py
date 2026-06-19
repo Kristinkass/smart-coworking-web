@@ -18,6 +18,7 @@ from internal.utils.formatters import (
     format_place_container,
     get_status_name,
 )
+from internal.utils.pdf_fonts import register_pdf_fonts
 
 
 def _pdf_escape(text):
@@ -29,33 +30,57 @@ def _pdf_cell(text, style):
     return Paragraph(_pdf_escape(text), style)
 
 
-def _build_section_table(section_key, section_mode, value_header, bookings, cell_style, header_style, font_name):
+def _formal_table_style(font_name, bold_name, header_rows=1):
     from reportlab.lib import colors
-    from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
+    from reportlab.platypus import TableStyle
+
+    return TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTNAME', (0, 0), (-1, header_rows - 1), bold_name),
+        ('FONTNAME', (0, header_rows), (-1, -1), font_name),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('LINEBELOW', (0, header_rows - 1), (-1, header_rows - 1), 1, colors.black),
+        ('WORDWRAP', (0, 0), (-1, -1), True),
+    ])
+
+
+def _build_section_table(section_key, section_mode, value_header, bookings, cell_style, header_style, font_name, bold_name):
+    from reportlab.platypus import Paragraph, Spacer, Table
 
     if not bookings:
         return []
 
     title = next(s['title'] for s in REPORT_SECTIONS if s['key'] == section_key)
     elements = [
-        Spacer(1, 12),
-        Paragraph(_pdf_escape(title), header_style),
-        Spacer(1, 6),
+        Spacer(1, 10),
+        Paragraph(_pdf_escape(f'{title} ({len(bookings)})'), header_style),
+        Spacer(1, 4),
     ]
 
     time_header = 'Период' if section_mode == 'period' else 'Время'
-    headers = ['Дата', time_header, 'Пользователь', 'Место', 'Локация']
+    headers = ['№', 'Дата', time_header, 'Пользователь', 'Место', 'Локация']
     if section_mode == 'subscription':
         headers.append('Абонемент')
-    headers.extend([value_header, 'Сумма', 'Статус'])
+    elif value_header:
+        headers.append(value_header)
+    headers.extend(['Сумма', 'Статус'])
     table_data = [[Paragraph(_pdf_escape(h), cell_style) for h in headers]]
 
-    for booking in bookings:
+    for idx, booking in enumerate(bookings, start=1):
         place_code = format_place_code(booking.place) if booking.place else '-'
         if booking.place and booking.place.name:
             place_code = f'{booking.place.name} ({place_code})'
         location_label = format_place_container(booking.place) if booking.place else ''
         row = [
+            _pdf_cell(str(idx), cell_style),
             _pdf_cell(booking.booking_date.strftime('%d.%m.%Y'), cell_style),
             _pdf_cell(format_booking_time_or_period(booking), cell_style),
             _pdf_cell(booking.user.username if booking.user else '-', cell_style),
@@ -64,33 +89,34 @@ def _build_section_table(section_key, section_mode, value_header, bookings, cell
         ]
         if section_mode == 'subscription':
             row.append(_pdf_cell(format_booking_subscription_name(booking), cell_style))
+        elif value_header:
+            row.append(_pdf_cell(format_booking_duration_display(booking), cell_style))
         row.extend([
-            _pdf_cell(format_booking_duration_display(booking), cell_style),
             _pdf_cell(f"{int(round(booking.total_price or 0))} ₽", cell_style),
             _pdf_cell(get_status_name(booking.status), cell_style),
         ])
         table_data.append(row)
 
     col_count = len(headers)
-    page_width = 523  # A4 минус поля 36pt с каждой стороны
-    col_width = page_width / col_count
-    col_widths = [col_width] * col_count
+    page_width = 523
+    weights = {
+        '№': 0.5,
+        'Дата': 0.9,
+        'Время': 1.0,
+        'Период': 1.2,
+        'Пользователь': 1.1,
+        'Место': 1.4,
+        'Локация': 1.2,
+        'Абонемент': 1.1,
+        'Длительность': 0.9,
+        'Сумма': 0.8,
+        'Статус': 0.9,
+    }
+    total_w = sum(weights.get(h, 1.0) for h in headers)
+    col_widths = [page_width * weights.get(h, 1.0) / total_w for h in headers]
 
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('FONTNAME', (0, 0), (-1, 0), font_name + '-Bold' if font_name == 'Arial' else 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 1), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('WORDWRAP', (0, 0), (-1, -1), True),
-    ]))
+    table.setStyle(_formal_table_style(font_name, bold_name))
     elements.append(table)
     return elements
 
@@ -101,13 +127,11 @@ def register_report_routes(app):
     def generate_pdf_report():
         """Генерация PDF отчета"""
         try:
-            from reportlab.lib import colors
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
             from reportlab.pdfbase import pdfmetrics
             from reportlab.pdfbase.ttfonts import TTFont
-            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-            import os
+            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
 
             start_date_str = request.args.get('start_date')
             end_date_str = request.args.get('end_date')
@@ -150,66 +174,75 @@ def register_report_routes(app):
             )
             elements = []
 
-            font_path = 'C:\\Windows\\Fonts\\arial.ttf'
-            font_name = 'Arial'
-            if os.path.exists(font_path):
-                pdfmetrics.registerFont(TTFont('Arial', font_path))
-                pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:\\Windows\\Fonts\\arialbd.ttf'))
-            else:
-                font_name = 'Helvetica'
+            font_name, bold_name = register_pdf_fonts(pdfmetrics, TTFont)
 
             styles = getSampleStyleSheet()
-            if font_name == 'Arial':
-                for name in ('Title', 'Normal', 'Heading2'):
-                    styles[name].fontName = 'Arial-Bold' if name != 'Normal' else 'Arial'
-
-            cell_style = ParagraphStyle(
-                'Cell',
+            title_style = ParagraphStyle(
+                'ReportTitle',
+                parent=styles['Title'],
+                fontName=bold_name,
+                fontSize=14,
+                leading=16,
+                textColor='black',
+            )
+            normal_style = ParagraphStyle(
+                'ReportNormal',
                 parent=styles['Normal'],
                 fontName=font_name,
-                fontSize=8,
-                leading=10,
+                fontSize=9,
+                leading=11,
+                textColor='black',
+            )
+            cell_style = ParagraphStyle(
+                'Cell',
+                parent=normal_style,
+                fontSize=7,
+                leading=9,
                 wordWrap='CJK',
             )
             section_style = ParagraphStyle(
                 'Section',
-                parent=styles['Heading2'],
-                fontName='Arial-Bold' if font_name == 'Arial' else 'Helvetica-Bold',
-                fontSize=11,
-                spaceAfter=4,
+                parent=normal_style,
+                fontName=bold_name,
+                fontSize=10,
+                spaceAfter=2,
             )
 
-            elements.append(Paragraph('Отчет по бронированиям коворкинга', styles['Title']))
-            elements.append(Spacer(1, 8))
+            type_labels = {
+                'all': 'Все бронирования',
+                'completed': 'Завершённые бронирования',
+                'active': 'Активные бронирования',
+                'cancelled': 'Отменённые бронирования',
+            }
+            elements.append(Paragraph('Отчёт по бронированиям коворкинга', title_style))
+            elements.append(Spacer(1, 6))
             elements.append(Paragraph(
-                f"Период: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}",
-                styles['Normal'],
+                f"Тип: {type_labels.get(report_type, report_type)} · "
+                f"Период: {start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}",
+                normal_style,
             ))
-            elements.append(Spacer(1, 12))
+            elements.append(Spacer(1, 10))
 
-            page_width = 523  # A4 минус поля 36pt с каждой стороны
+            page_width = 523
             stats_rows = [
-                ['Показатель', 'Значение'],
-                ['Всего бронирований', str(stats['total_bookings'])],
-                ['Общий доход', f"{stats['total_revenue']:.2f} ₽"],
+                [_pdf_cell('Показатель', cell_style), _pdf_cell('Значение', cell_style)],
+                [_pdf_cell('Всего бронирований', cell_style), _pdf_cell(str(stats['total_bookings']), cell_style)],
+                [_pdf_cell('Общий доход', cell_style), _pdf_cell(f"{stats['total_revenue']:.2f} ₽", cell_style)],
+                [_pdf_cell('Уникальных пользователей', cell_style), _pdf_cell(str(stats['unique_users']), cell_style)],
             ]
             for row in stats.get('tariff_summary', []):
-                stats_rows.append([row['label'], row['detail']])
+                stats_rows.append([
+                    _pdf_cell(row['label'], cell_style),
+                    _pdf_cell(row['detail'], cell_style),
+                ])
             for row in stats.get('subscription_summary', []):
-                stats_rows.append([f"Абонемент: {row['label']}", row['detail']])
+                stats_rows.append([
+                    _pdf_cell(f"Абонемент: {row['label']}", cell_style),
+                    _pdf_cell(row['detail'], cell_style),
+                ])
 
-            stats_table = Table(stats_rows, colWidths=[page_width / 2, page_width / 2])
-            stats_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('FONTNAME', (0, 0), (-1, 0), font_name + '-Bold' if font_name == 'Arial' else 'Helvetica-Bold'),
-                ('FONTNAME', (0, 1), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('WORDWRAP', (0, 0), (-1, -1), True),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ]))
+            stats_table = Table(stats_rows, colWidths=[page_width * 0.55, page_width * 0.45])
+            stats_table.setStyle(_formal_table_style(font_name, bold_name))
             elements.append(stats_table)
 
             for section in REPORT_SECTIONS:
@@ -217,7 +250,7 @@ def register_report_routes(app):
                     _build_section_table(
                         section['key'], section['mode'], section['value_label'],
                         grouped[section['key']],
-                        cell_style, section_style, font_name,
+                        cell_style, section_style, font_name, bold_name,
                     )
                 )
 
