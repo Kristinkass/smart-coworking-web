@@ -9,7 +9,7 @@ let wallsData = [];
 let doorsData = [];
 let currentFloor = 1;
 let zoomLevel = 1;
-let minZoomLevel = 0.4;
+let minZoomLevel = 1;
 let spaceEntryZoomLevel = null;
 let activeSpace = null; // Просмотр внутри помещения
 let userSubscriptions = []; // Активные абонементы пользователя
@@ -203,6 +203,8 @@ const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
 const KIND_STROKE = { desk: '#16a34a', room: '#0284c7', space: '#0284c7' };
 const DESK_ZONE_FILL = '#DDB892';
 const DESK_ZONE_STROKE = '#7C5C3A';
+const AMENITY_FILL = '#f3e8ff';
+const AMENITY_STROKE = '#7e22ce';
 
 function isDeskZoneSpace(place) {
     if (!isSpaceContainer(place)) return false;
@@ -710,7 +712,7 @@ function hideTooltip() {
 
 // ================== ОТРИСОВКА КАРТЫ ==================
 function placeFill(place) {
-    if (isAmenityPlace(place)) return 'rgba(148,163,184,0.22)';
+    if (isAmenityPlace(place)) return AMENITY_FILL;
     const st = effectivePlaceStatus(place);
     if (st === 'maintenance') return STATUS_OVERLAY.maintenance.fill;
     if (st === 'occupied') return STATUS_OVERLAY.occupied.fill;
@@ -719,7 +721,7 @@ function placeFill(place) {
     return KIND_FILL[place.kind] || '#e5e7eb';
 }
 function placeStroke(place) {
-    if (isAmenityPlace(place)) return '#64748b';
+    if (isAmenityPlace(place)) return AMENITY_STROKE;
     const st = effectivePlaceStatus(place);
     if (st === 'maintenance') return STATUS_OVERLAY.maintenance.stroke;
     if (st === 'occupied') return STATUS_OVERLAY.occupied.stroke;
@@ -904,6 +906,10 @@ function renderFloorPlan() {
         rect.setAttribute('stroke-width', showDeskOnMap(place) ? 2 : 3);
         rect.style.fill = placeFill(place);
         rect.style.stroke = placeStroke(place);
+        if (isAmenityPlace(place)) {
+            rect.setAttribute('stroke-dasharray', '12 6');
+            rect.setAttribute('stroke-width', 4);
+        }
         if (rotation) {
             rect.setAttribute('transform', `rotate(${rotation} ${x + w/2} ${y + h/2})`);
         }
@@ -914,7 +920,7 @@ function renderFloorPlan() {
         nameText.setAttribute('y', y + h / 2 + (showDeskOnMap(place) ? 0 : -4));
         nameText.setAttribute('text-anchor', 'middle');
         nameText.setAttribute('dominant-baseline', 'middle');
-        nameText.setAttribute('fill', showDeskOnMap(place) ? '#14532d' : '#1e293b');
+        nameText.setAttribute('fill', isAmenityPlace(place) ? '#581c87' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
         nameText.setAttribute('font-size', showDeskOnMap(place)
             ? Math.min(12, Math.max(9, Math.min(w, h) / 5))
             : Math.min(13, Math.max(9, w / 10)));
@@ -939,7 +945,7 @@ function renderFloorPlan() {
                 capText.setAttribute('font-weight', '600');
                 capText.textContent = `${place.partial_occupancy.occupied}/${place.partial_occupancy.capacity} занято`;
             } else if (isAmenityPlace(place)) {
-                capText.setAttribute('fill', '#64748b');
+                capText.setAttribute('fill', '#7e22ce');
                 capText.textContent = 'служебная зона';
             } else if (place.is_meeting_room) {
                 capText.setAttribute('fill', '#475569');
@@ -1047,7 +1053,6 @@ function enterSpaceView(space) {
     document.getElementById('booking-form').style.display = 'none';
     document.querySelector('.floor-plan-container')?.classList.add('space-zoom-active');
     spaceEntryZoomLevel = zoomLevel;
-    minZoomLevel = zoomLevel;
     const bar = document.getElementById('space-view-bar');
     if (bar) {
         document.getElementById('space-view-title').textContent = space.name;
@@ -1064,7 +1069,6 @@ function enterSpaceView(space) {
 function exitSpaceView() {
     activeSpace = null;
     invalidateViewCache();
-    minZoomLevel = 0.4;
     spaceEntryZoomLevel = null;
     document.querySelector('.floor-plan-container')?.classList.remove('space-zoom-active');
     updateSpaceViewBar();
@@ -1881,17 +1885,39 @@ function setMapFloor(floor) {
 }
 
 // ================== ZOOM ==================
-function zoomIn()    { zoomLevel = Math.min(zoomLevel * 1.25, 3);   applyZoom(); }
-function zoomOut()   { zoomLevel = Math.max(zoomLevel / 1.25, minZoomLevel); applyZoom(); }
+function calculateMinZoomLevel() {
+    const svg = document.getElementById('floor-plan');
+    const container = document.querySelector('.floor-plan-container');
+    if (!svg || !container) return 1;
+
+    const baseWidth = svg.offsetWidth || 2240;
+    const baseHeight = svg.offsetHeight || 1344;
+    const availableWidth = Math.max(1, container.clientWidth);
+    const availableHeight = Math.max(1, container.clientHeight);
+    const fitZoom = Math.min(availableWidth / baseWidth, availableHeight / baseHeight, 1);
+    return Math.max(0.1, fitZoom);
+}
+
+function updateMinZoomLevel() {
+    minZoomLevel = calculateMinZoomLevel();
+    if (zoomLevel < minZoomLevel) zoomLevel = minZoomLevel;
+}
+
+function zoomIn()    { updateMinZoomLevel(); zoomLevel = Math.min(zoomLevel * 1.25, 3); applyZoom(); }
+function zoomOut()   { updateMinZoomLevel(); zoomLevel = Math.max(zoomLevel / 1.25, minZoomLevel); applyZoom(); }
 function zoomReset() {
     zoomLevel = (activeSpace && spaceEntryZoomLevel != null) ? spaceEntryZoomLevel : 1;
     applyZoom();
 }
 function applyZoom() {
     const svg = document.getElementById('floor-plan');
+    if (!svg) return;
+    updateMinZoomLevel();
     svg.style.transform = `scale(${zoomLevel})`;
     svg.style.transformOrigin = 'top left';
 }
+
+window.addEventListener('resize', applyZoom);
 
 // ================== МЕНЕДЖЕРСКИЙ СПИСОК ==================
 function updateManagerStatusList() {
