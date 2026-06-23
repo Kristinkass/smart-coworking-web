@@ -1,23 +1,71 @@
 """Layout.json I/O, геометрия мест, стены и двери."""
 import json
+import os
+import tempfile
+import threading
 
 from internal.utils.paths import LAYOUT_PATH
 
 _LAYOUT_CACHE = None
+_LAYOUT_LOCK = threading.RLock()
+
+
+def _read_layout_file():
+    with open(LAYOUT_PATH, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def _save_layout_unlocked(layout):
+    """Записать layout на диск атомарно (вызывать под _LAYOUT_LOCK)."""
+    global _LAYOUT_CACHE
+    dir_name = os.path.dirname(os.path.abspath(LAYOUT_PATH)) or '.'
+    fd, tmp_path = tempfile.mkstemp(suffix='.json', dir=dir_name, prefix='.layout_')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(layout, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, LAYOUT_PATH)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+    _LAYOUT_CACHE = layout
+    from internal.layout.sync import reset_sync_cache
+    reset_sync_cache()
+
+
+def _save_layout(layout):
+    with _LAYOUT_LOCK:
+        _save_layout_unlocked(layout)
+
+
+def _mutate_layout(mutator):
+    """Потокобезопасное изменение layout.json."""
+    with _LAYOUT_LOCK:
+        layout = json.loads(json.dumps(load_layout()))
+        result = mutator(layout)
+        if result is False:
+            return False
+        _save_layout_unlocked(layout)
+        return result if result is not None else True
 
 
 def load_layout():
     global _LAYOUT_CACHE
-    if _LAYOUT_CACHE is None:
-        with open(LAYOUT_PATH, 'r', encoding='utf-8') as f:
-            _LAYOUT_CACHE = json.load(f)
-    return _LAYOUT_CACHE
+    with _LAYOUT_LOCK:
+        if _LAYOUT_CACHE is None:
+            _LAYOUT_CACHE = _read_layout_file()
+        return _LAYOUT_CACHE
 
 
 def reload_layout():
     """Сбросить кеш layout.json (после записи)."""
     global _LAYOUT_CACHE
-    _LAYOUT_CACHE = None
+    with _LAYOUT_LOCK:
+        _LAYOUT_CACHE = None
     from internal.layout.sync import reset_sync_cache
     reset_sync_cache()
 
@@ -54,36 +102,85 @@ def migrate_rooms_to_spaces_in_layout():
                 p['enclosed'] = True
             changed = True
     if changed:
-        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(layout, f, ensure_ascii=False, indent=2)
-        reload_layout()
+        _save_layout(layout)
     return changed
 
 
 def save_place_geometry(code, x, y, floor=None):
-    layout = load_layout()
-    for p in layout.get('places', []):
-        if p['code'] == code:
-            p['x'] = float(x)
-            p['y'] = float(y)
-            if floor is not None:
-                p['floor'] = int(floor)
-            break
-    else:
+    def mutate(layout):
+        for p in layout.get('places', []):
+            if p['code'] == code:
+                p['x'] = float(x)
+                p['y'] = float(y)
+                if floor is not None:
+                    p['floor'] = int(floor)
+                return True
         return False
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
-    return True
+    return bool(_mutate_layout(mutate))
 
 
 def add_place_to_layout(place_dict):
-    layout = load_layout()
-    layout.setdefault('places', []).append(place_dict)
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    def mutate(layout):
+        layout.setdefault('places', []).append(place_dict)
+    _mutate_layout(mutate)
     return True
+
+
+def add_places_to_layout(place_dicts):
+    """Пакетное добавление мест — одна запись в файл."""
+    if not place_dicts:
+        return True
+
+    def mutate(layout):
+        layout.setdefault('places', []).extend(place_dicts)
+
+    _mutate_layout(mutate)
+    return True
+
+
+def replace_container_desks_in_layout(container_code, place_dicts):
+    """Заменить все столы зоны одной атомарной записью (без дублей по code)."""
+    def mutate(layout):
+        places = layout.get('places', [])
+        kept = [
+            p for p in places
+            if not (p.get('kind') == 'desk' and p.get('container_code') == container_code)
+        ]
+        seen = {p.get('code') for p in kept if p.get('code')}
+        for row in place_dicts or []:
+            code = row.get('code')
+            if not code or code in seen:
+                continue
+            seen.add(code)
+            kept.append(dict(row))
+        layout['places'] = kept
+
+    _mutate_layout(mutate)
+    return True
+
+
+def dedupe_layout_places():
+    """Убрать повторяющиеся code в places (оставить запись побогаче)."""
+    def richness(p):
+        return sum(1 for k in ('name', 'location', 'category_id') if p.get(k))
+
+    def mutate(layout):
+        out = []
+        best_by_code = {}
+        for p in layout.get('places', []):
+            code = p.get('code')
+            if not code:
+                out.append(p)
+                continue
+            prev = best_by_code.get(code)
+            if prev is None:
+                best_by_code[code] = p
+            elif richness(p) > richness(prev):
+                best_by_code[code] = p
+        out.extend(best_by_code[c] for c in sorted(best_by_code))
+        layout['places'] = out
+
+    return _mutate_layout(mutate)
 
 
 def rename_place_in_layout(old_code, new_code):
@@ -98,9 +195,7 @@ def rename_place_in_layout(old_code, new_code):
             p['container_code'] = new_code
     if not found:
         return False
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -114,9 +209,7 @@ def remove_place_from_layout(code):
     if len(new_places) == len(places):
         return False
     layout['places'] = new_places
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -134,9 +227,7 @@ def save_place_category_in_layout(code, category_id):
                 break
         if not place_found:
             return False
-        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(layout, f, ensure_ascii=False, indent=2)
-        reload_layout()
+        _save_layout(layout)
         return True
     except Exception:
         return False
@@ -154,9 +245,7 @@ def save_place_zone_in_layout(code, location_code, zone_type_id=None):
             break
     else:
         return False
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -169,9 +258,7 @@ def resize_place(code, width, height):
             break
     else:
         return False
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -183,9 +270,7 @@ def rotate_place(code, rotation):
             break
     else:
         return False
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -196,9 +281,7 @@ def load_walls():
 def save_walls(walls):
     layout = load_layout()
     layout['walls'] = walls
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
 
 
 def load_ignored_drafts(floor=None):
@@ -233,9 +316,7 @@ def add_ignored_draft(room, floor=1):
         if _ignored_entry_matches(ig, entry):
             return ig
     ignored.append(entry)
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return entry
 
 
@@ -279,9 +360,7 @@ def remove_ignored_draft(room_key=None, x=None, y=None, width=None, height=None,
     if not removed:
         return False
     layout['ignored_drafts'] = kept
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return True
 
 
@@ -311,9 +390,7 @@ def purge_ignored_drafts_touching_wall(wall, floor=1):
     if len(kept) == len(ignored):
         return []
     layout['ignored_drafts'] = kept
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return removed_keys
 
 
@@ -343,9 +420,7 @@ def prune_stale_ignored_drafts(floor=1):
     if len(kept) == len(ignored):
         return []
     layout['ignored_drafts'] = kept
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return removed_keys
 
 
@@ -370,9 +445,7 @@ def remove_layout_places_in_box(x, y, width, height, floor=1):
     if not removed:
         return removed
     layout['places'] = kept
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return removed
 
 
@@ -420,9 +493,7 @@ def provision_new_floor_layout(floor_number, name=None):
             'height': ref_h,
         })
         floors.sort(key=lambda f: int(f.get('number', 0)))
-        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(layout, f, ensure_ascii=False, indent=2)
-        reload_layout()
+        _save_layout(layout)
 
     w, h = _floor_size(floor_num)
     floor_walls = [
@@ -458,9 +529,7 @@ def remove_floor_layout(floor_number):
             changed = True
 
     if changed:
-        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(layout, f, ensure_ascii=False, indent=2)
-        reload_layout()
+        _save_layout(layout)
     return changed
 
 
@@ -515,13 +584,13 @@ def move_container_with_children(code, new_x, new_y):
             p['x'] = float(p['x']) + dx
             p['y'] = float(p['y']) + dy
             moved.append(p['code'])
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
     return {'dx': dx, 'dy': dy, 'moved': moved}
 
 
 def add_wall(x1, y1, x2, y2, protected=False, floor=1):
+    from internal.layout.geometry import repair_wall_gaps
+
     walls = load_walls()
     wall_id = max([w.get('id', 0) for w in walls], default=0) + 1
     walls.append({
@@ -530,6 +599,7 @@ def add_wall(x1, y1, x2, y2, protected=False, floor=1):
         'protected': bool(protected),
         'floor': int(floor or 1),
     })
+    repair_wall_gaps(walls, floor=int(floor or 1))
     save_walls(walls)
     return wall_id
 
@@ -557,9 +627,7 @@ def load_doors():
 def save_doors(doors):
     layout = load_layout()
     layout['doors'] = doors
-    with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(layout, f, ensure_ascii=False, indent=2)
-    reload_layout()
+    _save_layout(layout)
 
 
 def add_door(wall_id, position, floor=1, width=100):
@@ -652,9 +720,7 @@ def sync_wall_bound_places(floor=None):
                 break
 
     if updated:
-        with open(LAYOUT_PATH, 'w', encoding='utf-8') as f:
-            json.dump(layout, f, ensure_ascii=False, indent=2)
-        reload_layout()
+        _save_layout(layout)
     return updated
 
 

@@ -1,5 +1,9 @@
 """API редактора: комнаты по стенам, варианты, регистрация локаций."""
 
+import copy
+import json
+import time
+
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
@@ -19,6 +23,74 @@ from internal.utils.room_geometry import (
 )
 
 room_editor_bp = Blueprint('room_editor_api', __name__)
+
+_VARIANT_CACHE = {}
+_VARIANT_CACHE_TTL = 25
+
+
+def _variant_cache_get(key):
+    item = _VARIANT_CACHE.get(key)
+    if not item:
+        return None
+    ts, payload = item
+    if time.monotonic() - ts > _VARIANT_CACHE_TTL:
+        _VARIANT_CACHE.pop(key, None)
+        return None
+    return copy.deepcopy(payload)
+
+
+def _variant_cache_set(key, payload):
+    if len(_VARIANT_CACHE) > 80:
+        _VARIANT_CACHE.clear()
+    _VARIANT_CACHE[key] = (time.monotonic(), copy.deepcopy(payload))
+
+
+def _variant_cache_clear():
+    _VARIANT_CACHE.clear()
+
+
+def _resolve_zone_kind(place, zone_type_id=None):
+    """Тип зоны для вариантов: из запроса, БД или layout.json."""
+    from internal.models import LocationZoneType
+    from internal.models.location_zone import DESK_ZONE_KIND
+
+    if zone_type_id:
+        zt = LocationZoneType.query.get(int(zone_type_id))
+        if zt:
+            return zt.kind, zt.name
+    if place and place.location and place.location.zone_type:
+        return place.location.zone_type.kind, place.location.zone_type.name
+    code = place.code if place else None
+    if code:
+        meta = models.get_layout_place_meta(code) or {}
+        ztid = meta.get('zone_type_id')
+        if ztid:
+            zt = LocationZoneType.query.get(int(ztid))
+            if zt:
+                return zt.kind, zt.name
+    return DESK_ZONE_KIND, 'Зона столов'
+
+
+def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name=None):
+    from internal.models.location_zone import is_amenity_zone_kind, ROOM_ZONE_KIND
+
+    cats = [c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()]
+    if zone_kind and is_amenity_zone_kind(zone_kind):
+        return 'amenity', [{
+            'variant_type': 'amenity',
+            'title': zone_name or 'Служебная зона',
+            'description': 'Служебная зона – без бронирования и столов',
+        }]
+    if zone_kind == ROOM_ZONE_KIND:
+        return 'meeting', meeting_fit_variants(
+            rw, rh, [c for c in cats if c.get('kind') == 'room'],
+        )
+    variants = desk_grid_variants(
+        rw, rh,
+        [c for c in cats if is_desk_template_category(c)],
+        room=room, doors=floor_doors, walls=floor_walls,
+    )
+    return 'desks', variants
 
 
 @room_editor_bp.before_request
@@ -94,6 +166,11 @@ def api_editor_map():
     containers = [f for f in formatted if f.get('kind') in ('space', 'room')]
     floor_walls = [w for w in walls if int(w.get('floor', 1)) == floor]
     floor_doors = [d for d in doors if int(d.get('floor', 1)) == floor]
+    from internal.layout.geometry import repair_wall_gaps
+    from internal.layout.store import save_walls
+    if repair_wall_gaps(walls, floor=floor):
+        save_walls(walls)
+        floor_walls = [w for w in walls if int(w.get('floor', 1)) == floor]
     rooms = link_rooms_with_places(detect_all_wall_rooms(floor_walls, floor), containers)
 
     return jsonify({
@@ -125,61 +202,72 @@ def api_register_room():
     ok, err, place = register_wall_room(data)
     if not ok:
         return jsonify({'success': False, 'error': err}), 400
+    _variant_cache_clear()
     return jsonify({'success': True, 'place': place, 'message': 'Локация зарегистрирована'}), 201
 
 
 @room_editor_bp.route('/api/admin/room/<path:code>/variants', methods=['GET'])
 def api_room_variants(code):
-    place = PlaceRepository.sync_by_code(code)
-    if not place:
-        return jsonify({'success': False, 'error': 'Локация не найдена'}), 404
+    try:
+        zone_type_id = request.args.get('zone_type_id', type=int)
+        place = PlaceRepository.sync_by_code(code)
+        layout_meta = models.get_layout_place_meta(code)
+        if not place and not layout_meta:
+            return jsonify({'success': False, 'error': 'Локация не найдена на карте'}), 404
 
-    geom = models.get_place_geometry(place.code)
-    rw, rh = geom['width'], geom['height']
-    cats = [c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()]
+        geom = models.get_place_geometry(code)
+        rw, rh = geom['width'], geom['height']
+        floor_num = int(geom.get('floor', 1))
+        layout = LayoutRepository.load()
+        floor_walls = [w for w in layout.get('walls', []) if int(w.get('floor', 1)) == floor_num]
+        floor_doors = [d for d in layout.get('doors', []) if int(d.get('floor', 1)) == floor_num]
+        room = {
+            'x': geom['x'], 'y': geom['y'],
+            'width': rw, 'height': rh, 'floor': floor_num,
+        }
 
-    from internal.models.location_zone import is_amenity_zone_kind
+        zone_kind, zone_name = _resolve_zone_kind(place, zone_type_id)
+        cache_key = ('room', code, rw, rh, zone_type_id or 0, zone_kind)
+        cached = _variant_cache_get(cache_key)
+        if cached:
+            return jsonify(cached)
+        mode, variants = _build_room_variants(
+            rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name,
+        )
 
-    zone_kind = None
-    if place.location and place.location.zone_type:
-        zone_kind = place.location.zone_type.kind
-
-    if zone_kind and is_amenity_zone_kind(zone_kind):
-        return jsonify({
+        payload = {
             'success': True,
-            'mode': 'amenity',
-            'variants': [{
-                'variant_type': 'amenity',
-                'title': place.location.zone_type.name,
-                'description': 'Служебная зона – без бронирования и столов',
-            }],
-        })
-
-    is_meeting = place.is_meeting_room() or zone_kind == 'room_zone'
-    if is_meeting:
-        room_cats = [c for c in cats if c.get('kind') == 'room']
-        variants = meeting_fit_variants(rw, rh, room_cats)
-        mode = 'meeting'
-    else:
-        desk_cats = [c for c in cats if is_desk_template_category(c)]
-        variants = desk_grid_variants(rw, rh, desk_cats)
-        mode = 'desks'
-
-    return jsonify({
-        'success': True,
-        'mode': mode,
-        'variants': variants,
-        'room': {'code': place.code, 'width': rw, 'height': rh},
-    })
+            'mode': mode,
+            'variants': variants,
+            'room': {'code': code, 'width': rw, 'height': rh},
+        }
+        _variant_cache_set(cache_key, payload)
+        return jsonify(payload)
+    except json.JSONDecodeError:
+        return jsonify({
+            'success': False,
+            'error': 'Файл планировки повреждён. Обратитесь к администратору или перезапустите сервер после восстановления layout.json',
+        }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @room_editor_bp.route('/api/admin/room/<path:code>/variants', methods=['POST'])
 def api_apply_room_variant(code):
-    data = request.get_json(silent=True) or {}
-    ok, err, result = apply_variant(code, data)
-    if not ok:
-        return jsonify({'success': False, 'error': err}), 400
-    return jsonify({'success': True, 'result': result})
+    try:
+        data = request.get_json(silent=True) or {}
+        ok, err, result = apply_variant(code, data)
+        if not ok:
+            return jsonify({'success': False, 'error': err}), 400
+        _variant_cache_clear()
+        return jsonify({'success': True, 'result': result})
+    except json.JSONDecodeError:
+        return jsonify({
+            'success': False,
+            'error': 'Файл планировки повреждён — не удалось сохранить столы',
+        }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
 @room_editor_bp.route('/api/admin/room/draft-variants', methods=['POST'])
@@ -194,32 +282,20 @@ def api_draft_variants():
 
     cats = [c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()]
     from internal.models import LocationZoneType
-    from internal.models.location_zone import is_amenity_zone_kind
 
     zone = LocationZoneType.query.get(zone_type_id) if zone_type_id else None
-    is_desk = zone and zone.kind == 'desk_zone'
-    is_amenity = zone and is_amenity_zone_kind(zone.kind)
+    zone_kind, zone_name = (zone.kind, zone.name) if zone else (None, None)
+    if zone_kind:
+        cache_key = ('draft', rw, rh, int(zone_type_id), zone_kind)
+        cached = _variant_cache_get(cache_key)
+        if cached:
+            return jsonify(cached)
+        mode, variants = _build_room_variants(rw, rh, None, [], [], zone_kind, zone_name)
+        payload = {'success': True, 'mode': mode, 'variants': variants}
+        _variant_cache_set(cache_key, payload)
+        return jsonify(payload)
 
-    if is_amenity:
-        return jsonify({
-            'success': True,
-            'mode': 'amenity',
-            'variants': [{
-                'variant_type': 'amenity',
-                'title': zone.name,
-                'description': 'Служебная зона – без бронирования и столов',
-            }],
-        })
-    if is_desk:
-        variants = desk_grid_variants(
-            rw, rh, [c for c in cats if is_desk_template_category(c)],
-        )
-        mode = 'desks'
-    else:
-        variants = meeting_fit_variants(rw, rh, [c for c in cats if c.get('kind') == 'room'])
-        mode = 'meeting'
-
-    return jsonify({'success': True, 'mode': mode, 'variants': variants})
+    return jsonify({'success': False, 'error': 'Укажите тип зоны'}), 400
 
 
 @room_editor_bp.route('/api/admin/room/dismiss-draft', methods=['POST'])
@@ -243,6 +319,7 @@ def api_dismiss_draft_room():
             msg += f' (стен: {result["walls_removed"]})'
         if result.get('layout_removed'):
             msg += f' · мест: {", ".join(result["layout_removed"])}'
+        _variant_cache_clear()
         return jsonify({'success': True, 'message': msg, **result})
     except PermissionError as e:
         return jsonify({'success': False, 'error': user_error_message(e)}), 403
@@ -267,4 +344,5 @@ def api_restore_draft_room():
     )
     if not removed:
         return jsonify({'success': False, 'error': 'Скрытая зона не найдена'}), 404
+    _variant_cache_clear()
     return jsonify({'success': True, 'message': 'Зона снова отображается на карте'})

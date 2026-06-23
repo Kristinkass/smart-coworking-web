@@ -11,7 +11,7 @@
     </div>
   </div>
 
-  <div class="module-stack">
+  <div class="notify-page-layout">
     <div class="module-section notify-form">
       <div class="form-group">
         <label for="notify-title">Заголовок</label>
@@ -48,7 +48,9 @@
         <select id="notify-user">
           <option value="">– выберите клиента –</option>
           {% for client in clients %}
-          <option value="{{ client.id }}">{{ client.email }} – {{ client.username }}</option>
+          <option value="{{ client.id }}" data-name="{{ client.username }}" data-phone="{{ client.phone or '' }}" data-login="{{ client.login_label }}">
+            {{ client.phone or client.login_label }}{% if client.username %} – {{ client.username }}{% endif %}
+          </option>
           {% endfor %}
         </select>
       </div>
@@ -58,53 +60,134 @@
       <div class="notify-result" id="notify-result"></div>
     </div>
 
-    <div class="module-section">
-      <h3 class="module-section-title"><i class="fas fa-history"></i> Системные уведомления</h3>
-      <div class="table-responsive">
-        <table class="module-data-table">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Заголовок</th>
-              <th>Текст</th>
-              <th>Кому</th>
-              <th>Отправитель</th>
-            </tr>
-          </thead>
-          <tbody id="history-system-tbody">
-            <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
-          </tbody>
-        </table>
+    <div class="notify-side-panel">
+      <div class="module-section">
+        <h3 class="module-section-title"><i class="fas fa-history"></i> Системные уведомления</h3>
+        <div class="table-responsive">
+          <table class="module-data-table notify-history-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Заголовок</th>
+                <th>Текст</th>
+                <th>Кому</th>
+                <th>Отправитель</th>
+              </tr>
+            </thead>
+            <tbody id="history-system-tbody">
+              <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <div class="module-section">
-      <h3 class="module-section-title"><i class="fas fa-comment-dots"></i> Обратная связь от клиентов</h3>
-      <div class="table-responsive">
-        <table class="module-data-table">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Тема</th>
-              <th>Детали</th>
-              <th>Кому</th>
-              <th>Клиент</th>
-            </tr>
-          </thead>
-          <tbody id="history-feedback-tbody">
-            <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
-          </tbody>
-        </table>
+      <div class="module-section">
+        <h3 class="module-section-title"><i class="fas fa-comment-dots"></i> Обратная связь от клиентов</h3>
+        <div class="table-responsive">
+          <table class="module-data-table notify-history-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Тема</th>
+                <th>Детали</th>
+                <th>Кому</th>
+                <th>Клиент и действия</th>
+              </tr>
+            </thead>
+            <tbody id="history-feedback-tbody">
+              <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function friendlyError(error, fallback = 'Произошла ошибка. Попробуйте ещё раз.') {
+      const raw = String(error?.message || error || fallback);
+      if (/Failed to fetch|NetworkError|Load failed/i.test(raw)) return 'Нет связи с сервером. Проверьте подключение.';
+      if (/Cannot read|undefined|TypeError|ReferenceError|Traceback|Stack trace/i.test(raw)) return fallback;
+      if (/^[\x00-\x7F]+$/.test(raw) && /[a-z]/i.test(raw)) return fallback;
+      return raw.replace(/^Ошибка:\s*/i, '') || fallback;
+    }
+
+    function setResult(type, text) {
+      const result = document.getElementById('notify-result');
+      result.className = 'notify-result ' + type;
+      result.textContent = text;
+    }
+
+    let notifyConfirmEl = null;
+    function askNotifyConfirm(message, onYes) {
+      if (notifyConfirmEl) notifyConfirmEl.remove();
+      notifyConfirmEl = document.createElement('div');
+      notifyConfirmEl.className = 'notify-confirm';
+      notifyConfirmEl.innerHTML = `
+        <strong>Подтвердите действие</strong>
+        <span>${escapeHtml(message)}</span>
+        <div>
+          <button type="button" class="btn-cancel">Отмена</button>
+          <button type="button" class="btn-danger">Удалить</button>
+        </div>`;
+      notifyConfirmEl.querySelector('.btn-cancel').onclick = () => notifyConfirmEl.remove();
+      notifyConfirmEl.querySelector('.btn-danger').onclick = () => {
+        notifyConfirmEl.remove();
+        onYes();
+      };
+      document.body.appendChild(notifyConfirmEl);
+    }
+
     function selectAudience(el, value) {
       document.querySelectorAll('.radio-item').forEach(r => r.classList.remove('checked'));
       el.classList.add('checked');
       el.querySelector('input').checked = true;
       document.getElementById('user-select-wrap').style.display = value === 'user' ? 'block' : 'none';
+    }
+
+    function setAudience(value) {
+      const input = document.querySelector(`input[name="audience"][value="${value}"]`);
+      const label = input?.closest('.radio-item');
+      if (label) selectAudience(label, value);
+    }
+
+    function writeToClient(userId, clientLabel, title) {
+      setAudience('user');
+      const select = document.getElementById('notify-user');
+      select.value = String(userId || '');
+      document.getElementById('notify-title').value = title || 'Ответ на обращение';
+      const message = document.getElementById('notify-message');
+      message.value = clientLabel ? `${clientLabel}, здравствуйте!\n\n` : '';
+      message.focus();
+      document.querySelector('.notify-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function openProblemPlace(placeCode, floor) {
+      if (!placeCode) {
+        setResult('error', 'У обращения нет привязанного места на карте');
+        return;
+      }
+      const params = new URLSearchParams();
+      params.set('place', placeCode);
+      if (floor) params.set('floor', floor);
+      window.open('/mapp?' + params.toString(), '_blank');
+    }
+
+    function openBookingContext(bookingId) {
+      if (!bookingId) {
+        setResult('error', 'У обращения нет привязанной брони');
+        return;
+      }
+      window.open('/admin/bookings?booking_id=' + encodeURIComponent(bookingId), '_blank');
     }
 
     async function loadHistory() {
@@ -116,17 +199,17 @@
       try {
         const r = await fetch('/api/admin/notifications/history?limit=50');
         const d = await r.json();
-        if (!d.success) throw new Error('load failed');
+        if (!d.success) throw new Error(d.error || 'Не удалось загрузить историю');
         const system = (d.history || []).filter(n => n.kind !== 'feedback');
         const feedback = (d.history || []).filter(n => n.kind === 'feedback');
         const audienceMap = { all: 'Все', clients: 'Клиенты', managers: 'Менеджеры', admins: 'Администраторы' };
         const renderSystemRow = n => `
           <tr>
-            <td class="cell-date">${n.created_at}</td>
-            <td class="cell-title">${n.title}</td>
-            <td class="cell-text">${n.message}</td>
-            <td>${n.audience_label || audienceMap[n.target_audience] || n.target_audience}</td>
-            <td class="cell-muted">${n.sender_name || '–'}</td>
+            <td class="cell-date">${escapeHtml(n.created_at)}</td>
+            <td class="cell-title">${escapeHtml(n.title)}</td>
+            <td class="cell-text">${escapeHtml(n.message)}</td>
+            <td>${escapeHtml(n.audience_label || audienceMap[n.target_audience] || n.target_audience)}</td>
+            <td class="cell-muted">${escapeHtml(n.sender_name || '–')}</td>
           </tr>`;
         systemBody.innerHTML = system.length
           ? system.map(renderSystemRow).join('')
@@ -134,47 +217,67 @@
         feedbackBody.innerHTML = feedback.length
           ? feedback.map(n => {
               const bookingDetails = (n.booking?.detail_lines || []).map(line =>
-                `<div class="cell-sub">${line}</div>`
+                `<div class="cell-sub">${escapeHtml(line)}</div>`
               ).join('');
               const path = n.booking?.location?.path
-                ? `<div class="cell-sub"><strong>Где:</strong> ${n.booking.location.path}</div>`
+                ? `<div class="cell-sub"><strong>Где:</strong> ${escapeHtml(n.booking.location.path)}</div>`
                 : '';
+              const loc = n.booking?.location || {};
+              const placeCode = loc.place_code || loc.container_code || '';
+              const clientLabel = n.client_label || n.sender_phone || n.sender_login_label || n.sender_name || 'Клиент';
+              const clientArg = encodeURIComponent(clientLabel);
+              const titleArg = encodeURIComponent('Ответ на обращение: ' + (n.title || ''));
+              const placeArg = encodeURIComponent(placeCode);
               return `
               <tr>
-                <td class="cell-date">${n.created_at}</td>
-                <td class="cell-title">${n.title}</td>
+                <td class="cell-date">${escapeHtml(n.created_at)}</td>
+                <td class="cell-title">${escapeHtml(n.title)}</td>
                 <td class="cell-text">
-                  <div class="cell-muted">${n.message}</div>
-                  ${n.booking ? `<div class="cell-sub">${path}${bookingDetails || n.booking.label}</div>` : ''}
+                  <div class="cell-muted">${escapeHtml(n.message)}</div>
+                  ${n.booking ? `<div class="cell-sub">${path}${bookingDetails || escapeHtml(n.booking.label)}</div>` : ''}
                 </td>
-                <td>${n.audience_label || audienceMap[n.target_audience] || n.target_audience}</td>
+                <td>${escapeHtml(n.audience_label || audienceMap[n.target_audience] || n.target_audience)}</td>
                 <td>
-                  <div class="cell-muted">${n.sender_name || '–'}</div>
-                  <button type="button" class="feedback-delete-btn" onclick="deleteFeedbackHistory(${n.id})"><i class="fas fa-trash"></i></button>
+                  <div class="cell-title">${escapeHtml(clientLabel)}</div>
+                  <div class="feedback-actions">
+                    <button type="button" onclick="writeToClient(${n.sender_id || 'null'}, decodeURIComponent('${clientArg}'), decodeURIComponent('${titleArg}'))">
+                      <i class="fas fa-paper-plane"></i> Написать
+                    </button>
+                    <button type="button" onclick="openProblemPlace(decodeURIComponent('${placeArg}'), ${loc.floor || 'null'})">
+                      <i class="fas fa-map-marker-alt"></i> Место
+                    </button>
+                    <button type="button" onclick="openBookingContext(${n.booking_id || 'null'})">
+                      <i class="fas fa-list-alt"></i> Бронь
+                    </button>
+                    <button type="button" class="feedback-delete-btn" onclick="deleteFeedbackHistory(${n.id})"><i class="fas fa-trash"></i></button>
+                  </div>
                 </td>
               </tr>`;
             }).join('')
           : '<tr><td colspan="5" class="cell-empty">Обращений клиентов пока нет</td></tr>';
       } catch (e) {
-        systemBody.innerHTML = '<tr><td colspan="5" class="cell-error">Ошибка загрузки</td></tr>';
-        feedbackBody.innerHTML = '<tr><td colspan="5" class="cell-error">Ошибка загрузки</td></tr>';
+        const msg = friendlyError(e, 'Не удалось загрузить историю уведомлений');
+        systemBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
+        feedbackBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
       }
     }
     document.addEventListener('DOMContentLoaded', loadHistory);
 
     async function deleteFeedbackHistory(id) {
-      if (!confirm('Удалить обращение из истории?')) return;
-      try {
-        const r = await fetch('/api/notifications/' + id, { method: 'DELETE' });
-        const d = await r.json();
-        if (!d.success) {
-          alert(d.error || 'Не удалось удалить');
-          return;
+      askNotifyConfirm('Удалить обращение из истории?', async () => {
+        try {
+          const r = await fetch('/api/notifications/' + id, { method: 'DELETE' });
+          const d = await r.json();
+          if (!d.success) {
+            setResult('error', friendlyError(d.error, 'Не удалось удалить обращение'));
+            return;
+          }
+          setResult('success', 'Обращение удалено');
+          loadHistory();
+        } catch (e) {
+          setResult('error', friendlyError(e, 'Не удалось удалить обращение'));
         }
-        loadHistory();
-      } catch (e) {
-        alert('Ошибка удаления: ' + e.message);
-      }
+      });
     }
 
     async function sendNotification() {
@@ -185,13 +288,11 @@
       const result = document.getElementById('notify-result');
       const btn = document.getElementById('notify-btn');
       if (!title || !message) {
-        result.className = 'notify-result error';
-        result.textContent = 'Заполните заголовок и текст уведомления';
+        setResult('error', 'Заполните заголовок и текст уведомления');
         return;
       }
       if (audience === 'user' && !userId) {
-        result.className = 'notify-result error';
-        result.textContent = 'Выберите клиента для персонального уведомления';
+        setResult('error', 'Выберите клиента для персонального уведомления');
         return;
       }
       btn.disabled = true;
@@ -210,19 +311,16 @@
         });
         const data = await response.json();
         if (data.success) {
-          result.className = 'notify-result success';
-          result.textContent = audience === 'user'
+          setResult('success', audience === 'user'
             ? 'Персональное уведомление отправлено!'
-            : 'Уведомление успешно отправлено!';
+            : 'Уведомление успешно отправлено!');
           document.getElementById('notify-title').value = '';
           document.getElementById('notify-message').value = '';
         } else {
-          result.className = 'notify-result error';
-          result.textContent = 'Ошибка: ' + (data.error || 'Неизвестная ошибка');
+          setResult('error', friendlyError(data.error, 'Не удалось отправить уведомление'));
         }
       } catch (e) {
-        result.className = 'notify-result error';
-        result.textContent = 'Ошибка отправки: ' + e.message;
+        setResult('error', friendlyError(e, 'Не удалось отправить уведомление'));
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить уведомление';

@@ -175,12 +175,11 @@ class Place(db.Model):
     def is_meeting_room(self):
         if not self.is_container():
             return False
-        from internal.models.location_zone import is_amenity_zone_kind
+        from internal.models.location_zone import ROOM_ZONE_KIND, is_amenity_zone_kind
         if self.location and self.location.zone_type:
             if is_amenity_zone_kind(self.location.zone_type.kind):
                 return False
-            if self.location.zone_type.kind == 'room_zone':
-                return True
+            return self.location.zone_type.kind == ROOM_ZONE_KIND
         return bool(self.category and self.category.kind == 'room')
 
     def compute_container_status(self):

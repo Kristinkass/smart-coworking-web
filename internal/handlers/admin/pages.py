@@ -137,6 +137,7 @@ def register_admin_pages_routes(app):
         """Управление бронированиями"""
         try:
             filter_type = request.args.get('filter', 'all')
+            selected_booking_id = request.args.get('booking_id', type=int)
 
             # Базовый запрос с оптимизацией
             query = models.Booking.query.options(
@@ -164,6 +165,11 @@ def register_admin_pages_routes(app):
                     models.Booking.booking_date.desc(),
                     models.Booking.start_time.desc()
                 ).all()
+
+            if selected_booking_id:
+                selected = [b for b in bookings if b.id == selected_booking_id]
+                rest = [b for b in bookings if b.id != selected_booking_id]
+                bookings = selected + rest
 
             # Рассчитываем статистику
             active_count = models.Booking.query.filter_by(status='active').count()
@@ -277,7 +283,8 @@ def register_admin_pages_routes(app):
                                    unique_users=unique_users,
                                    today_revenue=today_revenue,  # ДОБАВЛЕНО
                                    expiring_soon_count=expiring_soon_count,  # ДОБАВЛЕНО
-                                   active_bookings_count=active_count)
+                                   active_bookings_count=active_count,
+                                   selected_booking_id=selected_booking_id)
         except Exception as e:
             flash(f'Ошибка при загрузке бронирований: {user_error_message(e)}', 'error')
             return redirect(url_for('admin_dashboard'))

@@ -6,6 +6,7 @@ from sqlalchemy.orm import synonym
 
 from internal.models.db import db
 from internal.utils.formatters import format_local_datetime
+from internal.utils.phone import format_phone_display
 
 _LEGACY_BOOKING_PREFIX = re.compile(
     r'^Бронирование №(\d+): (.+?), (\d{2}\.\d{2}\.\d{4}) (\d{2}:\d{2})–(\d{2}:\d{2})\n\n',
@@ -147,6 +148,9 @@ class Notification(db.Model):
             'is_read': self.is_read,
             'sender_id': self.sender_id,
             'sender_name': self.sender.username if self.sender else None,
+            'sender_phone': format_phone_display(self.sender.phone) if self.sender and self.sender.phone else None,
+            'sender_login_label': self.sender.login_label if self.sender else None,
+            'client_label': self._client_label(),
             'kind': 'feedback' if self.is_feedback() else 'system',
             'created_at': format_local_datetime(self.created_at),
         }
@@ -156,6 +160,17 @@ class Notification(db.Model):
                 'Менеджеру' if self.target_audience == 'managers' else 'Администратору'
             )
         return data
+
+    def _client_label(self):
+        if not self.sender:
+            return None
+        parts = []
+        if self.sender.phone:
+            parts.append(format_phone_display(self.sender.phone))
+        parts.append(self.sender.username or self.sender.login_label)
+        if self.sender.email and self.sender.email not in parts:
+            parts.append(self.sender.email)
+        return ' · '.join([p for p in parts if p])
 
     def __repr__(self):
         return f'<Notification {self.title} ({self.target_audience})>'

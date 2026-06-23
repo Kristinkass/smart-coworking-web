@@ -24,6 +24,14 @@ class LayoutRepository:
         return layout_store.add_place_to_layout(place_dict)
 
     @staticmethod
+    def add_places(place_dicts):
+        return layout_store.add_places_to_layout(place_dicts)
+
+    @staticmethod
+    def replace_container_desks(container_code, place_dicts):
+        return layout_store.replace_container_desks_in_layout(container_code, place_dicts)
+
+    @staticmethod
     def remove_place(code):
         return layout_store.remove_place_from_layout(code)
 

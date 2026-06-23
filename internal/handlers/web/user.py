@@ -79,11 +79,10 @@ def register_user_routes(app):
     @app.route('/api/update_profile', methods=['POST'])
     @login_required
     def update_profile():
-        """Обновить профиль (имя и телефон; email неизменяем)"""
+        """Обновить профиль (имя; email и телефон неизменяемы)"""
         try:
             data = request.json
             username = data.get('username')
-            phone = data.get('phone')
 
             if not username:
                 return jsonify({'success': False, 'error': 'Имя пользователя обязательно'}), 400
@@ -91,17 +90,13 @@ def register_user_routes(app):
             if data.get('email') and data.get('email') != current_user.email:
                 return jsonify({'success': False, 'error': 'Изменить email нельзя'}), 400
 
+            if data.get('phone') is not None:
+                incoming = normalize_phone(data.get('phone') or '') or (data.get('phone') or '').strip()
+                current = normalize_phone(current_user.phone or '') or (current_user.phone or '').strip()
+                if incoming and current and incoming != current:
+                    return jsonify({'success': False, 'error': 'Изменить телефон нельзя'}), 400
+
             current_user.username = username
-            if phone is not None:
-                stripped = phone.strip()
-                if stripped:
-                    normalized = normalize_phone(stripped)
-                    digits = digits_only(normalized or stripped)
-                    if len(digits) != 11 or not digits.startswith('7'):
-                        return jsonify({'success': False, 'error': 'Введите корректный номер телефона'}), 400
-                    current_user.phone = normalized
-                else:
-                    current_user.phone = None
 
             db.session.commit()
 
@@ -134,6 +129,9 @@ def register_user_routes(app):
                 return jsonify({'success': False, 'error': 'Текущий пароль неверен'}), 400
 
             current_user.set_password(new_password)
+            if getattr(current_user, 'issued_temp_password', None):
+                current_user.issued_temp_password = None
+                current_user.must_change_password = False
             db.session.commit()
 
             return jsonify({

@@ -7,7 +7,7 @@ CANVAS_HEIGHT = 1344
 WALL_HALF_WIDTH = 8
 FLOOR_INSET = WALL_HALF_WIDTH
 WALL_PENETRATION = WALL_HALF_WIDTH
-PARENT_INSET = 0
+PARENT_INSET = 8
 
 
 def _wall_on_floor(wall, floor):
@@ -190,15 +190,69 @@ def rects_overlap(ax, ay, aw, ah, bx, by, bw, bh, gap=2):
     )
 
 
-def rects_meaningful_overlap(ax, ay, aw, ah, bx, by, bw, bh, min_depth=4):
-    """Пересечение с «глубиной» с обеих сторон — не просто общая грань соседних комнат."""
+def rects_meaningful_overlap(ax, ay, aw, ah, bx, by, bw, bh, min_depth=4, edge_touch_max=16):
+    """Пересечение с «глубиной» с обеих сторон — не просто общая грань соседних комнат.
+
+    Тонкая полоска по одной оси (≤ edge_touch_max) — соседство по стене, не конфликт.
+    """
     ix = max(float(ax), float(bx))
     iy = max(float(ay), float(by))
     iw = min(float(ax) + float(aw), float(bx) + float(bw)) - ix
     ih = min(float(ay) + float(ah), float(by) + float(bh)) - iy
     if iw <= 0 or ih <= 0:
         return False
+    if min(iw, ih) <= float(edge_touch_max):
+        return False
     return iw >= min_depth and ih >= min_depth
+
+
+def _wall_segment_orientation(wall):
+    dx = abs(int(wall['x1']) - int(wall['x2']))
+    dy = abs(int(wall['y1']) - int(wall['y2']))
+    if dx <= 4 < dy:
+        return 'v'
+    if dy <= 4 < dx:
+        return 'h'
+    return None
+
+
+def repair_wall_gaps(walls, floor=1, tol=16):
+    """Подтянуть концы стен к перпендикулярным — убрать зазоры в углах."""
+    floor_walls = [w for w in walls if int(w.get('floor', 1)) == int(floor)]
+    changed = False
+
+    for w in floor_walls:
+        ori = _wall_segment_orientation(w)
+        if not ori:
+            continue
+        for end in (1, 2):
+            ex = float(w[f'x{end}'])
+            ey = float(w[f'y{end}'])
+            for w2 in floor_walls:
+                if w2.get('id') == w.get('id'):
+                    continue
+                ori2 = _wall_segment_orientation(w2)
+                if not ori2 or ori == ori2:
+                    continue
+                if ori == 'v' and ori2 == 'h':
+                    hy = (int(w2['y1']) + int(w2['y2'])) / 2
+                    hx1, hx2 = min(w2['x1'], w2['x2']), max(w2['x1'], w2['x2'])
+                    vx = (int(w['x1']) + int(w['x2'])) / 2
+                    if abs(ey - hy) <= tol and hx1 - tol <= vx <= hx2 + tol:
+                        ny = int(round(hy))
+                        if int(w[f'y{end}']) != ny:
+                            w[f'y{end}'] = ny
+                            changed = True
+                elif ori == 'h' and ori2 == 'v':
+                    vx = (int(w2['x1']) + int(w2['x2'])) / 2
+                    vy1, vy2 = min(w2['y1'], w2['y2']), max(w2['y1'], w2['y2'])
+                    hy = (int(w['y1']) + int(w['y2'])) / 2
+                    if abs(ex - vx) <= tol and vy1 - tol <= hy <= vy2 + tol:
+                        nx = int(round(vx))
+                        if int(w[f'x{end}']) != nx:
+                            w[f'x{end}'] = nx
+                            changed = True
+    return changed
 
 
 def rect_contains(outer_x, outer_y, outer_w, outer_h, inner_x, inner_y, inner_w, inner_h, padding=0):
@@ -284,6 +338,9 @@ def find_place_overlap(
         if kind == 'desk':
             if item_kind != 'desk':
                 continue
+            if container_code:
+                if item.get('container_code') != container_code:
+                    continue
         else:
             continue
         ix, iy = item.get('x'), item.get('y')
@@ -292,7 +349,7 @@ def find_place_overlap(
             continue
         irot = int(float(item.get('rotation') or 0))
         iex, iey, iew, ieh = effective_rect_for_rotation(ix, iy, iw, ih, irot)
-        if rects_overlap(eff_x, eff_y, eff_w, eff_h, iex, iey, iew, ieh):
+        if rects_overlap(eff_x, eff_y, eff_w, eff_h, iex, iey, iew, ieh, gap=2):
             return f'Пересечение с «{item.get("code", "?")}»'
     return None
 
@@ -406,17 +463,21 @@ ZONE_WALL_SNAP_DIST = 28
 
 
 def desks_overlap_each_other(desks, gap=2):
-    """Пересекаются ли столы в списке."""
+    """Пересекаются ли столы в списке (с учётом поворота)."""
     items = list(desks or [])
     for i, a in enumerate(items):
         ax, ay = float(a['x']), float(a['y'])
         aw = float(a.get('width', 100))
         ah = float(a.get('height', 100))
+        arot = int(float(a.get('rotation') or 0))
+        aex, aey, aew, aeh = effective_rect_for_rotation(ax, ay, aw, ah, arot)
         for b in items[i + 1:]:
             bx, by = float(b['x']), float(b['y'])
             bw = float(b.get('width', 100))
             bh = float(b.get('height', 100))
-            if rects_overlap(ax, ay, aw, ah, bx, by, bw, bh, gap=gap):
+            brot = int(float(b.get('rotation') or 0))
+            bex, bey, bew, beh = effective_rect_for_rotation(bx, by, bw, bh, brot)
+            if rects_overlap(aex, aey, aew, aeh, bex, bey, bew, beh, gap=gap):
                 return True
     return False
 

@@ -1,6 +1,10 @@
 """Детект комнат по стенам и расчёт вариантов размещения."""
 from __future__ import annotations
 
+import math
+import random
+from collections import Counter
+
 TOL = 8
 MIN_ROOM_SIZE = 80
 SCALE = 100
@@ -373,49 +377,530 @@ def link_rooms_with_places(rooms, places):
     return linked
 
 
-def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30):
-    """Варианты сетки столов для desk_zone."""
-    variants = []
-    seen = set()
-    usable_w = max(0, room_w - margin * 2)
-    usable_h = max(0, room_h - margin * 2)
+WALL_PACK_MARGIN_PX = 0  # вплотную к границе комнаты (стены = контур)
+WALL_CLEARANCE_PX = WALL_PACK_MARGIN_PX
+DESK_GAP_PX = 50         # 0,5 м между столами
+DOOR_CLEARANCE_PX = 100
+TARGET_FILL = 0.62
+CLEARANCE_PX = WALL_CLEARANCE_PX
+WALL_MARGIN_PX = WALL_CLEARANCE_PX
 
+
+def _filter_desk_categories(desk_categories):
+    out = []
     for cat in desk_categories:
         name = (cat.get('name') or '').lower()
         if 'закрытая зона' in name or 'зона рабоч' in name:
             continue
         tw = int(cat.get('width_px') or cat.get('width_m', 1) * SCALE)
         th = int(cat.get('height_px') or cat.get('height_m', 0.75) * SCALE)
-        cap = int(cat.get('capacity', 1))
-        cols = int((usable_w + gap) // (tw + gap))
-        rows = int((usable_h + gap) // (th + gap))
-        count = cols * rows
-        if count < 1:
+        if tw < 1 or th < 1:
             continue
-        key = f"{cat.get('id')}:{count}"
-        if key in seen:
+        out.append({**cat, 'tw': tw, 'th': th, 'area': tw * th})
+    out.sort(key=lambda c: -c['area'])
+    return out
+
+
+def _effective_size(tw, th, rotation=0):
+    if int(rotation or 0) % 180 == 90:
+        return th, tw
+    return tw, th
+
+
+def _stored_from_effective(eff_x, eff_y, tw, th, rotation=0):
+    """Координаты layout из позиции bounding-box (с учётом поворота)."""
+    eff_w, eff_h = _effective_size(tw, th, rotation)
+    cx = eff_x + eff_w / 2
+    cy = eff_y + eff_h / 2
+    return round(cx - tw / 2), round(cy - th / 2)
+
+
+def _effective_rect(sx, sy, tw, th, rotation=0):
+    eff_w, eff_h = _effective_size(tw, th, rotation)
+    cx = sx + tw / 2
+    cy = sy + th / 2
+    return cx - eff_w / 2, cy - eff_h / 2, eff_w, eff_h
+
+
+def _rects_overlap_gap(ax, ay, aw, ah, bx, by, bw, bh, gap):
+    return not (
+        ax + aw + gap <= bx or bx + bw + gap <= ax
+        or ay + ah + gap <= by or by + bh + gap <= ay
+    )
+
+
+def _fits_at(eff_x, eff_y, eff_w, eff_h, margin, inner_w, inner_h, placed, gap):
+    right = margin + inner_w
+    bottom = margin + inner_h
+    if eff_x < margin - 0.5 or eff_y < margin - 0.5:
+        return False
+    if eff_x + eff_w > right + 0.5 or eff_y + eff_h > bottom + 0.5:
+        return False
+    for p in placed:
+        pex, pey, pw, ph = _effective_rect(p['x'], p['y'], p['width'], p['height'], p.get('rotation', 0))
+        if _rects_overlap_gap(eff_x, eff_y, eff_w, eff_h, pex, pey, pw, ph, gap):
+            return False
+    return True
+
+
+def pack_desks_fill(room_w, room_h, tw, th, category_id=None, gap=DESK_GAP_PX, margin=WALL_CLEARANCE_PX):
+    """Максимум столов одного типа — жадное заполнение."""
+    cat = {'tw': tw, 'th': th, 'id': category_id}
+    return pack_room_greedy_random(
+        room_w, room_h, [cat], gap=gap, margin=margin, seed=0,
+    )
+
+
+def _desk_item_at(cat, rotation, eff_x, eff_y):
+    tw, th = cat['tw'], cat['th']
+    sx, sy = _stored_from_effective(eff_x, eff_y, tw, th, rotation)
+    return {
+        'x': sx, 'y': sy,
+        'width': tw, 'height': th,
+        'rotation': int(rotation) % 360,
+        'category_id': cat.get('id'),
+    }
+
+
+def _candidate_values(start, end, step):
+    if end < start:
+        return []
+    values = {round(start), round(end)}
+    mid = (start + end) / 2
+    values.add(round(mid))
+    values.add(round((start + mid) / 2))
+    values.add(round((mid + end) / 2))
+    pos = start
+    guard = 0
+    while pos <= end + 0.5 and guard < 80:
+        values.add(round(pos))
+        pos += max(18, step)
+        guard += 1
+    return sorted(v for v in values if start - 0.5 <= v <= end + 0.5)
+
+
+def _candidate_spots(room_w, room_h, cat, placed, gap, margin, rotation, strategy, rng):
+    """Ограниченный пул позиций: углы, стены, центр и немного random."""
+    inner_w = room_w - margin * 2
+    inner_h = room_h - margin * 2
+    if inner_w < 1 or inner_h < 1:
+        return []
+    tw, th = cat['tw'], cat['th']
+    eff_w, eff_h = _effective_size(tw, th, rotation)
+    if eff_w > inner_w or eff_h > inner_h:
+        return []
+
+    x_min, y_min = margin, margin
+    x_max = margin + inner_w - eff_w
+    y_max = margin + inner_h - eff_h
+    step_x = eff_w + gap
+    step_y = eff_h + gap
+    xs = _candidate_values(x_min, x_max, step_x)
+    ys = _candidate_values(y_min, y_max, step_y)
+    spots = set()
+
+    corners = [
+        (x_min, y_min), (x_max, y_min), (x_min, y_max), (x_max, y_max),
+    ]
+    for spot in corners:
+        spots.add((round(spot[0]), round(spot[1])))
+
+    if strategy in ('corner_first', 'wall_ring', 'max_capacity', 'mixed_compact', 'sparse_comfort'):
+        for x in xs:
+            spots.add((x, round(y_min)))
+            spots.add((x, round(y_max)))
+        for y in ys:
+            spots.add((round(x_min), y))
+            spots.add((round(x_max), y))
+
+    if strategy in ('center_island', 'mixed_compact', 'max_capacity', 'sparse_comfort'):
+        cx = (x_min + x_max) / 2
+        cy = (y_min + y_max) / 2
+        for dx in (0, -(eff_w + gap), eff_w + gap, -(eff_w + gap) / 2, (eff_w + gap) / 2):
+            for dy in (0, -(eff_h + gap), eff_h + gap, -(eff_h + gap) / 2, (eff_h + gap) / 2):
+                spots.add((round(cx + dx), round(cy + dy)))
+
+    if strategy == 'max_capacity':
+        for x in xs:
+            for y in ys:
+                spots.add((x, y))
+
+    random_count = 18 if strategy in ('mixed_compact', 'sparse_comfort') else 10
+    for _ in range(random_count):
+        spots.add((round(rng.uniform(x_min, x_max)), round(rng.uniform(y_min, y_max))))
+
+    valid = []
+    for x, y in spots:
+        x = max(round(x_min), min(round(x), round(x_max)))
+        y = max(round(y_min), min(round(y), round(y_max)))
+        if _fits_at(x, y, eff_w, eff_h, margin, inner_w, inner_h, placed, gap):
+            valid.append((x, y))
+    return valid
+
+
+def _estimate_free_area(room_w, room_h, placed, margin):
+    """Грубая оценка оставшейся площади внутри комнаты."""
+    inner_w = max(0, room_w - margin * 2)
+    inner_h = max(0, room_h - margin * 2)
+    used = 0
+    for p in placed:
+        ex, ey, ew, eh = _effective_rect(
+            p['x'], p['y'], p['width'], p['height'], p.get('rotation', 0),
+        )
+        used += ew * eh
+    return max(0, inner_w * inner_h - used)
+
+
+def _layout_valid(room_w, room_h, placed, gap, margin):
+    """Все столы внутри комнаты и без пересечений."""
+    inner_w = room_w - margin * 2
+    inner_h = room_h - margin * 2
+    for p in placed:
+        ex, ey, ew, eh = _effective_rect(
+            p['x'], p['y'], p['width'], p['height'], p.get('rotation', 0),
+        )
+        if not _fits_at(ex, ey, ew, eh, margin, inner_w, inner_h, [], gap):
+            return False
+    for i, a in enumerate(placed):
+        aex, aey, aw, ah = _effective_rect(
+            a['x'], a['y'], a['width'], a['height'], a.get('rotation', 0),
+        )
+        for b in placed[i + 1:]:
+            bex, bey, bw, bh = _effective_rect(
+                b['x'], b['y'], b['width'], b['height'], b.get('rotation', 0),
+            )
+            if _rects_overlap_gap(aex, aey, aw, ah, bex, bey, bw, bh, gap):
+                return False
+    return True
+
+
+def _wall_proximity_score(x, y, eff_w, eff_h, margin, inner_w, inner_h):
+    """Бонус за близость к стенам (вплотную к границе комнаты)."""
+    score = 0
+    if x <= margin + 3:
+        score += 2
+    if y <= margin + 3:
+        score += 2
+    if x + eff_w >= margin + inner_w - 3:
+        score += 2
+    if y + eff_h >= margin + inner_h - 3:
+        score += 2
+    return score
+
+
+def _corner_score(x, y, eff_w, eff_h, margin, inner_w, inner_h):
+    corners = [
+        (margin, margin),
+        (margin + inner_w - eff_w, margin),
+        (margin, margin + inner_h - eff_h),
+        (margin + inner_w - eff_w, margin + inner_h - eff_h),
+    ]
+    dist = min(abs(x - cx) + abs(y - cy) for cx, cy in corners)
+    return max(0, 8 - dist / 55)
+
+
+def _center_score(x, y, eff_w, eff_h, margin, inner_w, inner_h):
+    cx = margin + inner_w / 2
+    cy = margin + inner_h / 2
+    px = x + eff_w / 2
+    py = y + eff_h / 2
+    return max(0, 8 - (abs(px - cx) + abs(py - cy)) / 70)
+
+
+def _strategy_score(strategy, x, y, eff_w, eff_h, margin, inner_w, inner_h,
+                    cat, last_cat_id, rng):
+    wall = _wall_proximity_score(x, y, eff_w, eff_h, margin, inner_w, inner_h)
+    corner = _corner_score(x, y, eff_w, eff_h, margin, inner_w, inner_h)
+    center = _center_score(x, y, eff_w, eff_h, margin, inner_w, inner_h)
+    mix = 3 if last_cat_id and cat.get('id') != last_cat_id else 0
+    jitter = rng.random() * 0.75
+    if strategy == 'corner_first':
+        return corner * 2.8 + wall + mix + jitter
+    if strategy == 'wall_ring':
+        return wall * 2.4 + corner * 0.8 + mix + jitter
+    if strategy == 'center_island':
+        return center * 2.6 + mix + jitter
+    if strategy == 'mixed_compact':
+        return mix * 2.0 + wall + center * 0.6 + jitter
+    if strategy == 'sparse_comfort':
+        return wall + center + mix + jitter
+    return wall + corner * 0.5 + center * 0.5 + mix + jitter
+
+
+def _strategy_categories(cats, strategy, placed_count):
+    if strategy == 'mixed_compact':
+        # Цикл по размерам: крупный → средний → малый, чтобы не получить стену одинаковых столов.
+        return cats[placed_count % len(cats):] + cats[:placed_count % len(cats)]
+    if strategy == 'sparse_comfort':
+        return sorted(cats, key=lambda c: (-int(c.get('capacity', 1)), c['area']))
+    return cats
+
+
+def pack_room_greedy_random(room_w, room_h, desk_categories, gap=DESK_GAP_PX,
+                            margin=WALL_CLEARANCE_PX, seed=0, strategy='max_capacity'):
+    """Быстрое жадное заполнение по стратегии, без полного перебора всей сетки."""
+    rng = random.Random(int(seed))
+    cats = _filter_desk_categories(desk_categories)
+    if not cats:
+        return []
+
+    work_cats = list(cats)
+    if strategy == 'mixed_compact':
+        rng.shuffle(work_cats)
+
+    inner_w = room_w - margin * 2
+    inner_h = room_h - margin * 2
+    if inner_w < 1 or inner_h < 1:
+        return []
+
+    placed = []
+    min_area = min(c['area'] for c in work_cats)
+    last_cat_id = None
+    target_limit = 999
+    if strategy == 'sparse_comfort':
+        target_limit = max(1, int((inner_w * inner_h) / (min_area * 2.2)))
+
+    for _ in range(18):
+        if len(placed) >= target_limit:
+            break
+        free_area = _estimate_free_area(room_w, room_h, placed, margin)
+        if free_area < min_area * 0.45:
+            break
+
+        options = []
+        for cat in _strategy_categories(work_cats, strategy, len(placed)):
+            if cat['area'] > free_area * 1.08:
+                continue
+            for rotation in (0, 90):
+                eff_w, eff_h = _effective_size(cat['tw'], cat['th'], rotation)
+                if eff_w > inner_w or eff_h > inner_h:
+                    continue
+                spots = _candidate_spots(
+                    room_w, room_h, cat, placed, gap, margin, rotation, strategy, rng,
+                )
+                if not spots:
+                    continue
+                for x, y in spots:
+                    score = _strategy_score(
+                        strategy, x, y, eff_w, eff_h, margin, inner_w, inner_h,
+                        cat, last_cat_id, rng,
+                    )
+                    options.append((cat['area'], score, cat, rotation, x, y))
+
+        if not options:
+            break
+
+        if strategy in ('mixed_compact', 'sparse_comfort'):
+            options.sort(key=lambda o: (o[1], o[0]), reverse=True)
+            tier = options[:min(10, len(options))]
+        else:
+            max_area = max(o[0] for o in options)
+            tier = [o for o in options if o[0] >= max_area * 0.88]
+            tier.sort(key=lambda o: (o[1], rng.random()), reverse=True)
+        pick_n = min(len(tier), max(1, min(6, len(tier))))
+        _, _, cat, rotation, x, y = rng.choice(tier[:pick_n])
+        placed.append(_desk_item_at(cat, rotation, x, y))
+        last_cat_id = cat.get('id')
+
+    if not _layout_valid(room_w, room_h, placed, gap, margin):
+        return []
+    return placed
+
+
+def pack_room_varied(room_w, room_h, desk_categories, gap=DESK_GAP_PX, margin=WALL_CLEARANCE_PX,
+                     mode='scatter', seed=0):
+    """Алиас стратегического заполнения (mode влияет на стратегию и seed)."""
+    mode_seed = {
+        'max_capacity': 0, 'balanced': 17, 'corner_first': 41,
+        'mirror': 73, 'scatter': 101, 'wall_ring': 149,
+        'center_island': 211, 'mixed_compact': 307, 'sparse_comfort': 401,
+    }.get(mode, 0)
+    strategy = mode if mode in {
+        'max_capacity', 'corner_first', 'wall_ring', 'center_island',
+        'mixed_compact', 'sparse_comfort',
+    } else 'mixed_compact'
+    return pack_room_greedy_random(
+        room_w, room_h, desk_categories, gap, margin, seed=seed + mode_seed,
+        strategy=strategy,
+    )
+
+
+def pack_room_mixed(room_w, room_h, desk_categories, gap=DESK_GAP_PX, margin=WALL_CLEARANCE_PX,
+                    mode='scatter', seed=0):
+    return pack_room_varied(room_w, room_h, desk_categories, gap, margin, mode, seed)
+
+
+def pack_room_greedy(room_w, room_h, desk_categories, gap=DESK_GAP_PX, margin=WALL_CLEARANCE_PX):
+    return pack_room_varied(room_w, room_h, desk_categories, gap, margin, 'max_capacity', 0)
+
+
+def pack_desks_random(room, tw, th, category_id=None, doors=None, walls=None,
+                      gap=DESK_GAP_PX, target_fill=TARGET_FILL, clearance=WALL_CLEARANCE_PX):
+    """Алиас — заполнение рядами (doors/walls пока не используются)."""
+    return pack_desks_fill(room['width'], room['height'], tw, th, category_id, gap, clearance)
+
+
+def pack_desks_greedy(room, tw, th, category_id=None, gap=DESK_GAP_PX,
+                      wall_margin=WALL_CLEARANCE_PX, door_margin=DOOR_CLEARANCE_PX,
+                      doors=None, walls=None):
+    return pack_desks_random(room, tw, th, category_id, doors, walls, gap, clearance=wall_margin)
+
+
+def _variant_from_positions(room, positions, title, description, extra=None):
+    if not positions:
+        return None
+    xs = [p['x'] for p in positions]
+    ys = [p['y'] for p in positions]
+    x2 = [p['x'] + p['width'] for p in positions]
+    y2 = [p['y'] + p['height'] for p in positions]
+    fp_w = max(x2) - min(xs)
+    fp_h = max(y2) - min(ys)
+    cap = sum(int(p.get('capacity', 1)) for p in positions)
+    # capacity per position from category not stored — computed in desk_grid_variants
+
+    v = {
+        'variant_type': 'desks',
+        'title': title,
+        'description': description,
+        'count': len(positions),
+        'cols': 0,
+        'rows': 0,
+        'gap': DESK_GAP_PX,
+        'margin': WALL_CLEARANCE_PX,
+        'door_margin': DOOR_CLEARANCE_PX,
+        'positions': positions,
+        'footprint_w_px': fp_w,
+        'footprint_h_px': fp_h,
+        'footprint_w_m': round(fp_w / SCALE, 2),
+        'footprint_h_m': round(fp_h / SCALE, 2),
+        'capacity_total': cap,
+    }
+    if extra:
+        v.update(extra)
+    return v
+
+
+def _layout_signature(placed, grid=22):
+    return tuple(sorted(
+        (p['category_id'], round(p['x'] / grid), round(p['y'] / grid), p.get('rotation', 0))
+        for p in placed
+    ))
+
+
+def _layout_distance(a, b):
+    aset = set(_layout_signature(a, grid=18))
+    bset = set(_layout_signature(b, grid=18))
+    if not aset and not bset:
+        return 0
+    return 1 - (len(aset & bset) / max(len(aset | bset), 1))
+
+
+def _mix_description(placed, cats):
+    names = {c['id']: c.get('name', 'Стол') for c in cats}
+    caps = {c['id']: int(c.get('capacity', 1)) for c in cats}
+    parts = []
+    for cid, cnt in Counter(p['category_id'] for p in placed).most_common():
+        nm = names.get(cid, 'Стол')
+        parts.append(f'{nm} ×{cnt}')
+    total_cap = sum(caps.get(p['category_id'], 1) for p in placed)
+    return ' · '.join(parts), total_cap
+
+
+def _count_mix_types(placed):
+    return len({p['category_id'] for p in placed})
+
+
+def _variant_quality(placed, room_w, room_h, margin):
+    if not placed:
+        return 0
+    inner_w = max(1, room_w - margin * 2)
+    inner_h = max(1, room_h - margin * 2)
+    wall_score = 0
+    corner_score = 0
+    for p in placed:
+        ex, ey, ew, eh = _effective_rect(
+            p['x'], p['y'], p['width'], p['height'], p.get('rotation', 0),
+        )
+        wall_score += _wall_proximity_score(ex, ey, ew, eh, margin, inner_w, inner_h)
+        corner_score += _corner_score(ex, ey, ew, eh, margin, inner_w, inner_h)
+    return wall_score + corner_score + _count_mix_types(placed) * 4
+
+
+def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
+                       room=None, doors=None, walls=None):
+    """Быстрые разные варианты: углы, стены, центр, плотный и смешанный сценарии."""
+    abs_room = room if room else {
+        'x': 0, 'y': 0, 'width': room_w, 'height': room_h, 'floor': 1,
+    }
+    cats = _filter_desk_categories(desk_categories)
+    if not cats:
+        return []
+
+    w, h = abs_room['width'], abs_room['height']
+    variants = []
+    placed_variants = []
+    seen = set()
+    cap_map = {c['id']: int(c.get('capacity', 1)) for c in cats}
+    base_seed = int(w * 997 + h * 13 + len(cats) * 31)
+    strategy_runs = [
+        ('corner_first', 0, 45),
+        ('wall_ring', 0, 50),
+        ('center_island', 12, 45),
+        ('mixed_compact', 8, 45),
+        ('max_capacity', 8, 40),
+        ('sparse_comfort', 18, 60),
+        ('corner_first', 8, 55),
+        ('mixed_compact', 0, 50),
+        ('center_island', 0, 55),
+        ('max_capacity', 0, 45),
+    ]
+
+    for attempt, (strategy, wall_margin, desk_gap) in enumerate(strategy_runs):
+        seed = base_seed + attempt * 1009
+        trial = pack_room_greedy_random(
+            w, h, cats, desk_gap, wall_margin, seed, strategy=strategy,
+        )
+        if not trial:
             continue
-        seen.add(key)
-        fp_w = cols * tw + max(0, cols - 1) * gap
-        fp_h = rows * th + max(0, rows - 1) * gap
-        fp_w_m = round(fp_w / SCALE, 2)
-        fp_h_m = round(fp_h / SCALE, 2)
-        variants.append({
-            'variant_type': 'desks',
-            'category_id': cat.get('id'),
-            'title': f"{cat.get('name')} · {count} шт.",
-            'description': (
-                f'{cols}×{rows} · {count * cap} рабочих мест · '
-                f'занимает {fp_w_m}×{fp_h_m} м'
-            ),
-            'cols': cols, 'rows': rows, 'count': count,
-            'margin': margin, 'gap': gap,
-            'template_width': tw, 'template_height': th,
-            'footprint_w_px': fp_w, 'footprint_h_px': fp_h,
-            'footprint_w_m': fp_w_m, 'footprint_h_m': fp_h_m,
-            'capacity_total': count * cap,
-        })
-    variants.sort(key=lambda v: v['capacity_total'], reverse=True)
+        sig = _layout_signature(trial, grid=12)
+        if sig in seen:
+            continue
+        if any(_layout_distance(trial, other) < 0.35 for other in placed_variants):
+            continue
+        seen.add(sig)
+        placed_variants.append([dict(p) for p in trial])
+
+        mix_desc, total_cap = _mix_description(trial, cats)
+        for p in trial:
+            p['capacity'] = cap_map.get(p['category_id'], 1)
+
+        n = len(variants) + 1
+        variants.append(_variant_from_positions(
+            abs_room, trial,
+            title=f'Вариант {n} · {len(trial)} столов',
+            description=f'{total_cap} мест · {mix_desc}',
+            extra={
+                'mixed': _count_mix_types(trial) >= 2,
+                'strategy': strategy,
+                'gap': desk_gap,
+                'margin': wall_margin,
+                'category_id': trial[0].get('category_id'),
+                'capacity_total': total_cap,
+                'quality_score': _variant_quality(trial, w, h, wall_margin),
+                'mix_breakdown': [
+                    {'category_id': cid, 'count': cnt}
+                    for cid, cnt in Counter(p['category_id'] for p in trial).most_common()
+                ],
+            },
+        ))
+
+    variants.sort(key=lambda v: (
+        -v.get('capacity_total', 0),
+        -v.get('quality_score', 0),
+        -v.get('count', 0),
+    ))
+    for i, v in enumerate(variants[:8], 1):
+        v['title'] = f'Вариант {i} · {v.get("count", 0)} столов'
     return variants[:8]
 
 
@@ -464,12 +949,9 @@ def meeting_fit_variants(room_w, room_h, room_categories):
     return variants
 
 
-def compute_desk_positions(room, cols, rows, tw, th, margin=40, gap=30):
-    """Координаты столов внутри комнаты."""
-    positions = []
-    for r in range(rows):
-        for c in range(cols):
-            x = room['x'] + margin + c * (tw + gap)
-            y = room['y'] + margin + r * (th + gap)
-            positions.append({'x': x, 'y': y, 'width': tw, 'height': th})
-    return positions
+def compute_desk_positions(room, cols, rows, tw, th, margin=40, gap=30,
+                           align='center', rotation=0, door_margin=DOOR_CLEARANCE_PX):
+    return pack_desks_fill(
+        room['width'], room['height'], tw, th,
+        gap=gap or DESK_GAP_PX, margin=margin or WALL_CLEARANCE_PX,
+    )

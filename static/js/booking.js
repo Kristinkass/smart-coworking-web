@@ -31,6 +31,7 @@ function setBookingTimeControlsEnabled(enabled) {
         const el = document.getElementById(id);
         if (el) el.disabled = !enabled;
     });
+    if (window.ClockTimePicker) ClockTimePicker.setEnabled(enabled);
 
     const bookBtn = document.getElementById('book-btn');
     const noTariff = document.getElementById('no-tariff-hint')?.style.display === 'block';

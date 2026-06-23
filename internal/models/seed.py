@@ -494,6 +494,7 @@ def run_migrations():
 
     try:
         _migrate_user_login_fields(inspector)
+        _migrate_user_password_fields(inspector)
     except Exception as e:
         print(f"[MIGRATE] users login fields: {e}")
 
@@ -549,6 +550,31 @@ def _migrate_user_login_fields(inspector):
             conn.execute(text(
                 "UPDATE users SET email = NULL "
                 "WHERE email LIKE 'guest_%@coworking.local'"
+            ))
+            conn.commit()
+
+
+def _migrate_user_password_fields(inspector):
+    """Временный пароль для быстрой регистрации."""
+    if not inspector.has_table('users'):
+        return
+    cols = {c['name'] for c in inspector.get_columns('users')}
+    with db.engine.connect() as conn:
+        if 'must_change_password' not in cols:
+            print('[MIGRATE] users.must_change_password')
+            if db.engine.dialect.name == 'postgresql':
+                conn.execute(text(
+                    'ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT FALSE'
+                ))
+            else:
+                conn.execute(text(
+                    'ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0'
+                ))
+            conn.commit()
+        if 'issued_temp_password' not in cols:
+            print('[MIGRATE] users.issued_temp_password')
+            conn.execute(text(
+                'ALTER TABLE users ADD COLUMN issued_temp_password VARCHAR(32)'
             ))
             conn.commit()
 

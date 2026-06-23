@@ -1424,6 +1424,19 @@
                     }
                     container.innerHTML = items.map(n => {
                         const unreadClass = !n.is_read ? ' unread' : '';
+                        const isLong = (n.message || '').length > 100 || (n.message || '').includes('\n');
+                        if (!isLong) {
+                            return `
+                            <div class="notify-card notify-card-flat${unreadClass}" data-notify-id="${n.id}" data-unread="${!n.is_read}">
+                                <div class="notify-head-static">
+                                    <div class="notify-title">
+                                        <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}
+                                    </div>
+                                    <div class="notify-text">${escapeHtml(n.message)}</div>
+                                    <div class="notify-meta">${escapeHtml(n.created_at)}</div>
+                                </div>
+                            </div>`;
+                        }
                         const preview = escapeHtml(n.message.length > 120 ? n.message.slice(0, 120) + '…' : n.message);
                         return `
                             <div class="notify-card${unreadClass}" data-notify-id="${n.id}" data-unread="${!n.is_read}">
@@ -1624,7 +1637,8 @@
                                         <label for="phone">Телефон</label>
                                         <input type="tel" id="phone" name="phone" class="form-control phone-mask"
                                                value="{{ format_phone(current_user.phone) }}"
-                                               placeholder="+7 999 123 45 67">
+                                               placeholder="+7 999 123 45 67" readonly disabled>
+                                        <small style="color: #6b7280;">Телефон нельзя изменить — он используется для входа</small>
                                     </div>
 
                                     <div class="form-group full-width">
@@ -1776,15 +1790,8 @@
         async function updateProfile(event) {
             event.preventDefault();
 
-            const phoneVal = document.getElementById('phone').value.trim();
-            if (phoneVal && typeof isPhoneComplete === 'function' && !isPhoneComplete(phoneVal)) {
-                showToast('Введите корректный номер телефона', 'warning');
-                return;
-            }
-
             const formData = {
-                username: document.getElementById('username').value,
-                phone: phoneVal
+                username: document.getElementById('username').value
             };
 
             try {

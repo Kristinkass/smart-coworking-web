@@ -17,6 +17,9 @@ python -m venv venv
 # Windows
 venv\Scripts\activate
 
+# Если PowerShell запрещает Activate.ps1, запускайте команды напрямую:
+venv\Scripts\python.exe -m pip install -r requirements.txt
+
 # macOS / Linux
 source venv/bin/activate
 
@@ -42,6 +45,8 @@ ADMIN_NAME=Администратор
 
 ```bash
 python cmd/app/main.py
+# Windows PowerShell без активации:
+venv\Scripts\python.exe cmd\app\main.py
 ```
 
 Приложение: http://127.0.0.1:5000

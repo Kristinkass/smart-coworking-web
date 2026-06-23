@@ -1,5 +1,6 @@
 """Сервис редактора: регистрация локаций и применение вариантов."""
 import json
+import threading
 
 from sqlalchemy.exc import IntegrityError
 
@@ -10,7 +11,28 @@ from internal.models.location_zone import LocationZoneType, is_amenity_zone_kind
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
 from internal.utils.paths import LAYOUT_PATH
-from internal.utils.room_geometry import compute_desk_positions
+from internal.utils.room_geometry import (
+    DESK_GAP_PX,
+    DOOR_CLEARANCE_PX,
+    WALL_CLEARANCE_PX,
+    WALL_MARGIN_PX,
+    compute_desk_positions,
+    pack_desks_fill,
+    pack_desks_greedy,
+    pack_desks_random,
+)
+
+_APPLY_VARIANT_LOCKS = {}
+_APPLY_VARIANT_GUARD = threading.Lock()
+
+
+def _apply_variant_lock(container_code):
+    with _APPLY_VARIANT_GUARD:
+        lock = _APPLY_VARIANT_LOCKS.get(container_code)
+        if lock is None:
+            lock = threading.Lock()
+            _APPLY_VARIANT_LOCKS[container_code] = lock
+    return lock
 
 
 def _merge_contained_locations(new_code, x, y, width, height, floor):
@@ -298,65 +320,194 @@ def apply_variant(place_code, variant_data):
 
     if vtype == 'desks':
         if not models.place_allows_child_desks(place):
-            return False, 'В переговорную нельзя добавлять столы', None
-        if variant_data.get('clear_existing', True):
-            _delete_child_desks(place.code)
+            zone_name = place.location.zone_type.name if place.location and place.location.zone_type else None
+            if zone_name:
+                return False, f'В «{zone_name}» нельзя добавлять столы', None
+            return False, 'В этой локации нельзя добавлять столы', None
 
         cols = int(variant_data.get('cols', 0))
         rows = int(variant_data.get('rows', 0))
-        cat_id = int(variant_data.get('category_id'))
-        cat = PlaceCategory.query.get(cat_id)
-        if not cat or cols < 1 or rows < 1:
+        is_mixed = bool(variant_data.get('mixed'))
+        cat_id = variant_data.get('category_id')
+        default_cat = PlaceCategory.query.get(cat_id) if cat_id else None
+        raw_positions = variant_data.get('positions')
+        if not is_mixed and not default_cat:
+            return False, 'Некорректный вариант столов', None
+        if is_mixed and not raw_positions:
             return False, 'Некорректный вариант столов', None
 
-        tw, th = cat.get_width_px(), cat.get_height_px()
-        margin = int(variant_data.get('margin', 40))
-        gap = int(variant_data.get('gap', 30))
-        positions = compute_desk_positions(room, cols, rows, tw, th, margin, gap)
-        walls = LayoutRepository.load_walls()
-        created = 0
-        floor_num = int(room['floor'])
+        tw = default_cat.get_width_px() if default_cat else 0
+        th = default_cat.get_height_px() if default_cat else 0
+        margin = int(variant_data.get('margin', WALL_CLEARANCE_PX))
+        gap = int(variant_data.get('gap', DESK_GAP_PX))
+        door_margin = int(variant_data.get('door_margin', DOOR_CLEARANCE_PX))
+        rotation = int(variant_data.get('desk_rotation', 0))
 
-        for pos in positions:
+        if raw_positions:
+            positions = []
+            for p in raw_positions:
+                pos_cat_id = p.get('category_id', cat_id)
+                pos_cat = PlaceCategory.query.get(pos_cat_id) if pos_cat_id else default_cat
+                if not pos_cat:
+                    continue
+                pw = int(p.get('width', pos_cat.get_width_px()))
+                ph = int(p.get('height', pos_cat.get_height_px()))
+                positions.append({
+                    'x': room['x'] + int(p['x']),
+                    'y': room['y'] + int(p['y']),
+                    'width': pw,
+                    'height': ph,
+                    'rotation': int(p.get('rotation', rotation)),
+                    'category_id': pos_cat_id,
+                })
+        elif default_cat and cols >= 1 and rows >= 1:
+            packed = pack_desks_fill(
+                room['width'], room['height'], tw, th, default_cat.id,
+                gap=gap, margin=margin,
+            )
+            positions = [{
+                **p,
+                'x': room['x'] + p['x'],
+                'y': room['y'] + p['y'],
+                'category_id': default_cat.id,
+            } for p in packed]
+        elif default_cat:
+            packed = pack_desks_fill(
+                room['width'], room['height'], tw, th, default_cat.id,
+                gap=gap, margin=margin,
+            )
+            positions = [{
+                **p,
+                'x': room['x'] + p['x'],
+                'y': room['y'] + p['y'],
+                'category_id': default_cat.id,
+            } for p in packed]
+        else:
+            return False, 'Некорректный вариант столов', None
+
+        if not positions:
+            return False, 'В помещении нет места для столов', None
+
+        lock = _apply_variant_lock(place.code)
+        if not lock.acquire(blocking=False):
+            return False, 'Размещение уже выполняется — подождите пару секунд', None
+        try:
+            if variant_data.get('clear_existing', True):
+                _delete_child_desks(place.code)
+            return _apply_desk_variant(place, room, variant_data, positions, cat_id, rotation)
+        finally:
+            lock.release()
+
+    return False, 'Неизвестный тип варианта', None
+
+
+def _apply_desk_variant(place, room, variant_data, positions, cat_id, rotation):
+    layout_places = LayoutRepository.load().get('places', [])
+    parent_meta = models.get_layout_place_meta(place.code) or {}
+    wall_bound_parent = (
+        parent_meta.get('source') == 'walls'
+        and parent_meta.get('enclosed', True) is not False
+    )
+    floor_num = int(room['floor'])
+    layout_batch = []
+    desk_rows = []
+    reserved_codes = set()
+
+    for pos in positions:
+        pos_cat = PlaceCategory.query.get(pos.get('category_id') or cat_id)
+        if not pos_cat:
+            continue
+        pw = int(pos.get('width', pos_cat.get_width_px()))
+        ph = int(pos.get('height', pos_cat.get_height_px()))
+        pos_rot = int(pos.get('rotation', rotation))
+        from internal.layout.geometry import (
+            clamp_rect_in_parent_rotated,
+            find_place_overlap,
+        )
+        ax, ay = float(pos['x']), float(pos['y'])
+        is_enclosed = parent_meta.get('enclosed', True) is not False
+        if is_enclosed or wall_bound_parent:
+            clamped = clamp_rect_in_parent_rotated(
+                ax, ay, pw, ph, pos_rot,
+                room['x'], room['y'], room['width'], room['height'],
+            )
+            if clamped[0] is None:
+                continue
+            ax, ay = clamped
+        else:
+            walls = LayoutRepository.load_walls()
             ax, ay, err = models.validate_place_rect(
-                pos['x'], pos['y'], tw, th, walls, floor_num,
+                ax, ay, pw, ph, walls, floor_num,
             )
             if err:
                 continue
-            for _ in range(3):
-                try:
-                    code = models.generate_place_code('desk', place.location.code)
-                    desk = Place(
-                        code=code,
-                        name=cat.name,
-                        kind='desk',
-                        location_id=place.location_id,
-                        floor_id=place.floor_id,
-                        category_id=cat.id,
-                        container_code=place.code,
-                        status='free',
-                        active=True,
-                    )
-                    db.session.add(desk)
-                    db.session.flush()
-                    LayoutRepository.add_place({
-                        'code': code,
-                        'name': cat.name,
-                        'location': place.location.code,
-                        'kind': 'desk',
-                        'x': ax, 'y': ay,
-                        'width': tw, 'height': th,
-                        'floor': floor_num,
-                        'container_code': place.code,
-                        'category_id': cat.id,
-                    })
-                    created += 1
-                    break
-                except IntegrityError:
-                    db.session.rollback()
-                    continue
-        db.session.commit()
-        models.ensure_place_parent_links()
-        return True, None, {'created': created, 'place': place.to_dict()}
+        overlap_err = find_place_overlap(
+            layout_places, None, ax, ay, pw, ph,
+            floor_num, 'desk', place.code, rotation=pos_rot,
+        )
+        if overlap_err:
+            continue
 
-    return False, 'Неизвестный тип варианта', None
+        code = None
+        for _ in range(8):
+            candidate = models.generate_place_code('desk', place.location.code)
+            if candidate in reserved_codes:
+                continue
+            reserved_codes.add(candidate)
+            code = candidate
+            break
+        if not code:
+            continue
+
+        layout_row = {
+            'code': code,
+            'name': pos_cat.name,
+            'location': place.location.code,
+            'kind': 'desk',
+            'x': ax, 'y': ay,
+            'width': pw, 'height': ph,
+            'rotation': int(pos.get('rotation', 0)),
+            'floor': floor_num,
+            'container_code': place.code,
+            'category_id': pos_cat.id,
+        }
+        layout_batch.append(layout_row)
+        layout_places.append({
+            'code': code, 'x': ax, 'y': ay,
+            'width': pw, 'height': ph,
+            'floor': floor_num, 'kind': 'desk',
+            'rotation': pos_rot,
+        })
+        desk_rows.append(Place(
+            code=code,
+            name=pos_cat.name,
+            kind='desk',
+            location_id=place.location_id,
+            floor_id=place.floor_id,
+            category_id=pos_cat.id,
+            container_code=place.code,
+            status='free',
+            active=True,
+        ))
+
+    if not layout_batch:
+        return False, 'Не удалось разместить столы в помещении', None
+
+    try:
+        for desk in desk_rows:
+            db.session.add(desk)
+        db.session.flush()
+        LayoutRepository.replace_container_desks(place.code, layout_batch)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return False, 'Конфликт кодов столов — попробуйте ещё раз', None
+    except Exception:
+        db.session.rollback()
+        raise
+
+    models.ensure_place_parent_links()
+    return True, None, {
+        'created': len(layout_batch),
+        'place': place.to_dict(),
+    }

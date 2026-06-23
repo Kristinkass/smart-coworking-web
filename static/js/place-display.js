@@ -44,12 +44,14 @@ function placeLabelWithCode(place) {
     if (!place) return '';
     const name = (place.name || '').trim();
     const code = formatPlaceCode(place);
-    if (name && code) return `${name} (${code})`;
+    if (name && code && name !== code) return `${name} (${code})`;
     return name || code;
 }
 
 function placeDisplayName(place) {
-    return placeLabelWithCode(place);
+    const name = (place.name || '').trim();
+    if (name) return name;
+    return formatPlaceCode(place);
 }
 
 function formatRubles(amount) {

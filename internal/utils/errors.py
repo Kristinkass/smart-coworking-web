@@ -36,6 +36,9 @@ def user_error_message(exc, fallback=None):
         return 'Запись с такими данными уже существует'
 
     rules = (
+        (('cannot read properties', 'undefined', 'null is not', 'is not a function'), 'Интерфейс не смог прочитать данные. Обновите страницу и попробуйте ещё раз'),
+        (('traceback', 'typeerror', 'attributeerror', 'keyerror', 'referenceerror', 'syntaxerror'), 'Произошла техническая ошибка. Попробуйте ещё раз или обратитесь к администратору'),
+        (('failed to fetch', 'load failed'), 'Нет связи с сервером. Проверьте подключение и повторите'),
         (('unique constraint', 'already exists', 'duplicate key', 'unique failed'), 'Запись с такими данными уже существует'),
         (('users.email',), 'Пользователь с таким email уже существует'),
         (('users.phone',), 'Пользователь с таким телефоном уже существует'),

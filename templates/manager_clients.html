@@ -14,27 +14,40 @@
         </div>
     </div>
 
-    <!-- Модальное окно быстрой регистрации -->
     <div id="quick-register-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:12px; padding:24px; width:400px; max-width:90%; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+        <div style="background:white; border-radius:12px; padding:24px; width:440px; max-width:92%; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
             <h3 style="margin-bottom:16px;"><i class="fas fa-user-plus"></i> Быстрая регистрация клиента</h3>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>Имя <span style="color:#ef4444">*</span></label>
-                <input type="text" id="qr-username" class="form-control" placeholder="Иван Иванов">
+            <div id="qr-form-fields">
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Имя <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="qr-username" class="form-control" placeholder="Иван Иванов">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Телефон <span style="color:#ef4444">*</span></label>
+                    <input type="tel" id="qr-phone" class="form-control phone-mask" placeholder="+7 999 123 45 67">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Почта <small style="color:#6b7280">(необязательно)</small></label>
+                    <input type="email" id="qr-email" class="form-control" placeholder="client@email.com">
+                </div>
             </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>Телефон <span style="color:#ef4444">*</span></label>
-                <input type="tel" id="qr-phone" class="form-control phone-mask" placeholder="+7 999 123 45 67">
+            <div id="qr-result" style="display:none; margin-bottom:16px; padding:16px; background:#f0fdf4; border:1px solid #86efac; border-radius:10px;">
+                <div style="font-weight:600; color:#166534; margin-bottom:8px;"><i class="fas fa-check-circle"></i> Клиент создан</div>
+                <div id="qr-result-user" style="font-size:14px; color:#334155; margin-bottom:12px;"></div>
+                <div style="font-size:13px; color:#64748b; margin-bottom:6px;">Временный пароль (до смены клиентом):</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <code id="qr-temp-pwd" style="flex:1; font-size:22px; letter-spacing:3px; padding:10px 12px; background:#fff; border-radius:8px; border:1px dashed #4ade80;"></code>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyQuickRegisterPassword()" title="Копировать">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div style="font-size:12px; color:#64748b; margin-top:10px;">Пароль останется в списке, пока клиент его не сменит.</div>
             </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label>Почта <span style="color:#ef4444">*</span></label>
-                <input type="email" id="qr-email" class="form-control" placeholder="client@email.com" required>
-            </div>
+            <div id="qr-error" style="display:none; margin-bottom:12px; color:#c75050; font-size:14px;"></div>
             <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn btn-outline-secondary" onclick="closeQuickRegister()">Отмена</button>
-                <button class="btn btn-primary" onclick="submitQuickRegister()">Создать</button>
+                <button class="btn btn-outline-secondary" onclick="closeQuickRegister()">Закрыть</button>
+                <button id="qr-submit-btn" class="btn btn-primary" onclick="submitQuickRegister()">Создать</button>
             </div>
-            <div id="qr-result" style="margin-top:12px; font-size:13px; color:#475569; display:none;"></div>
         </div>
     </div>
 
@@ -46,6 +59,7 @@
                     <th>Имя</th>
                     <th>Почта</th>
                     <th>Телефон</th>
+                    <th>Врем. пароль</th>
                     <th>Дата регистрации</th>
                     <th>Статус</th>
                 </tr>
@@ -57,6 +71,11 @@
                     <td><strong>{{ user.username }}</strong></td>
                     <td>{{ user.email or '—' }}</td>
                     <td>{{ format_phone(user.phone) or '-' }}</td>
+                    <td>
+                        {% if user.issued_temp_password %}
+                        <code style="font-size:13px; background:#fef3c7; padding:2px 6px; border-radius:4px;">{{ user.issued_temp_password }}</code>
+                        {% else %}—{% endif %}
+                    </td>
                     <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
                     <td>
                         <span class="status-badge {% if user.active %}status-active{% else %}status-cancelled{% endif %}">
@@ -65,7 +84,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" style="text-align:center; color:#6b7280; padding:24px;">Клиентов пока нет</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:#6b7280; padding:24px;">Клиентов пока нет</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -76,30 +95,38 @@
 function openQuickRegister() {
     document.getElementById('quick-register-modal').style.display = 'flex';
     document.getElementById('qr-result').style.display = 'none';
+    document.getElementById('qr-error').style.display = 'none';
+    document.getElementById('qr-form-fields').style.display = 'block';
+    document.getElementById('qr-submit-btn').style.display = 'inline-block';
     document.getElementById('qr-username').value = '';
     document.getElementById('qr-phone').value = '';
     document.getElementById('qr-email').value = '';
 }
 function closeQuickRegister() {
     document.getElementById('quick-register-modal').style.display = 'none';
+    location.reload();
+}
+function copyQuickRegisterPassword() {
+    const pwd = document.getElementById('qr-temp-pwd').textContent;
+    navigator.clipboard.writeText(pwd).then(() => showToast('Пароль скопирован', 'success'));
 }
 async function submitQuickRegister() {
     const username = document.getElementById('qr-username').value.trim();
     const phone = document.getElementById('qr-phone').value.trim();
     const email = document.getElementById('qr-email').value.trim();
+    const errEl = document.getElementById('qr-error');
+    errEl.style.display = 'none';
 
-    if (!username || !phone || !email) {
-        showToast('Имя, почта и телефон обязательны', 'warning');
+    if (!username || !phone) {
+        showToast('Имя и телефон обязательны', 'warning');
         return;
     }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showToast('Укажите корректный email', 'warning');
-        return;
-    }
-
     if (typeof isPhoneComplete === 'function' && !isPhoneComplete(phone)) {
         showToast('Введите корректный номер телефона', 'warning');
+        return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('Укажите корректный email или оставьте пустым', 'warning');
         return;
     }
 
@@ -107,16 +134,18 @@ async function submitQuickRegister() {
         const r = await fetch('/api/admin/quick_register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, phone, email })
+            body: JSON.stringify({ username, phone, email: email || null })
         });
         const d = await r.json();
-        const resEl = document.getElementById('qr-result');
-        resEl.style.display = 'block';
         if (d.success) {
-            resEl.innerHTML = `<div style="color:#4d8f5f; font-weight:600;"><i class="fas fa-check-circle"></i> ${d.message}</div>`;
-            setTimeout(() => location.reload(), 1500);
+            document.getElementById('qr-form-fields').style.display = 'none';
+            document.getElementById('qr-submit-btn').style.display = 'none';
+            document.getElementById('qr-result').style.display = 'block';
+            document.getElementById('qr-result-user').textContent = `${username} · ${phone}`;
+            document.getElementById('qr-temp-pwd').textContent = d.temp_password || '—';
         } else {
-            resEl.innerHTML = `<div style="color:#c75050;"><i class="fas fa-times-circle"></i> ${d.error || 'Ошибка'}</div>`;
+            errEl.style.display = 'block';
+            errEl.textContent = d.error || 'Ошибка создания клиента';
         }
     } catch (e) {
         showToast('Ошибка: ' + e.message, 'error');

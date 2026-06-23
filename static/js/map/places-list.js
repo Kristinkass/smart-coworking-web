@@ -142,6 +142,15 @@ function listPriceLabel(place) {
     return ` · ${Math.round(Number(price))} ₽/ч`;
 }
 
+function listLocationGroupTitle(place) {
+    if (place.is_meeting_room || place.kind === 'room') return 'Переговорные';
+    if (isDeskZoneContainer(place)) return 'Рабочие зоны';
+    if (place.kind === 'desk') return 'Рабочие столы';
+    return 'Другие места';
+}
+
+const LIST_GROUP_ORDER = ['Рабочие столы', 'Рабочие зоны', 'Переговорные', 'Другие места'];
+
 function listPriceForSort(place) {
     if (place.show_list_price === false) return null;
     const price = place.price_per_hour ?? place.category?.hourly_price;
@@ -173,6 +182,10 @@ function renderPlaceListItem(place) {
     }
 
     const fullCode = formatPlaceCode(place);
+    const title = (place.name || '').trim() || fullCode;
+    const codeHint = fullCode && fullCode !== title
+        ? `<span class="place-list-code-sub">${fullCode}</span>`
+        : '';
     const ratingText = place.rating && place.rating > 0
         ? `<span class="places-list-rating"><i class="fas fa-star"></i> ${place.rating.toFixed(1)}</span>`
         : '<span class="places-list-no-rating">Нет оценок</span>';
@@ -191,10 +204,9 @@ function renderPlaceListItem(place) {
     <div class="place-list-item ${statusClass}${isDeskZoneContainer(place) ? ' place-list-zone' : ''}"
          onclick="selectPlaceFromList('${place.code}')">
         <div class="place-list-item-header">
-            <span class="place-list-code">${fullCode}</span>
+            <span class="place-list-code">${title}${codeHint}</span>
             <span class="place-list-status" style="color:${statusColor}">${statusText}</span>
         </div>
-        <div class="place-list-name">${place.name}</div>
         <div class="place-list-meta">
             <span>${capacity} мест${place.size_label ? ' · ' + place.size_label : ''}${metaExtra}${listPriceLabel(place)}</span>
             <span>${ratingText}${zoneHint}</span>
@@ -266,19 +278,19 @@ function renderPlacesList() {
         return;
     }
 
-    const byLocation = {};
+    const byGroup = {};
     filtered.forEach(p => {
-        const locCode = p.location_code || 'Другое';
-        if (!byLocation[locCode]) byLocation[locCode] = [];
-        byLocation[locCode].push(p);
+        const group = listLocationGroupTitle(p);
+        if (!byGroup[group]) byGroup[group] = [];
+        byGroup[group].push(p);
     });
 
     let html = '';
-    for (const [locCode, locPlaces] of Object.entries(byLocation)) {
-        html += `<div class="places-list-group"><h4 class="places-list-group-title">Локация ${locCode}</h4><div class="places-list-grid">`;
-        html += locPlaces.map(renderPlaceListItem).join('');
+    LIST_GROUP_ORDER.filter(g => byGroup[g]?.length).forEach(group => {
+        html += `<div class="places-list-group"><h4 class="places-list-group-title">${group}</h4><div class="places-list-grid">`;
+        html += byGroup[group].map(renderPlaceListItem).join('');
         html += '</div></div>';
-    }
+    });
 
     container.innerHTML = html;
 }

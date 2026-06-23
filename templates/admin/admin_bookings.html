@@ -89,7 +89,7 @@
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th width="60">№</th>
+                    <th width="90">№ брони</th>
                     <th>Пользователь</th>
                     <th>Место</th>
                     <th width="180">Локация</th>
@@ -103,11 +103,11 @@
             <tbody>
                 {% if bookings %}
                     {% for booking in bookings %}
-                    <tr class="{% if booking.status == 'active' %}active-row{% elif booking.status == 'cancelled' %}cancelled-row{% endif %}">
+                    <tr id="booking-{{ booking.id }}" class="{% if booking.id == selected_booking_id %}selected-booking-row {% endif %}{% if booking.status == 'active' %}active-row{% elif booking.status == 'cancelled' %}cancelled-row{% endif %}">
                         <td>
                             <div class="booking-id">
-                                <strong>{{ loop.index }}</strong>
-                                <small class="text-muted">{{ booking.created_at.strftime('%d.%m') }}</small>
+                                <strong>№{{ booking.id }}</strong>
+                                <small class="text-muted">{{ booking.created_at.strftime('%d.%m.%Y %H:%M') if booking.created_at else '–' }}</small>
                             </div>
                         </td>
                         <td>
@@ -522,6 +522,11 @@
 .booking-id small {
     font-size: 12px;
     color: #9ca3af;
+}
+
+.selected-booking-row td {
+    background: #fff7ed !important;
+    box-shadow: inset 4px 0 0 #f59e0b;
 }
 
 .user-info {
@@ -1020,6 +1025,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация tooltip'ов Bootstrap если используется
     if (typeof $ !== 'undefined') {
         $('[title]').tooltip();
+    }
+    const selectedRow = document.querySelector('.selected-booking-row');
+    if (selectedRow) {
+        selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 });
 </script>

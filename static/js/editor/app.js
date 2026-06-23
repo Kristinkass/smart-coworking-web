@@ -5,7 +5,7 @@
   'use strict';
 
   const SVG_W = 2240, SVG_H = 1344, SCALE = 100;
-  const WALL_HALF = 8, FLOOR_INSET = 8, PARENT_INSET = 0, WALL_PENETRATION = 8;
+  const WALL_HALF = 8, FLOOR_INSET = 8, PARENT_INSET = 8, WALL_PENETRATION = 8;
   const DOOR_W_1M = 100, DOOR_W_15M = 150;
 
   let places = [], walls = [], doors = [], wallRooms = [];
@@ -19,6 +19,35 @@
 
   const $ = id => document.getElementById(id);
 
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function friendlyError(error, fallback = 'Что-то пошло не так') {
+    const raw = String(error?.message || error || fallback);
+    if (/Cannot read properties|undefined|null is not|is not a function/i.test(raw)) {
+      return 'Редактор не смог прочитать данные локации. Обновите карту и попробуйте ещё раз.';
+    }
+    if (/Failed to fetch|NetworkError|Load failed/i.test(raw)) {
+      return 'Нет связи с сервером. Проверьте, что приложение запущено.';
+    }
+    if (/Unexpected token|JSON/i.test(raw)) {
+      return 'Сервер вернул повреждённый ответ. Обновите страницу или перезапустите приложение.';
+    }
+    if (/Traceback|Stack trace|TypeError|ReferenceError|SyntaxError|AttributeError|KeyError/i.test(raw)) {
+      return fallback;
+    }
+    if (/^[\x00-\x7F]+$/.test(raw) && /[a-z]/i.test(raw)) {
+      return fallback;
+    }
+    return raw.replace(/^Error:\s*/i, '') || fallback;
+  }
+
   async function api(path, opts = {}) {
     const r = await fetch(path, {
       credentials: 'same-origin',
@@ -26,18 +55,28 @@
       ...opts,
     });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error || data.message || ('Ошибка ' + r.status));
-    if (data.success === false) throw new Error(data.error || data.message || 'Ошибка запроса');
+    if (!r.ok) throw new Error(friendlyError(data.error || data.message || ('Ошибка ' + r.status)));
+    if (data.success === false) throw new Error(friendlyError(data.error || data.message || 'Ошибка запроса'));
     return data;
   }
 
   function toast(msg, type) {
     const t = document.createElement('div');
-    t.className = 'toast ' + (type || 'info');
-    t.textContent = msg;
+    const kind = type || 'info';
+    const icons = { success: 'check-circle', error: 'exclamation-triangle', warning: 'exclamation-circle', info: 'info-circle' };
+    t.className = 'toast ' + kind;
+    t.innerHTML = `<i class="fas fa-${icons[kind] || icons.info}"></i><span>${escapeHtml(friendlyError(msg, 'Готово'))}</span>`;
     document.body.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2500);
-    setTimeout(() => t.remove(), 2900);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s, transform .3s'; t.style.transform = 'translateY(-6px)'; }, 3200);
+    setTimeout(() => t.remove(), 3600);
+  }
+
+  const toastLimiter = new Map();
+  function toastLimited(key, msg, type, delay = 1400) {
+    const now = Date.now();
+    if (now - (toastLimiter.get(key) || 0) < delay) return;
+    toastLimiter.set(key, now);
+    toast(msg, type);
   }
 
   let confirmToastEl = null;
@@ -48,13 +87,14 @@
     }
   }
 
-  function askConfirm(message, onYes, yesLabel) {
+  function askConfirm(message, onYes, yesLabel, opts = {}) {
     hideConfirmToast();
     const el = document.createElement('div');
     el.className = 'confirm-toast';
-    el.innerHTML = `<span>${message}</span><div class="confirm-actions">
+    el.innerHTML = `<div class="confirm-title"><i class="fas fa-${opts.icon || 'question-circle'}"></i>${escapeHtml(opts.title || 'Подтвердите действие')}</div>
+    <span>${escapeHtml(message)}</span><div class="confirm-actions">
       <button type="button" class="confirm-no">Отмена</button>
-      <button type="button" class="confirm-yes">${yesLabel || 'Удалить'}</button>
+      <button type="button" class="confirm-yes">${escapeHtml(yesLabel || 'Удалить')}</button>
     </div>`;
     el.querySelector('.confirm-yes').addEventListener('click', () => {
       hideConfirmToast();
@@ -63,6 +103,63 @@
     el.querySelector('.confirm-no').addEventListener('click', hideConfirmToast);
     document.body.appendChild(el);
     confirmToastEl = el;
+  }
+
+  function selectedZone() {
+    return zoneById($('prop-location-zone')?.value);
+  }
+
+  function zoneLabel(z) {
+    if (!z) return '–';
+    return z.name || (z.letter ? `Зона ${z.letter}` : '–');
+  }
+
+  function zoneKindFlags(z) {
+    z = z || selectedZone();
+    const amenity = isAmenityZone(z);
+    return {
+      z,
+      amenity,
+      meeting: !amenity && isRoomZone(z),
+      desk: !amenity && isDeskZone(z),
+      label: zoneLabel(z),
+    };
+  }
+
+  function zoneForPlace(place) {
+    if (!place) return null;
+    if (place.zone_type?.kind) return place.zone_type;
+    if (place.zone_type_id) return zoneById(place.zone_type_id) || null;
+    return null;
+  }
+
+  function isMeetingPlace(place) {
+    const z = zoneForPlace(place);
+    if (z) return isRoomZone(z);
+    return !!place?.is_meeting_room;
+  }
+
+  function isAmenityPlace(place) {
+    const z = zoneForPlace(place);
+    if (z) return isAmenityZone(z);
+    return place?.bookable === false;
+  }
+
+  function placeZoneSub(p) {
+    const z = zoneForPlace(p);
+    if (z?.name) return z.name;
+    if (isMeetingPlace(p)) return 'Переговорная';
+    if (p?.allows_desks !== false) return 'Зона столов';
+    return '–';
+  }
+
+  function deskBlockedMessage(place) {
+    if (isMeetingPlace(place)) {
+      return 'В переговорную нельзя класть столы – используйте «Варианты размещения»';
+    }
+    const zn = placeZoneSub(place);
+    if (zn && zn !== '–') return `В «${zn}» столы нельзя размещать`;
+    return 'Столы здесь не разрешены';
   }
 
   function snapWallPoint(pt) {
@@ -112,17 +209,30 @@
   }
 
   function allowsDesks(place) {
-    return place && place.allows_desks !== false && !place.is_meeting_room && place.bookable !== false;
+    if (!place || place.bookable === false || isAmenityPlace(place)) return false;
+    const z = zoneForPlace(place);
+    if (z) return isDeskZone(z);
+    return place.allows_desks !== false && !isMeetingPlace(place);
   }
 
   function allowsLayoutItems(place) {
     return place && (place.kind === 'space' || place.kind === 'room');
   }
 
+  const DESK_GAP = 8;
+
+  function desksEffectiveOverlap(ax, ay, aw, ah, aRot, bx, by, bw, bh, bRot, gap = DESK_GAP) {
+    const a = effectiveRectForRotation(ax, ay, aw, ah, aRot);
+    const b = effectiveRectForRotation(bx, by, bw, bh, bRot);
+    return rectsOverlap(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h, gap);
+  }
+
   function deskParent(desk) {
     if (desk.container_code) {
-      return places.find(p => p.code === desk.container_code);
+      const linked = places.find(p => p.code === desk.container_code);
+      if (linked) return linked;
     }
+    if (!desk || desk.width == null || desk.height == null) return null;
     return floorPlaces().find(p =>
       (p.kind === 'space' || p.kind === 'room') &&
       desk.x + desk.width / 2 >= p.x && desk.x + desk.width / 2 <= p.x + p.width &&
@@ -138,11 +248,19 @@
   }
 
   function deskOverlapsOthers(desk, x, y, w, h, rotation = 0) {
-    const a = effectiveRectForRotation(x, y, w, h, rotation);
+    const parent = desk?.container_code || null;
     return floorPlaces().some(p => {
       if (p.kind !== 'desk' || p.code === desk.code) return false;
-      const b = effectiveRectForRotation(p.x, p.y, p.width, p.height, p.rotation || 0);
-      return rectsOverlap(a.x, a.y, a.w, a.h, b.x, b.y, b.w, b.h);
+      if (p.width == null || p.height == null) return false;
+      if (parent) {
+        if (p.container_code !== parent) return false;
+      } else if (p.container_code) {
+        return false;
+      }
+      return desksEffectiveOverlap(
+        x, y, w, h, rotation,
+        p.x, p.y, p.width, p.height, p.rotation || 0,
+      );
     });
   }
 
@@ -178,9 +296,9 @@
   }
 
   function validateDeskInCorridor(x, y, w, h, floor, desk = null, rotation = 0) {
-    const check = validateRect(x, y, w, h, floor);
-    if (!check.ok) return check;
-    let rx = check.x, ry = check.y;
+    const clamped = clampRectToFloorRotated(x, y, w, h, rotation, SVG_W, SVG_H, FLOOR_INSET);
+    if (!clamped) return { ok: false, error: 'Стол не помещается на этаже' };
+    let rx = clamped.x, ry = clamped.y;
     const eff = effectiveRectForRotation(rx, ry, w, h, rotation);
     const adj = adjustRectFromWalls(eff.x, eff.y, eff.w, eff.h, floor);
     const moved = applyEffectiveRectDelta(rx, ry, adj[0], adj[1], w, h, rotation);
@@ -197,27 +315,35 @@
   }
 
   function validateDeskInParent(parent, x, y, w, h, floor, desk = null, rotation = 0) {
-    if (!parent) return validateDeskInCorridor(x, y, w, h, floor, desk, rotation);
-    if (!deskCenterInParent(parent, x, y, w, h)) {
-      return { ok: false, error: 'Стол должен оставаться внутри помещения' };
+    if (!parent || parent.width == null || parent.height == null) {
+      return validateDeskInCorridor(x, y, w, h, floor, desk, rotation);
     }
     const eff = effectiveRectForRotation(x, y, w, h, rotation);
+    if (!deskEffectiveRectInParent(parent, eff.x, eff.y, eff.w, eff.h, PARENT_INSET)) {
+      const clamped = clampRectInParentRotated(x, y, w, h, rotation, parent, PARENT_INSET);
+      if (!clamped) {
+        return { ok: false, error: 'Стол должен оставаться внутри помещения' };
+      }
+      x = clamped.x;
+      y = clamped.y;
+    }
     const inset = PARENT_INSET;
+    const effNow = effectiveRectForRotation(x, y, w, h, rotation);
     const minX = parent.x + inset;
     const minY = parent.y + inset;
-    const maxX = parent.x + parent.width - inset - eff.w;
-    const maxY = parent.y + parent.height - inset - eff.h;
+    const maxX = parent.x + parent.width - inset - effNow.w;
+    const maxY = parent.y + parent.height - inset - effNow.h;
     if (maxX < minX || maxY < minY) {
       return { ok: false, error: 'Стол не помещается в локацию' };
     }
-    let effX = Math.max(minX, Math.min(eff.x, maxX));
-    let effY = Math.max(minY, Math.min(eff.y, maxY));
+    let effX = Math.max(minX, Math.min(effNow.x, maxX));
+    let effY = Math.max(minY, Math.min(effNow.y, maxY));
     const wallBound = isWallBoundZone(parent);
     if (!wallBound) {
-      [effX, effY] = adjustRectFromWalls(effX, effY, eff.w, eff.h, floor);
+      [effX, effY] = adjustRectFromWalls(effX, effY, effNow.w, effNow.h, floor);
       effX = Math.max(minX, Math.min(effX, maxX));
       effY = Math.max(minY, Math.min(effY, maxY));
-      if (rectOverlapsWalls(effX, effY, eff.w, eff.h, floor)) {
+      if (rectOverlapsWalls(effX, effY, effNow.w, effNow.h, floor)) {
         return { ok: false, error: 'Нельзя разместить на стене' };
       }
     }
@@ -232,13 +358,14 @@
     const rot = desk?.rotation || 0;
     const tryAt = (x, y, par) => {
       if (!par) return validateDeskInCorridor(x, y, w, h, floor, desk, rot);
-      if (par.is_meeting_room) {
-        const cx = x + w / 2, cy = y + h / 2;
+      if (par && !allowsDesks(par)) {
+        const effAt = effectiveRectForRotation(x, y, w, h, rot);
+        const cx = effAt.x + effAt.w / 2, cy = effAt.y + effAt.h / 2;
         const newPar = findDeskParentAt(cx, cy, w, h);
         if (newPar && allowsDesks(newPar)) {
           return validateDeskInParent(newPar, x, y, w, h, floor, desk, rot);
         }
-        return { ok: false, error: 'В переговорной столы запрещены. Переместите стол в зону столов или коридор.' };
+        return { ok: false, error: deskBlockedMessage(par) + ' Переместите в зону столов или коридор.' };
       }
       return validateDeskInParent(par, x, y, w, h, floor, desk, rot);
     };
@@ -255,6 +382,23 @@
     }
     if (tryX.ok) return tryX;
     if (tryY.ok) return tryY;
+
+    const offsets = [8, 16, 24, 36, 48, 64, 84, 108];
+    let best = null;
+    const remember = candidate => {
+      if (!candidate.ok) return;
+      const dist = Math.abs(candidate.x - nx) + Math.abs(candidate.y - ny);
+      if (!best || dist < best.dist) best = { ...candidate, dist };
+    };
+    for (const d of offsets) {
+      [
+        [nx - d, ny], [nx + d, ny], [nx, ny - d], [nx, ny + d],
+        [lastX, ny - d], [lastX, ny + d], [nx - d, lastY], [nx + d, lastY],
+        [nx - d, ny - d], [nx + d, ny - d], [nx - d, ny + d], [nx + d, ny + d],
+      ].forEach(([x, y]) => remember(tryAt(x, y, parent)));
+      if (best && best.dist <= d * 1.5) return best;
+    }
+    if (best) return best;
     return check;
   }
 
@@ -438,7 +582,17 @@
     ).join('');
     const sel = $('prop-location-zone');
     if (sel) sel.innerHTML = '<option value="">– зона –</option>' + opts;
+    updateZoneHint();
     updateZoneFields();
+  }
+
+  function updateZoneHint() {
+    const hint = $('prop-zone-hint');
+    if (!hint) return;
+    hint.textContent = locationZones
+      .filter(z => z.active !== false)
+      .map(z => `${z.letter} – ${z.name}`)
+      .join(' · ');
   }
 
   function populateCategorySelect() {
@@ -454,6 +608,7 @@
   }
 
   function roomFromPlace(p) {
+    const meeting = isMeetingPlace(p);
     return {
       room_key: 'place-' + p.code,
       x: p.x, y: p.y,
@@ -467,8 +622,8 @@
         zone_type_id: p.zone_type_id,
         zone_type: p.zone_type,
         category: p.category,
-        allows_desks: p.allows_desks !== false && !p.is_meeting_room,
-        is_meeting_room: !!p.is_meeting_room,
+        allows_desks: allowsDesks(p),
+        is_meeting_room: meeting,
       },
     };
   }
@@ -593,7 +748,7 @@
       else if (locationZones.length) $('prop-location-zone').value = locationZones[0].id;
       if (p && p.category) $('prop-category').value = p.category.id;
       updateZoneFields();
-      if (p && p.is_meeting_room && p.category) {
+      if (p && isMeetingPlace(p) && p.category) {
         $('prop-cap-display').value = p.category.capacity + ' мест (целиком)';
       } else if (p && allowsDesks(p)) {
         const seats = zoneSeatCapacity(p);
@@ -635,28 +790,65 @@
   }
 
   function updateZoneFields() {
-    const zid = $('prop-location-zone').value;
-    const z = zoneById(zid);
-    const isMeeting = isRoomZone(z);
-    const isAmenity = isAmenityZone(z);
+    const z = selectedZone();
+    const { amenity, meeting } = zoneKindFlags(z);
     const catRow = $('prop-category-row');
+    const catLabel = catRow?.querySelector('label');
     const deskHint = $('prop-desk-zone-hint');
     const enclosedRow = $('prop-enclosed-row');
     const amenityHint = $('prop-amenity-hint');
-    if (catRow) catRow.style.display = isMeeting ? 'block' : 'none';
-    if (deskHint) deskHint.style.display = (isMeeting || isAmenity) ? 'none' : 'block';
+    if (catRow) catRow.style.display = meeting ? 'block' : 'none';
+    if (catLabel) catLabel.textContent = meeting ? 'Тип переговорной' : 'Тип';
+    if (deskHint) {
+      deskHint.style.display = meeting || amenity ? 'none' : 'block';
+      if (!meeting && !amenity && z) {
+        deskHint.textContent = `Для «${z.name}» тип столов выбирается ниже в «Вариантах размещения».`;
+      }
+    }
     if (enclosedRow) enclosedRow.style.display = 'none';
-    if (amenityHint) amenityHint.style.display = isAmenity ? 'block' : 'none';
+    if (amenityHint) {
+      amenityHint.style.display = amenity ? 'block' : 'none';
+      if (amenity && z) {
+        amenityHint.textContent = `${z.letter} – ${z.name} · только для карты, без бронирования`;
+      }
+    }
     filterCategoryByZone();
   }
 
   function filterCategoryByZone() {
-    const zid = $('prop-location-zone').value;
-    const z = zoneById(zid);
+    const z = zoneById($('prop-location-zone')?.value);
     const sel = $('prop-category');
-    if (!sel) return;
+    if (!sel || !categories.length) return;
     if (!isRoomZone(z)) return;
-    // Для переговорных типы подбирает loadVariantsForSelection по геометрии комнаты.
+    const roomCats = categories.filter(c => c.kind === 'room');
+    const cur = sel.value;
+    sel.innerHTML = roomCats.length
+      ? roomCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
+      : '<option value="">Нет типов переговорных</option>';
+    if (cur && sel.querySelector(`option[value="${cur}"]`)) sel.value = cur;
+    else if (roomCats.length) sel.value = String(roomCats[0].id);
+  }
+
+  async function fetchRoomVariants(room, placeCode) {
+    const zid = parseInt($('prop-location-zone')?.value || '', 10);
+    const payload = {
+      width: room.width,
+      height: room.height,
+      zone_type_id: zid || null,
+    };
+    if (placeCode) {
+      const qs = zid ? `?zone_type_id=${zid}` : '';
+      try {
+        return await api('/api/admin/room/' + encodeURIComponent(placeCode) + '/variants' + qs);
+      } catch (e) {
+        if (!/не найдена/i.test(e.message || '')) throw e;
+        toast('Локация на карте устарела — показываем предпросмотр по размеру комнаты', 'warning');
+      }
+    }
+    return await api('/api/admin/room/draft-variants', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   async function loadVariantsForSelection() {
@@ -671,32 +863,20 @@
     $('layout-helper-title').textContent = 'Варианты размещения';
 
     try {
-      let data;
-      if (selection.draft) {
-        const zid = $('prop-location-zone').value;
-        data = await api('/api/admin/room/draft-variants', {
-          method: 'POST',
-          body: JSON.stringify({
-            width: selection.room.width,
-            height: selection.room.height,
-            zone_type_id: zid ? parseInt(zid, 10) : null,
-          }),
-        });
-      } else if (selection.place) {
-        data = await api('/api/admin/room/' + encodeURIComponent(selection.place.code) + '/variants');
-      } else {
-        return;
-      }
+      const room = selection.room;
+      if (!room) return;
+      const data = selection.draft || !selection.place
+        ? await fetchRoomVariants(room, null)
+        : await fetchRoomVariants(room, selection.place.code);
       variants = data.variants || [];
       variantMode = data.mode || 'desks';
-      const rw = (selection.room.width / SCALE).toFixed(1);
-      const rh = (selection.room.height / SCALE).toFixed(1);
-      const z = zoneById($('prop-location-zone')?.value);
-      const meetingZone = isRoomZone(z) || variantMode === 'meeting';
-      const amenityZone = isAmenityZone(z) || variantMode === 'amenity';
+      const roomW = room?.width ?? selection.place?.width ?? 0;
+      const roomH = room?.height ?? selection.place?.height ?? 0;
+      const rw = (roomW / SCALE).toFixed(1);
+      const rh = (roomH / SCALE).toFixed(1);
+      const { z, amenity, meeting, label } = zoneKindFlags();
 
-      // Для переговорных – только типы, которые помещаются в комнату
-      if (meetingZone && variants.length) {
+      if (meeting && variants.length) {
         const fitting = variants.filter(v => v.fits && v.category_id);
         const sel = $('prop-category');
         if (sel && fitting.length) {
@@ -712,21 +892,24 @@
           }
         }
       }
-      metrics.innerHTML = amenityZone
-        ? `Служебная зона · ${rw}×${rh} м – зафиксируйте локацию`
-        : meetingZone
-          ? `Переговорная · ${rw}×${rh} м – выберите тип комнаты`
-          : `Зона столов · ${rw}×${rh} м – подберите тип столов и сетку`;
+      metrics.innerHTML = amenity
+        ? `${label} · ${rw}×${rh} м – зафиксируйте локацию`
+        : meeting
+          ? `${label} · ${rw}×${rh} м – выберите тип комнаты`
+          : `${label} · ${rw}×${rh} м – подберите тип столов и сетку`;
       renderVariantCards(options);
     } catch (e) {
-      options.innerHTML = '<div class="metric">Не удалось загрузить варианты</div>';
+      metrics.innerHTML = 'Ошибка загрузки вариантов';
+      options.innerHTML = `<div class="metric">${escapeHtml(friendlyError(e, 'Не удалось загрузить варианты'))}</div>`;
+      toast(e.message || 'Не удалось загрузить варианты', 'error');
     }
   }
 
   function renderVariantCards(container) {
     container.innerHTML = '';
-    if (variantMode === 'amenity') {
-      container.innerHTML = '<div class="metric">Нажмите «Зафиксировать локацию» – столы сюда не добавляются</div>';
+    const { amenity, label } = zoneKindFlags();
+    if (amenity || variantMode === 'amenity') {
+      container.innerHTML = `<div class="metric">Нажмите «Зафиксировать локацию» – ${label}, без столов и бронирования</div>`;
       return;
     }
     if (!variants.length) {
@@ -767,14 +950,20 @@
     return place;
   }
 
+  let _applyVariantBusy = false;
   async function applyVariant(idx) {
     const v = variants[idx];
     if (!v) return;
+    if (_applyVariantBusy) {
+      toast('Подождите — предыдущее размещение ещё выполняется', 'warning');
+      return;
+    }
     if (selection.draft) {
       await fixLocation(true, v);
       return;
     }
     if (!selection.place) return;
+    _applyVariantBusy = true;
     try {
       let place = selection.place;
       if (v.variant_type === 'meeting') {
@@ -784,9 +973,16 @@
         method: 'POST',
         body: JSON.stringify({ ...v, clear_existing: true }),
       });
-      toast('Вариант применён', 'success');
+      const n = data.result?.created ?? 0;
+      if (v.variant_type === 'desks' && n === 0) {
+        toast('Столы не разместились — проверьте размер помещения', 'error');
+      } else if (v.variant_type === 'desks') {
+        toast(`Размещено столов: ${n}`, 'success');
+      } else {
+        toast('Вариант применён', 'success');
+      }
       await loadAll(true);
-      const code = selection.place.code;
+      const code = selection.place?.code;
       const p = places.find(x => x.code === code);
       const room = wallRooms.find(r => r.place && r.place.code === code);
       if (room) selectLocation(room);
@@ -798,6 +994,8 @@
       }
     } catch (e) {
       toast(e.message || 'Ошибка', 'error');
+    } finally {
+      _applyVariantBusy = false;
     }
   }
 
@@ -807,7 +1005,7 @@
     const zid = parseInt($('prop-location-zone').value, 10);
     const z = zoneById(zid);
     let name = $('prop-name').value.trim();
-    if (!name && z) name = 'Зона ' + z.letter;
+    if (!name && z) name = z.name || ('Зона ' + z.letter);
     const meeting = isRoomZone(z);
     const amenity = isAmenityZone(z);
     const catId = meeting ? parseInt($('prop-category').value, 10) : null;
@@ -862,10 +1060,8 @@
     const z = zoneById(zid);
     const catId = $('prop-category').value;
     const name = $('prop-name').value.trim();
+
     try {
-      if (isRoomZone(z) && !isAmenityZone(z)) {
-        p = await syncLocationZoneFromForm(p);
-      }
       await api('/api/admin/place/' + p.id + '/layout', {
         method: 'PUT',
         body: JSON.stringify({ name: name || p.name, enclosed: true }),
@@ -875,6 +1071,16 @@
           method: 'PUT',
           body: JSON.stringify({ zone_type_id: parseInt(zid, 10), floor: currentFloor }),
         });
+        if (zRes.place) {
+          p = zRes.place;
+          selection.place = p;
+          const wr = wallRooms.find(r =>
+            r.place && (r.place.code === p.code || r.place.code === zRes.old_code)
+          );
+          if (wr) wr.place = p;
+          $('prop-title').textContent = p.name + ' (' + p.code + ')';
+          $('prop-code-hint').textContent = 'Код: ' + p.code;
+        }
         if (zRes.renamed) toast(zRes.message, 'success');
       }
       if (isRoomZone(z) && !isAmenityZone(z) && catId) {
@@ -984,12 +1190,21 @@
     const selected = selection && selection.type === 'location' &&
       selection.room && selection.room.room_key === room.room_key;
     const registered = room.registered;
-    const isMeeting = room.place && room.place.is_meeting_room;
+    const isMeeting = room.place && isMeetingPlace(room.place);
+    const isAmenity = room.place && isAmenityPlace(room.place);
     let fill = 'rgba(148,163,184,0.12)';
     let stroke = '#94a3b8';
     if (registered) {
-      fill = isMeeting ? 'rgba(99,102,241,0.15)' : 'rgba(34,197,94,0.12)';
-      stroke = isMeeting ? '#6366f1' : '#22c55e';
+      if (isAmenity) {
+        fill = 'rgba(148,163,184,0.18)';
+        stroke = '#64748b';
+      } else if (isMeeting) {
+        fill = 'rgba(99,102,241,0.15)';
+        stroke = '#6366f1';
+      } else {
+        fill = 'rgba(34,197,94,0.12)';
+        stroke = '#22c55e';
+      }
     }
     if (selected) { stroke = '#f59e0b'; }
     return { fill, stroke, dash: registered ? 'none' : '8,4', sw: selected ? 4 : 2 };
@@ -1038,8 +1253,8 @@
     floorPlaces().filter(p => p.kind === 'space' || p.kind === 'room').forEach(p => {
       const selected = selection && selection.type === 'location' &&
         selection.place && selection.place.code === p.code;
-      const meeting = p.is_meeting_room;
-      const amenity = p.bookable === false || (p.zone_type && isAmenityZone(p.zone_type));
+      const meeting = isMeetingPlace(p);
+      const amenity = isAmenityPlace(p);
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rect.setAttribute('x', p.x);
@@ -1066,7 +1281,7 @@
       lbl.setAttribute('text-anchor', 'middle');
       lbl.setAttribute('font-size', 12);
       lbl.setAttribute('font-weight', '600');
-      lbl.setAttribute('fill', meeting ? '#4338ca' : '#15803d');
+      lbl.setAttribute('fill', amenity ? '#475569' : (meeting ? '#4338ca' : '#15803d'));
       lbl.setAttribute('pointer-events', 'none');
       lbl.setAttribute('class', 'map-place-label');
       lbl.setAttribute('style', 'user-select:none;-webkit-user-select:none;pointer-events:none;');
@@ -1080,7 +1295,7 @@
     const layer = $('desks-layer');
     if (!layer) return;
     layer.innerHTML = '';
-    floorPlaces().filter(p => p.kind === 'desk').forEach(p => {
+    floorPlaces().filter(p => p.kind === 'desk' && p.width != null && p.height != null).forEach(p => {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       const rot = p.rotation || 0;
       const cx = p.x + p.width / 2, cy = p.y + p.height / 2;
@@ -1216,7 +1431,7 @@
       items.push({
         key: 'place-' + p.code,
         title: p.name + ' (' + p.code + ')',
-        sub: p.is_meeting_room ? 'Переговорная' : 'Зона столов',
+        sub: placeZoneSub(p),
         onClick: () => selectSpace(p),
       });
     });
@@ -1249,9 +1464,11 @@
     if (!box) return;
     const desks = categories.filter(c => c.kind === 'desk');
     const loc = selection && selection.place;
-    const deskHint = loc && loc.is_meeting_room
+    const deskHint = loc && isMeetingPlace(loc)
       ? '<p style="font-size:11px;color:#a5b4fc;">Мебель переговорной (бронь только целиком)</p>'
-      : '<p style="font-size:11px;color:#86efac;">Перетащите стол в закрытое помещение или в коридор.</p>';
+      : (loc && !allowsDesks(loc)
+        ? `<p style="font-size:11px;color:#fcd34d;">В «${escapeHtml(placeZoneSub(loc))}» столы не размещаются.</p>`
+        : '<p style="font-size:11px;color:#86efac;">Перетащите стол в закрытое помещение или в коридор.</p>');
     const html = '<h3>Столы</h3>' + deskHint + desks.map(c =>
       `<div class="tpl" data-kind="desk" data-cat-id="${c.id}" data-w="${c.width_px}" data-h="${c.height_px}" data-name="${c.name}">
         <div class="tpl-name">${c.name}</div><div class="tpl-meta">${c.width_m}×${c.height_m} м</div>
@@ -1320,7 +1537,7 @@
       }
       const blockedParent = parent || selectedParent || findBlockedDeskContainerAt(pt.x, pt.y);
       if (blockedParent && (blockedParent.kind === 'space' || blockedParent.kind === 'room') && !allowsDesks(blockedParent)) {
-        toast('В переговорную нельзя класть столы – используйте «Варианты размещения»', 'error');
+        toast(deskBlockedMessage(blockedParent), 'error');
         return;
       }
       const corridorCheck = validateDeskInCorridor(
@@ -1336,7 +1553,7 @@
   async function createDesk(parent, x, y, w, h, catId, name) {
     if (_createBusy) return;
     if (!allowsDesks(parent)) {
-      toast('В переговорной столы запрещены. Используйте «Варианты размещения»', 'error');
+      toast(deskBlockedMessage(parent), 'error');
       return;
     }
     _createBusy = true;
@@ -1368,7 +1585,7 @@
     if (_createBusy) return;
     const blockedParent = findBlockedDeskContainerAt(x + w / 2, y + h / 2);
     if (blockedParent) {
-      toast('В переговорной столы запрещены. Используйте «Варианты размещения»', 'error');
+      toast(deskBlockedMessage(blockedParent), 'error');
       return;
     }
     _createBusy = true;
@@ -1418,10 +1635,14 @@
       moved = true;
       const cur = svgPoint(e);
       const nx = ox + cur.x - start.x, ny = oy + cur.y - start.y;
+      if (p.width == null || p.height == null) return;
       const check = resolveDeskDragPosition(
         parent, nx, ny, p.width, p.height, currentFloor, p, lastX, lastY,
       );
-      if (!check.ok) return;
+      if (!check.ok) {
+        toastLimited('desk-drag-limit', check.error || 'Стол нельзя поставить в это место', 'warning');
+        return;
+      }
       p.x = check.x;
       p.y = check.y;
       lastX = p.x;
@@ -1451,11 +1672,11 @@
       api('/api/admin/place/move', {
         method: 'POST',
         body: JSON.stringify({ code: p.code, x: p.x, y: p.y, floor: currentFloor }),
-      }).catch(() => {
+      }).catch(err => {
         p.x = ox;
         p.y = oy;
         render();
-        toast('Стол пересекается с другим или не помещается', 'error');
+        toast(err.message || 'Стол пересекается с другим или не помещается', 'error');
       });
       selectDesk(p);
     }
@@ -1467,7 +1688,23 @@
     if (!selection || selection.type !== 'desk' || !selection.place) return;
     const p = selection.place;
     const rot = parseInt($('prop-rotation').value, 10) || 0;
+    const parent = deskParent(p);
+    const check = parent
+      ? validateDeskInParent(parent, p.x, p.y, p.width, p.height, currentFloor, p, rot)
+      : validateDeskInCorridor(p.x, p.y, p.width, p.height, currentFloor, p, rot);
+    if (!check.ok) {
+      toast(check.error || 'Стол не помещается с таким поворотом', 'error');
+      return;
+    }
     try {
+      if (check.x !== p.x || check.y !== p.y) {
+        await api('/api/admin/place/move', {
+          method: 'POST',
+          body: JSON.stringify({ code: p.code, x: check.x, y: check.y, floor: currentFloor }),
+        });
+        p.x = check.x;
+        p.y = check.y;
+      }
       await api('/api/admin/place/rotate', {
         method: 'POST',
         body: JSON.stringify({ code: p.code, rotation: rot }),
@@ -1488,13 +1725,14 @@
   async function deleteDesk() {
     if (!selection || !selection.place) return;
     const p = selection.place;
-    if (!confirm('Удалить стол «' + p.code + '»?')) return;
-    try {
-      await api('/api/admin/place/' + p.id, { method: 'DELETE' });
-      clearSelection();
-      await loadAll(true);
-      toast('Удалено', 'success');
-    } catch (e) { toast('Ошибка удаления', 'error'); }
+    askConfirm('Удалить стол «' + p.code + '»?', async () => {
+      try {
+        await api('/api/admin/place/' + p.id, { method: 'DELETE' });
+        clearSelection();
+        await loadAll(true);
+        toast('Стол удалён', 'success');
+      } catch (e) { toast(e.message || 'Ошибка удаления', 'error'); }
+    }, 'Удалить', { title: 'Удаление стола', icon: 'trash' });
   }
 
   function startWallDrag(evt, w) {
@@ -1677,6 +1915,13 @@
   window.deleteDoor = deleteDoor;
   window.zoom = d => { zoomLevel = Math.max(0.3, Math.min(3, zoomLevel + d)); applyZoom(); };
   window.zoomReset = () => { zoomLevel = 1; applyZoom(); };
+
+  window.addEventListener('error', event => {
+    toast(friendlyError(event.error || event.message, 'Ошибка редактора. Обновите страницу и попробуйте ещё раз.'), 'error');
+  });
+  window.addEventListener('unhandledrejection', event => {
+    toast(friendlyError(event.reason, 'Ошибка запроса. Попробуйте ещё раз.'), 'error');
+  });
 
   function applyZoom() {
     const svg = $('canvas');

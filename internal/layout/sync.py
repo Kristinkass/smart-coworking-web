@@ -1001,8 +1001,7 @@ def place_allows_child_desks(place):
         zkind = place.location.zone_type.kind
         if is_amenity_zone_kind(zkind):
             return False
-        if not zone_kind_allows_desks(zkind):
-            return False
+        return zone_kind_allows_desks(zkind)
     layout_meta = get_layout_place_meta(place.code)
     if layout_meta.get('bookable') is False:
         return False

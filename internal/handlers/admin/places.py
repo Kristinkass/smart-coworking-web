@@ -27,9 +27,33 @@ def _api_error(exc):
     return user_error_message(exc)
 
 
+def _desk_blocked_message(container):
+    """Человечный текст, если стол нельзя поместить в выбранную локацию."""
+    zone_name = None
+    if container and container.location and container.location.zone_type:
+        zone_name = container.location.zone_type.name
+        if container.location.zone_type.kind == 'room_zone':
+            return 'В переговорную нельзя добавлять столы. Это единая локация для бронирования целиком.'
+    if zone_name:
+        return f'В «{zone_name}» нельзя размещать столы.'
+    return 'В этой локации нельзя размещать столы.'
+
+
 def _desk_center_in_rect(fx, fy, w, h, rx, ry, rw, rh):
     cx, cy = fx + w / 2, fy + h / 2
     return rx <= cx <= rx + rw and ry <= cy <= ry + rh
+
+
+def _desk_effective_in_parent(fx, fy, w, h, rotation, rx, ry, rw, rh, inset=0):
+    """Проверить, что повёрнутый стол целиком внутри родительской локации."""
+    from internal.layout.geometry import effective_rect_for_rotation
+    eff_x, eff_y, eff_w, eff_h = effective_rect_for_rotation(fx, fy, w, h, rotation)
+    return (
+        eff_x >= rx + inset
+        and eff_y >= ry + inset
+        and eff_x + eff_w <= rx + rw - inset
+        and eff_y + eff_h <= ry + rh - inset
+    )
 
 
 def _validate_desk_geometry(code, x, y, width, height, rotation, floor_num, container_code=None):
@@ -179,26 +203,26 @@ def register_admin_place_routes(app):
     @staff_required
     def admin_quick_register():
         """Быстрая регистрация клиента менеджером.
-        Вход: username, email, phone (все обязательны)
+        Вход: username, phone (обязательны), email (необязателен)
         Выход: {success, user_id, temp_password, message}
         """
         try:
             data = request.json
             username = (data.get('username') or '').strip()
             phone = normalize_phone(data.get('phone'))
-            email = (data.get('email') or '').strip().lower()
 
-            if not username or not phone or not email:
-                return jsonify({'success': False, 'error': 'Имя, почта и телефон обязательны'}), 400
-
-            if '@' not in email or '.' not in email.split('@')[-1]:
-                return jsonify({'success': False, 'error': 'Укажите корректный email'}), 400
+            if not username or not phone:
+                return jsonify({'success': False, 'error': 'Имя и телефон обязательны'}), 400
 
             if UserRepository.get_by_phone(phone):
                 return jsonify({'success': False, 'error': 'Пользователь с таким телефоном уже существует'}), 400
 
-            if UserRepository.get_by_email(email):
-                return jsonify({'success': False, 'error': 'Этот email уже занят'}), 400
+            email = (data.get('email') or '').strip().lower() or None
+            if email:
+                if '@' not in email or '.' not in email.split('@')[-1]:
+                    return jsonify({'success': False, 'error': 'Укажите корректный email'}), 400
+                if UserRepository.get_by_email(email):
+                    return jsonify({'success': False, 'error': 'Этот email уже занят'}), 400
 
             # Генерация временного пароля (6 цифр)
             import random, string
@@ -210,7 +234,9 @@ def register_admin_place_routes(app):
                 phone=phone,
                 role='client',
                 active=True,
-                visitor_kind='tariff'
+                visitor_kind='tariff',
+                must_change_password=True,
+                issued_temp_password=temp_password,
             )
             user.set_password(temp_password)
             db.session.add(user)
@@ -243,7 +269,7 @@ def register_admin_place_routes(app):
             if parent and not models.place_allows_child_desks(parent):
                 return jsonify({
                     'success': False,
-                    'error': 'В переговорную нельзя добавлять столы. Это единая локация для бронирования целиком.',
+                    'error': _desk_blocked_message(parent),
                 }), 400
 
         if data.get('kind') in ('space', 'room') and data.get('container_code'):
@@ -585,14 +611,18 @@ def register_admin_place_routes(app):
                 )
                 wall_bound_enclosed = parent_meta.get('source') == 'walls' and is_enclosed
                 if container_code and is_enclosed:
-                    if not _desk_center_in_rect(
-                        fx, fy, w, h,
-                        *(models.get_place_geometry(container_code)[k] for k in ('x', 'y', 'width', 'height')),
-                    ):
-                        return jsonify({
-                            'success': False,
-                            'error': 'Стол должен оставаться внутри помещения',
-                        }), 400
+                    pg = models.get_place_geometry(container_code)
+                    if pg:
+                        clamped = clamp_rect_in_parent_rotated(
+                            fx, fy, w, h, rotation,
+                            pg['x'], pg['y'], pg['width'], pg['height'],
+                        )
+                        if clamped[0] is None:
+                            return jsonify({
+                                'success': False,
+                                'error': 'Стол не помещается внутри помещения',
+                            }), 400
+                        fx, fy = clamped
                 fx, fy, geom_err = _validate_desk_geometry(
                     place.code, fx, fy, w, h, rotation, floor_num, container_code,
                 )
@@ -627,7 +657,7 @@ def register_admin_place_routes(app):
                     if container and not container.allows_child_desks():
                         return jsonify({
                             'success': False,
-                            'error': 'В переговорную нельзя класть столы – используйте «Варианты размещения»',
+                            'error': _desk_blocked_message(container),
                         }), 400
 
             ok = LayoutRepository.save_place_geometry(place.code, fx, fy, floor=floor)
@@ -711,7 +741,7 @@ def register_admin_place_routes(app):
             container_code = meta.get('container_code')
 
             if meta.get('kind', 'desk') == 'desk':
-                _, _, geom_err = _validate_desk_geometry(
+                ax, ay, geom_err = _validate_desk_geometry(
                     code, geom['x'], geom['y'], geom['width'], geom['height'],
                     rotation, floor_num, container_code,
                 )
@@ -721,6 +751,8 @@ def register_admin_place_routes(app):
             ok = LayoutRepository.rotate_place(code, rotation)
             if not ok:
                 return jsonify({'success': False, 'error': 'Место не найдено'}), 404
+            if meta.get('kind', 'desk') == 'desk':
+                LayoutRepository.save_place_geometry(code, ax, ay, floor=floor_num)
             return jsonify({'success': True, 'message': f'Поворот {code}: {rotation}°'})
         except Exception as e:
             return jsonify({'success': False, 'error': _api_error(e)}), 500

@@ -90,40 +90,43 @@
         .modal-icon.success { background: #e3efe6; color: #4d8f5f; }
 
         .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0; padding: 12px 16px;
-            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; }
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0; font-size: 13px; }
         .legend-item { display: flex; align-items: center; gap: 6px; }
-        .legend-box { width: 18px; height: 18px; border-radius: 4px; border: 2px solid; }
+        .legend-box { width: 18px; height: 18px; border-radius: 0; border: 2px solid; flex-shrink: 0; }
         .legend-box.desk       { background: #bbf7d0; border-color: #16a34a; }
+        .legend-box.desk-zone  { background: #DDB892; border-color: #7C5C3A; }
         .legend-box.room       { background: #bae6fd; border-color: #0284c7; }
         .legend-box.occupied   { background: #fecaca; border-color: #dc2626; }
         .legend-box.partial    { background: #fde68a; border-color: #d97706; }
+        .legend-box.maintenance{ background: #d1d5db; border-color: #6b7280; }
+        .legend-box.amenity    { background: rgba(148,163,184,0.22); border-color: #64748b; }
+
         .space-view-bar {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-            background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 0;
             padding: 10px 14px; margin-bottom: 14px;
         }
         .space-view-title { font-weight: 700; color: #92400e; flex: 1; }
         .place-zone.space-container rect { stroke-dasharray: 8 4; stroke-width: 4; }
-        .legend-box.maintenance{ background: #d1d5db; border-color: #6b7280; }
 
         .view-toggle { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
         .view-toggle button { border: 1px solid #cbd5e1; background: #fff; color: #334155;
-            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all .2s; }
+            padding: 8px 16px; border-radius: 0; cursor: pointer; font-weight: 600; font-size: 14px; transition: all .2s; }
         .view-toggle button.active { background: #8fa67a; border-color: #8fa67a; color: white; }
         .map-view-hidden { display: none !important; }
 
         .manager-status-list { display: none !important; }
 
         .edit-mode-bar { display: none; background: #1e293b; color: white; padding: 12px 20px;
-            border-radius: 10px; margin-bottom: 12px; align-items: center; gap: 15px; flex-wrap: wrap; }
+            border-radius: 0; margin-bottom: 12px; align-items: center; gap: 15px; flex-wrap: wrap; }
         .edit-mode-bar.active { display: flex; }
         .btn-edit-mode { background: #f59e0b; color: white; border: none; padding: 8px 18px;
-            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+            border-radius: 0; cursor: pointer; font-weight: 600; font-size: 14px;
             display: flex; align-items: center; gap: 6px; transition: background .2s; }
         .btn-edit-mode:hover { background: #d97706; }
         .btn-edit-mode.active { background: #ef4444; }
 
-        .maintenance-panel { display: none; background: #1e293b; color: white; border-radius: 10px; padding: 20px; margin-top: 12px; }
+        .maintenance-panel { display: none; background: #1e293b; color: white; border-radius: 0; padding: 20px; margin-top: 12px; }
 
         /* Временная шкала бронирования - 15-минутные слоты */
         .timeline-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
@@ -251,9 +254,169 @@
             color: #64748b;
             margin-bottom: 8px;
         }
-        #time-picker-row select:disabled {
+        #time-picker-row select:disabled,
+        .clock-time-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+        .clock-time-box {
+            display: flex;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .clock-time-btn {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fff;
+            color: #1e293b;
+            cursor: pointer;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .clock-time-btn:hover:not(:disabled) {
+            border-color: #8fa67a;
+            box-shadow: 0 2px 8px rgba(111, 133, 92, 0.15);
+        }
+        .clock-time-btn i {
+            color: #6f855c;
+            font-size: 14px;
+        }
+        .clock-time-btn span {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .clock-time-btn small {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .clock-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .clock-modal.visible {
+            display: flex;
+        }
+        .clock-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+        }
+        .clock-modal-sheet {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+            box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+        }
+        .clock-modal-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+        .clock-dial {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .clock-dial-face {
+            position: relative;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #f8fafc 0%, #eef2f7 100%);
+            border: 2px solid #e2e8f0;
+        }
+        .clock-hour-btn {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: #fff;
+            color: #334155;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,.08);
+        }
+        .clock-hour-btn.active {
+            background: #6f855c;
+            color: #fff;
+        }
+        .clock-hour-btn.disabled,
+        .clock-hour-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .clock-dial-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            pointer-events: none;
+        }
+        .clock-minutes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .clock-min-btn {
+            flex: 1;
+            max-width: 72px;
+            padding: 10px 0;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .clock-min-btn.active {
+            background: #6f855c;
+            border-color: #6f855c;
+            color: #fff;
+        }
+        .clock-min-btn.disabled,
+        .clock-min-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .clock-modal-done {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #6f855c;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
         }
         .time-picker-box {
             display: flex;
@@ -435,10 +598,12 @@
 
             <div class="map-legend">
                 <div class="legend-item"><div class="legend-box desk"></div> Рабочий стол</div>
+                <div class="legend-item"><div class="legend-box desk-zone"></div> Зона рабочих столов</div>
                 <div class="legend-item"><div class="legend-box room"></div> Переговорная</div>
                 <div class="legend-item"><div class="legend-box partial"></div> Частично занято</div>
                 <div class="legend-item"><div class="legend-box occupied"></div> Полностью занято</div>
                 <div class="legend-item"><div class="legend-box maintenance"></div> На обслуживании</div>
+                <div class="legend-item"><div class="legend-box amenity"></div> Служебная зона</div>
             </div>
 
             {% if is_admin or is_manager %}
@@ -461,7 +626,7 @@
 
             <div class="floor-plan-container">
                 <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
-                    <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="16"/>
+                    <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="0"/>
                     <defs>
                         <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
                             <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#e2e8f0" stroke-width="1"/>
@@ -507,8 +672,8 @@
                         <label style="font-size:13px; color:#475569; font-weight:600;">Тип:</label>
                         <select id="list-filter-kind" class="form-control" aria-label="Фильтр по типу места" style="font-size:13px; padding:6px 10px;" onchange="renderPlacesList()">
                             <option value="all">Все</option>
-                            <option value="desk">Рабочий стол</option>
-                            <option value="room">Переговорная</option>
+                            <option value="desk">Рабочие столы и зоны</option>
+                            <option value="room">Переговорные</option>
                         </select>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
@@ -573,35 +738,23 @@
                     </div>
                     <div id="time-picker-row">
                         <label class="form-label">Время</label>
-                        <div class="time-picker-box">
-                            <div class="time-picker-field">
-                                <div class="time-picker-label">Начало</div>
-                                <div class="time-picker-selects">
-                                    <select id="start-hour" class="form-control" aria-label="Час начала" onchange="onTimeChange()"></select>
-                                    <span class="time-picker-sep">:</span>
-                                    <select id="start-min" class="form-control" aria-label="Минуты начала" onchange="onTimeChange()">
-                                        <option value="00">00</option>
-                                        <option value="15">15</option>
-                                        <option value="30">30</option>
-                                        <option value="45">45</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="clock-time-box">
+                            <button type="button" class="clock-time-btn" id="clock-start-btn" onclick="openClockPicker('start')">
+                                <i class="fas fa-clock"></i>
+                                <span id="clock-start-display">10:00</span>
+                                <small>Начало</small>
+                            </button>
                             <span class="time-picker-arrow">→</span>
-                            <div class="time-picker-field">
-                                <div class="time-picker-label">Конец</div>
-                                <div class="time-picker-selects">
-                                    <select id="end-hour" class="form-control" aria-label="Час окончания" onchange="onTimeChange()"></select>
-                                    <span class="time-picker-sep">:</span>
-                                    <select id="end-min" class="form-control" aria-label="Минуты окончания" onchange="onTimeChange()">
-                                        <option value="00">00</option>
-                                        <option value="15">15</option>
-                                        <option value="30">30</option>
-                                        <option value="45">45</option>
-                                    </select>
-                                </div>
-                            </div>
+                            <button type="button" class="clock-time-btn" id="clock-end-btn" onclick="openClockPicker('end')">
+                                <i class="fas fa-clock"></i>
+                                <span id="clock-end-display">11:00</span>
+                                <small>Конец</small>
+                            </button>
                         </div>
+                        <input type="hidden" id="start-hour" value="10">
+                        <input type="hidden" id="start-min" value="00">
+                        <input type="hidden" id="end-hour" value="11">
+                        <input type="hidden" id="end-min" value="00">
                     </div>
                 </div>
 
@@ -699,6 +852,17 @@
         const IS_STAFF = JSON.parse('{{ "true" if is_admin or is_manager else "false" }}');
         const SERVER_NOW = '{{ now_str }}';
     </script>
+    <!-- Модальное окно циферблата -->
+    <div id="clock-picker-modal" class="clock-modal" role="dialog" aria-modal="true">
+        <div class="clock-modal-backdrop" onclick="closeClockPicker()"></div>
+        <div class="clock-modal-sheet">
+            <div class="clock-modal-title" id="clock-modal-title">Выберите время</div>
+            <div class="clock-dial" id="clock-dial"></div>
+            <div class="clock-minutes" id="clock-minutes"></div>
+            <button type="button" class="clock-modal-done" onclick="closeClockPicker()">Готово</button>
+        </div>
+    </div>
+
     <!-- Модальное окно подтверждения -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-box">
@@ -714,6 +878,7 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/booking.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
     <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=20"></script>

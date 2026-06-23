@@ -297,8 +297,12 @@ document.addEventListener('DOMContentLoaded', function () {
     setupEventListeners();
     setupMapEventDelegation();
     loadUserSubscriptions();
+    const initialParams = new URLSearchParams(window.location.search);
+    const initialFloor = parseInt(initialParams.get('floor') || '', 10);
+    if (initialFloor) currentFloor = initialFloor;
     loadPlaces().then(() => {
         if (typeof setUserView === 'function') setUserView('map');
+        applyInitialMapFocus(initialParams);
     });
 
     document.getElementById('floor-plan').addEventListener('click', function (e) {
@@ -346,14 +350,12 @@ function filterPastMinuteOptions() {
     const nowTotal = roundUpTo15(now.getHours() * 60 + now.getMinutes());
     const selH = parseInt(startH.value, 10) * 60;
 
+    const disabledStartMinutes = new Set();
     ['00', '15', '30', '45'].forEach(mm => {
         const m = parseInt(mm, 10);
-        const opt = startM.querySelector(`option[value="${mm}"]`);
-        if (!opt) return;
-        const disabled = isToday && (selH + m < nowTotal);
-        opt.disabled = disabled;
-        opt.style.color = disabled ? '#ccc' : '';
+        if (isToday && (selH + m < nowTotal)) disabledStartMinutes.add(mm);
     });
+    if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('start', disabledStartMinutes);
 
     if (isToday) {
         const cur = selH + parseInt(startM.value, 10);
@@ -366,16 +368,16 @@ function filterPastMinuteOptions() {
 
     if (endH && endM) {
         const startTotal = parseInt(startH.value, 10) * 60 + parseInt(startM.value, 10);
+        const disabledEndMinutes = new Set();
         ['00', '15', '30', '45'].forEach(mm => {
             const m = parseInt(mm, 10);
-            const opt = endM.querySelector(`option[value="${mm}"]`);
-            if (!opt) return;
             const endTotal = parseInt(endH.value, 10) * 60 + m;
-            const disabled = endTotal <= startTotal;
-            opt.disabled = disabled;
-            opt.style.color = disabled ? '#ccc' : '';
+            if (endTotal <= startTotal) disabledEndMinutes.add(mm);
         });
+        if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('end', disabledEndMinutes);
     }
+
+    if (window.ClockTimePicker) ClockTimePicker.refresh();
 }
 
 function onBookingDateChange() {
@@ -398,7 +400,6 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const hours = getCoworkingHours();
     const openHour = openTimeStr ? parseInt(openTimeStr.split(':')[0], 10) : Math.floor(hours.open / 60);
     const closeHour = closeTimeStr ? parseInt(closeTimeStr.split(':')[0], 10) : Math.floor(hours.close / 60);
-    const closeMinute = closeTimeStr ? parseInt(closeTimeStr.split(':')[1], 10) : hours.close % 60;
 
     const now = getNow();
     const todayVal = document.getElementById('booking-date')?.value;
@@ -408,35 +409,15 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const prevStart = startH.value;
     const prevEnd = endH.value;
 
-    startH.innerHTML = '';
-    endH.innerHTML = '';
-    fillMinuteSelect(startM);
-    fillMinuteSelect(endM);
+    const hourList = [];
+    for (let h = openHour; h <= closeHour; h++) hourList.push(h);
+    if (window.ClockTimePicker) ClockTimePicker.setAvailableHours(hourList);
 
-    for (let h = openHour; h <= closeHour; h++) {
-        const hh = String(h).padStart(2, '0');
-        const startOpt = document.createElement('option');
-        startOpt.value = hh;
-        startOpt.textContent = hh;
-        if (isToday && h * 60 + 45 < nowTotal) {
-            startOpt.disabled = true;
-            startOpt.style.color = '#ccc';
-        }
-        startH.appendChild(startOpt);
-
-        const endOpt = document.createElement('option');
-        endOpt.value = hh;
-        endOpt.textContent = hh;
-        endH.appendChild(endOpt);
-    }
-
-    const closeHH = String(closeHour).padStart(2, '0');
-    if (!Array.from(endH.options).some(o => o.value === closeHH)) {
-        const endOpt = document.createElement('option');
-        endOpt.value = closeHH;
-        endOpt.textContent = closeHH;
-        endH.appendChild(endOpt);
-    }
+    const disabledStart = new Set();
+    hourList.forEach(h => {
+        if (isToday && h * 60 + 45 < nowTotal) disabledStart.add(h);
+    });
+    if (window.ClockTimePicker) ClockTimePicker.setDisabledHours('start', disabledStart);
 
     let defaultStart = roundUpTo15(isToday ? Math.max(openHour * 60, nowTotal) : openHour * 60 + 60);
     if (defaultStart >= hours.close) defaultStart = Math.max(openHour * 60, hours.close - 60);
@@ -445,24 +426,24 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const defaultStartM = String(defaultStart % 60).padStart(2, '0');
     const defaultEndM = String(defaultEnd % 60).padStart(2, '0');
 
-    const pickHourValue = (selectEl, preferred, fallback) => {
-        if (preferred && Array.from(selectEl.options).some(o => o.value === preferred && !o.disabled)) {
-            return preferred;
-        }
-        const enabled = Array.from(selectEl.options).find(o => !o.disabled);
-        return enabled ? enabled.value : fallback;
+    const pickHourValue = (preferred, fallback, disabledSet) => {
+        const p = parseInt(preferred, 10);
+        if (preferred && hourList.includes(p) && !disabledSet.has(p)) return preferred;
+        const enabled = hourList.find(h => !disabledSet.has(h));
+        return enabled != null ? String(enabled).padStart(2, '0') : fallback;
     };
 
     const defaultStartH = String(Math.floor(defaultStart / 60)).padStart(2, '0');
     const defaultEndH = String(Math.floor(defaultEnd / 60)).padStart(2, '0');
 
-    startH.value = pickHourValue(startH, prevStart, defaultStartH);
+    startH.value = pickHourValue(prevStart, defaultStartH, disabledStart);
     startM.value = ['00', '15', '30', '45'].includes(startM.value) ? startM.value : defaultStartM;
 
-    endH.value = pickHourValue(endH, prevEnd, defaultEndH);
+    endH.value = pickHourValue(prevEnd, defaultEndH, new Set());
     endM.value = ['00', '15', '30', '45'].includes(endM.value) ? endM.value : defaultEndM;
 
     filterPastMinuteOptions();
+    if (window.ClockTimePicker) ClockTimePicker.refresh();
     if (typeof syncTimelineWithSelects === 'function') syncTimelineWithSelects();
 }
 
@@ -558,9 +539,14 @@ function renderTooltipContent(place, mouseX, mouseY) {
     const tt = document.getElementById('place-tooltip');
     if (!tt) return;
 
-    let nameText = placeDisplayName(place);
+    const nameText = placeDisplayName(place);
+    const codeText = formatPlaceCode(place);
     document.getElementById('tt-name').textContent = nameText;
-    document.getElementById('tt-kind').textContent = placeTypeLabel(place);
+    const kindEl = document.getElementById('tt-kind');
+    if (kindEl) {
+        const kind = placeTypeLabel(place);
+        kindEl.textContent = codeText && codeText !== nameText ? `${kind} · ${codeText}` : kind;
+    }
     
     // Количество мест зоны (не путать с «1 бронь на всю зону»)
     let capText = displayCapacity(place) + ' мест';
@@ -714,7 +700,7 @@ function renderFloorPlan() {
         floor.setAttribute('y', activeSpace.y);
         floor.setAttribute('width', activeSpace.width);
         floor.setAttribute('height', activeSpace.height);
-        floor.setAttribute('rx', 16);
+        floor.setAttribute('rx', 0);
         floor.setAttribute('fill', '#f8fafc');
         floor.setAttribute('stroke', 'none');
         layer.appendChild(floor);
@@ -768,7 +754,7 @@ function renderFloorPlan() {
         border.setAttribute('y', activeSpace.y + 2);
         border.setAttribute('width', activeSpace.width - 4);
         border.setAttribute('height', activeSpace.height - 4);
-        border.setAttribute('rx', 14);
+        border.setAttribute('rx', 0);
         border.setAttribute('fill', 'none');
         border.setAttribute('stroke', '#0ea5e9');
         border.setAttribute('stroke-width', 2);
@@ -803,7 +789,7 @@ function renderFloorPlan() {
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', x); rect.setAttribute('y', y);
         rect.setAttribute('width', w); rect.setAttribute('height', h);
-        rect.setAttribute('rx', showDeskOnMap(place) ? 10 : 8);
+        rect.setAttribute('rx', 0);
         rect.setAttribute('fill', placeFill(place));
         rect.setAttribute('stroke', placeStroke(place));
         rect.setAttribute('stroke-width', showDeskOnMap(place) ? 2 : 3);
@@ -932,17 +918,10 @@ function handlePlaceClick(place) {
 }
 
 function deskDisplayLabel(place, w) {
-    const label = placeLabelWithCode(place);
-    const maxLen = Math.max(10, Math.floor(w / 6));
-    if (label.length <= maxLen) return label;
-    const code = formatPlaceCode(place);
-    const codeSuffix = code ? ` (${code})` : '';
-    const name = (place.name || '').trim();
-    if (codeSuffix && name) {
-        const maxName = maxLen - codeSuffix.length - 1;
-        if (maxName > 2) return name.slice(0, maxName) + '…' + codeSuffix;
-    }
-    return label.slice(0, maxLen - 1) + '…';
+    const name = placeDisplayName(place);
+    const maxLen = Math.max(6, Math.floor(w / 6));
+    if (name.length <= maxLen) return name;
+    return name.slice(0, Math.max(1, maxLen - 1)) + '…';
 }
 
 function updateSpaceViewBar() {
@@ -1323,23 +1302,39 @@ function selectPlaceByCode(placeCode) {
     if (place) handlePlaceClick(place);
 }
 
+function applyInitialMapFocus(params) {
+    const placeCode = params.get('place');
+    if (!placeCode) return;
+    const place = places.find(p => p.code === placeCode);
+    if (!place) {
+        showAlert('Место из обращения не найдено на карте', 'warning');
+        return;
+    }
+    if (Number(place.floor || 1) !== Number(currentFloor)) {
+        currentFloor = Number(place.floor || 1);
+        renderFloorToggles();
+    }
+    const parent = place.container_code
+        ? places.find(p => p.code === place.container_code)
+        : null;
+    if (parent && isSpaceContainer(parent)) {
+        enterSpaceView(parent);
+    } else {
+        renderFloorPlan();
+    }
+    selectPlaceByCode(place.code);
+    setTimeout(() => {
+        document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+}
+
 function filterPastHours(dateVal) {
-    const now = getNow();
-    const isToday = dateVal === now.toISOString().split('T')[0];
-    const startH = document.getElementById('start-hour');
-    if (!startH) return;
-
-    Array.from(startH.options).forEach(opt => {
-        const h = parseInt(opt.value);
-        if (isToday && h < now.getHours()) {
-            opt.disabled = true;
-            opt.style.color = '#ccc';
-        } else {
-            opt.disabled = false;
-            opt.style.color = '';
-        }
-    });
-
+    const openTime = window.currentSchedule?.open_time;
+    const closeTime = window.currentSchedule?.close_time;
+    if (typeof rebuildTimeSelects === 'function' && openTime && closeTime) {
+        rebuildTimeSelects(openTime, closeTime);
+        return;
+    }
     filterPastMinuteOptions();
 }
 

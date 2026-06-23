@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Редактор планировки – Умный Коворкинг</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   * { box-sizing: border-box; }
@@ -45,20 +44,33 @@
   .suggestion-card span { display:block; color:#94a3b8; font-size:11px; line-height:1.35; }
   .suggestion-card button { width:100%; margin-top:8px; border:none; border-radius:6px; padding:6px; background:#22c55e; color:white; font-weight:700; cursor:pointer; font-size:12px; }
 
-  .toast { position:fixed; top:60px; right:20px; padding:10px 16px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.4); z-index:1000; font-size:13px; font-weight:500; }
-  .toast.success { background:#4d8f5f; color:white; }
-  .toast.error { background:#c75050; color:white; }
-  .toast.info { background:#8fa67a; color:white; }
+  .toast {
+    position:fixed; top:64px; right:20px; min-width:240px; max-width:340px;
+    padding:10px 12px; border-radius:10px; box-shadow:0 8px 22px rgba(0,0,0,.22);
+    z-index:1200; font-size:13px; font-weight:600; display:flex; gap:10px; align-items:flex-start;
+    border:1px solid #334155; border-left-width:4px; background:#1e293b; color:#e2e8f0;
+  }
+  .toast i { margin-top:2px; }
+  .toast.success { border-left-color:#8fa67a; }
+  .toast.success i { color:#86efac; }
+  .toast.error { border-left-color:#c75050; }
+  .toast.error i { color:#fca5a5; }
+  .toast.warning { border-left-color:#f59e0b; }
+  .toast.warning i { color:#fcd34d; }
+  .toast.info { border-left-color:#94a3b8; }
+  .toast.info i { color:#cbd5e1; }
 
   .confirm-toast {
-    position:fixed; top:60px; right:20px; z-index:1100;
-    background:#1e293b; border:2px solid #c75050; border-radius:10px;
-    padding:12px 14px; max-width:280px; box-shadow:0 8px 24px rgba(0,0,0,.45);
+    position:fixed; top:64px; right:20px; z-index:1300;
+    background:#1e293b; border:1px solid #475569; border-left:4px solid #f59e0b; border-radius:10px;
+    padding:12px 14px; max-width:320px; box-shadow:0 10px 26px rgba(0,0,0,.3);
     display:flex; flex-direction:column; gap:10px; font-size:13px; color:#e2e8f0;
   }
+  .confirm-toast .confirm-title { display:flex; gap:8px; align-items:center; color:#f8fafc; font-weight:800; }
+  .confirm-toast .confirm-title i { color:#f59e0b; }
   .confirm-toast .confirm-actions { display:flex; gap:8px; justify-content:flex-end; }
-  .confirm-toast button { border:none; border-radius:6px; padding:6px 12px; font-weight:600; cursor:pointer; font-size:12px; }
-  .confirm-toast .confirm-yes { background:#c75050; color:white; }
+  .confirm-toast button { border:none; border-radius:8px; padding:7px 12px; font-weight:700; cursor:pointer; font-size:12px; }
+  .confirm-toast .confirm-yes { background:#dc2626; color:white; }
   .confirm-toast .confirm-no { background:#334155; color:#cbd5e1; }
 
   /* Стили модального окна */
@@ -189,9 +201,7 @@
         <div class="field">
           <label>Зона (буква в коде)</label>
           <select id="prop-location-zone"></select>
-          <small id="prop-zone-hint" style="display:block;color:#64748b;font-size:11px;margin-top:4px;">
-            A – рабочие столы · B – переговорные. Локация: 1A-L1, стол: 1A-T1
-          </small>
+          <small id="prop-zone-hint" style="display:block;color:#64748b;font-size:11px;margin-top:4px;"></small>
         </div>
         <div class="field" id="prop-category-row" style="display:none;">
           <label>Тип переговорной</label>
@@ -200,9 +210,7 @@
         <p id="prop-desk-zone-hint" style="display:none;font-size:11px;color:#86efac;margin:0 0 10px;">
           Для зоны столов тип столов выбирается ниже в «Вариантах размещения».
         </p>
-        <p id="prop-amenity-hint" style="display:none;font-size:11px;color:#94a3b8;margin:0 0 10px;">
-          Служебная зона (отдых, кухня, санузел) – только для карты, без бронирования.
-        </p>
+        <p id="prop-amenity-hint" style="display:none;font-size:11px;color:#94a3b8;margin:0 0 10px;"></p>
         <p id="prop-wall-bound-hint" style="display:none;font-size:11px;color:#fcd34d;margin:0 0 10px;">
           <i class="fas fa-vector-square"></i> Комната задана стенами – двигайте контур через «Двигать стены». Столы внутри можно перетаскивать отдельно.
         </p>
@@ -277,7 +285,7 @@
   </aside>
 </div>
 
-<script src="{{ url_for('static', filename='js/editor/geometry.js') }}?v=1"></script>
-<script src="{{ url_for('static', filename='js/editor/app.js') }}?v=7"></script>
+<script src="{{ url_for('static', filename='js/editor/geometry.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/editor/app.js') }}?v=8"></script>
 </body>
 </html>

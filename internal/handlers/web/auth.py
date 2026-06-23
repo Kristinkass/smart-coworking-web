@@ -74,26 +74,26 @@ def register_auth_routes(app):
             return redirect(url_for('dashboard'))
 
         if request.method == 'POST':
-            email = (request.form.get('email') or '').strip().lower()
-            username = request.form.get('username')
+            username = (request.form.get('username') or '').strip()
             password = request.form.get('password')
-            phone = normalize_phone(request.form.get('phone')) if request.form.get('phone') else None
+            phone = normalize_phone(request.form.get('phone'))
 
-            if not email or not username or not password:
-                flash('Все обязательные поля должны быть заполнены', 'error')
+            if not username or not password or not phone:
+                flash('Укажите имя, телефон и пароль', 'error')
                 return redirect(url_for('register'))
 
-            if '@' not in email or '.' not in email.split('@')[-1]:
-                flash('Введите корректный email (должен содержать @ и домен)', 'error')
-                return redirect(url_for('register'))
-
-            if UserRepository.get_by_email(email):
-                flash('Пользователь с таким email уже существует', 'error')
-                return redirect(url_for('register'))
-
-            if phone and UserRepository.get_by_phone(phone):
+            if UserRepository.get_by_phone(phone):
                 flash('Пользователь с таким телефоном уже существует', 'error')
                 return redirect(url_for('register'))
+
+            email = (request.form.get('email') or '').strip().lower() or None
+            if email:
+                if '@' not in email or '.' not in email.split('@')[-1]:
+                    flash('Введите корректный email (должен содержать @ и домен)', 'error')
+                    return redirect(url_for('register'))
+                if UserRepository.get_by_email(email):
+                    flash('Пользователь с таким email уже существует', 'error')
+                    return redirect(url_for('register'))
 
             user = models.User(
                 email=email,

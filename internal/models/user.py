@@ -21,6 +21,8 @@ class User(UserMixin, db.Model):
     # Только для client: tariff (по тарифам) | subscription (по абонементу)
     visitor_kind = db.Column(db.String(20), default='tariff')
     active = db.Column(db.Boolean, default=True)
+    must_change_password = db.Column(db.Boolean, default=False, nullable=False)
+    issued_temp_password = db.Column(db.String(32), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
 

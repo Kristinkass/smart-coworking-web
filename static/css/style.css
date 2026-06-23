@@ -18,7 +18,7 @@
     --light-color: #f8f9fa;
     --dark-color: #212529;
     --gray-color: #6c757d;
-    --border-radius: 8px;
+    --border-radius: 0;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --transition: all 0.3s ease;
 }
@@ -1043,6 +1043,26 @@ body.nav-menu-open {
     width: 100%;
 }
 
+.notify-page-layout {
+    display: grid;
+    grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.45fr);
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+}
+
+.notify-side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.notify-page-layout .notify-form {
+    position: sticky;
+    top: 16px;
+}
+
 .module-section {
     background: var(--card-bg);
     border-radius: 16px;
@@ -1143,6 +1163,84 @@ body.nav-menu-open {
 
 .module-data-table .feedback-delete-btn {
     margin-top: 8px;
+}
+
+.notify-history-table th,
+.notify-history-table td {
+    padding: 10px;
+}
+
+.feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.feedback-actions button {
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.feedback-actions button:hover {
+    border-color: var(--primary-color);
+    background: #eef2e8;
+}
+
+.feedback-actions .feedback-delete-btn {
+    color: var(--danger-color);
+}
+
+.notify-confirm {
+    position: fixed;
+    top: 72px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 320px;
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--danger-color);
+    border-radius: 12px;
+    box-shadow: 0 14px 36px rgba(47, 52, 40, 0.18);
+}
+
+.notify-confirm span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.notify-confirm div {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.notify-confirm button {
+    border: none;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.notify-confirm .btn-cancel {
+    background: var(--bg-color);
+    color: var(--text-secondary);
+}
+
+.notify-confirm .btn-danger {
+    background: var(--danger-color);
+    color: #fff;
 }
 
 /* ── Notify form (admin send page) ── */
@@ -1258,6 +1356,16 @@ body.nav-menu-open {
     display: none;
 }
 
+@media (max-width: 1100px) {
+    .notify-page-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .notify-page-layout .notify-form {
+        position: static;
+    }
+}
+
 /* ── Notifications & feedback (dashboard + admin) ── */
 .notify-section-tabs {
     display: flex;
@@ -1296,7 +1404,7 @@ body.nav-menu-open {
 .notify-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 0;
     margin-bottom: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(47, 52, 40, 0.05);
@@ -1363,6 +1471,10 @@ body.nav-menu-open {
     padding: 0 18px 14px;
 }
 
+.notify-card.open .notify-preview {
+    display: none;
+}
+
 .notify-card.open .notify-body {
     display: block;
 }
@@ -1395,7 +1507,7 @@ body.nav-menu-open {
 .feedback-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 0;
     margin-bottom: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(47, 52, 40, 0.05);
@@ -1482,6 +1594,10 @@ body.nav-menu-open {
 .feedback-body {
     display: none;
     padding: 14px 18px 16px;
+}
+
+.feedback-card.open .feedback-preview {
+    display: none;
 }
 
 .feedback-card.open .feedback-body {
@@ -1760,11 +1876,18 @@ body.nav-menu-open {
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 
     .action-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .module-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 
     .admin-table {
@@ -1881,7 +2004,7 @@ body.nav-menu-open {
 .place-list-item {
     background: white;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 0;
     padding: 12px;
     cursor: pointer;
     transition: box-shadow 0.2s;
@@ -1894,6 +2017,11 @@ body.nav-menu-open {
     margin-bottom: 8px;
 }
 .place-list-code { font-weight: 600; color: #1e293b; font-size: 13px; }
+.place-list-code-sub { display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-top: 2px; }
+
+.notify-head-static {
+    padding: 14px 18px;
+}
 .place-list-status { font-size: 12px; font-weight: 500; }
 .place-list-name { font-size: 13px; color: #64748b; margin-bottom: 4px; }
 .place-list-meta {
@@ -1905,3 +2033,11 @@ body.nav-menu-open {
 }
 .places-list-rating { color: #f59e0b; }
 .places-list-no-rating { color: #94a3b8; }
+
+/* Единые острые углы в основных блоках интерфейса */
+.btn, .card, .module-section, .module-card, .stat-card, .filter-btn,
+.action-card, .form-control, .nav-toggle, .modal-box, .booking-panel,
+.timeline-wrapper, .capacity-badge, .status-badge, .notify-confirm,
+.module-note, .places-list-group-title, .list-zone-bar {
+    border-radius: 0 !important;
+}

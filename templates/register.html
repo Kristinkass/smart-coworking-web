@@ -12,11 +12,11 @@
         
         <form method="POST" action="{{ url_for('register') }}" class="auth-form" novalidate>
             <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i> Почта *</label>
-                <input type="email" id="email" name="email" required 
-                       placeholder="ваш@email.com" class="form-control">
+                <label for="phone"><i class="fas fa-phone"></i> Телефон *</label>
+                <input type="tel" id="phone" name="phone" class="form-control phone-mask" required
+                       placeholder="+7 999 123 45 67">
             </div>
-            
+
             <div class="form-group">
                 <label for="username"><i class="fas fa-user"></i> Имя пользователя *</label>
                 <input type="text" id="username" name="username" required 
@@ -24,11 +24,10 @@
             </div>
             
             <div class="form-group">
-                <label for="phone"><i class="fas fa-phone"></i> Телефон</label>
-                <input type="tel" id="phone" name="phone" class="form-control phone-mask"
-                       placeholder="+7 999 123 45 67">
+                <label for="email"><i class="fas fa-envelope"></i> Почта <small style="color:#6b7280">(необязательно)</small></label>
+                <input type="email" id="email" name="email"
+                       placeholder="ваш@email.com" class="form-control">
             </div>
-
 
             <div class="form-group">
                 <label for="password"><i class="fas fa-lock"></i> Пароль *</label>
@@ -64,12 +63,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof initPhoneMasks === 'function') initPhoneMasks();
 
     form.addEventListener('submit', function(e) {
-        const email = document.getElementById('email').value.trim();
         const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
 
-        if (!email || !username || !password.value) {
+        if (!username || !password.value || !phoneInput.value.trim()) {
             e.preventDefault();
-            showToast('Заполните все обязательные поля', 'warning');
+            showToast('Укажите телефон, имя и пароль', 'warning');
             return false;
         }
 
@@ -87,18 +86,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        const email = document.getElementById('email').value.trim();
-        if (!email.includes('@') || !email.split('@')[1]?.includes('.')) {
-            e.preventDefault();
-            showToast('Введите корректный email (должен содержать @ и домен)', 'warning');
-            document.getElementById('email').focus();
-            return false;
-        }
-
-        if (phoneInput.value && typeof isPhoneComplete === 'function' && !isPhoneComplete(phoneInput.value)) {
+        if (typeof isPhoneComplete === 'function' && !isPhoneComplete(phoneInput.value)) {
             e.preventDefault();
             showToast('Введите корректный номер телефона', 'warning');
             phoneInput.focus();
+            return false;
+        }
+
+        if (email && (!email.includes('@') || !email.split('@')[1]?.includes('.'))) {
+            e.preventDefault();
+            showToast('Введите корректный email или оставьте поле пустым', 'warning');
+            document.getElementById('email').focus();
             return false;
         }
     });

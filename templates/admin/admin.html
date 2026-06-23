@@ -444,5 +444,62 @@
     color: var(--text-secondary);
     font-style: italic;
 }
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .action-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 12px 10px;
+        gap: 8px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .stat-info h3 {
+        font-size: 20px;
+    }
+
+    .stat-info p {
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .admin-actions {
+        padding: 16px;
+    }
+
+    .admin-actions h2 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+
+    .action-card {
+        padding: 14px 8px;
+        gap: 8px;
+    }
+
+    .action-card i {
+        font-size: 22px;
+    }
+
+    .action-card span {
+        font-size: 12px;
+        line-height: 1.25;
+    }
+}
 </style>
 {% endblock %}
