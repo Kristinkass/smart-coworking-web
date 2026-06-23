@@ -858,8 +858,6 @@ def get_timegrid_for_place(place_id: int, booking_date: date) -> Dict:
         not s['is_past'] and s['status'] != 'full' and s['available'] > 0
         for s in slots_data
     )
-    if not is_today and slots_data:
-        has_future_bookable = True
     if is_today and now_minutes is not None and now_minutes >= close_limit:
         has_future_bookable = False
 
