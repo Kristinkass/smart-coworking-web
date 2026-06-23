@@ -55,7 +55,7 @@
       ...opts,
     });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(friendlyError(data.error || data.message || ('Ошибка ' + r.status)));
+    if (!r.ok) throw new Error(friendlyError(data.error || data.message || ('Ошибка ' + r.status), 'Ошибка ' + r.status));
     if (data.success === false) throw new Error(friendlyError(data.error || data.message || 'Ошибка запроса'));
     return data;
   }
@@ -1731,7 +1731,11 @@
     const p = selection.place;
     askConfirm('Удалить стол «' + p.code + '»?', async () => {
       try {
-        await api('/api/admin/place/' + p.id, { method: 'DELETE' });
+        if (p.id) {
+          await api('/api/admin/place/' + p.id, { method: 'DELETE' });
+        } else {
+          await api('/api/admin/place-by-code/' + encodeURIComponent(p.code), { method: 'DELETE' });
+        }
         clearSelection();
         await loadAll(true);
         toast('Стол удалён', 'success');

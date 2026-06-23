@@ -876,6 +876,7 @@ def sync_place_by_code(code):
     from internal.models.category import PlaceCategory
     from internal.models.coworking import Location
     from internal.models.place import Place
+    from internal.layout.codes import find_layout_place, resolve_location_for_layout_place
 
     if not code:
         return None
@@ -892,9 +893,20 @@ def sync_place_by_code(code):
         None,
     )
     if not layout_place:
-        return None
+        layout_place, code = find_layout_place(code, load_layout().get('places', []))
+        if not layout_place:
+            return None
 
-    location = Location.query.filter_by(code=layout_place.get('location')).first()
+    location_code = resolve_location_for_layout_place(
+        layout_place, load_layout().get('places', []),
+    )
+    location = None
+    if location_code:
+        location = Location.query.filter_by(code=location_code).first()
+    if not location:
+        loc_raw = layout_place.get('location')
+        if loc_raw:
+            location = Location.query.filter_by(code=loc_raw).first()
     if not location:
         return None
 
@@ -1165,8 +1177,112 @@ def apply_place_location_zone(place, floor_num, zone_type_id, rename_code=True):
 
 LEGACY_LETTER_MAP = {
     'Б': 'B', 'б': 'B', 'А': 'A', 'а': 'A', 'В': 'C', 'в': 'C',
-    'К': 'K', 'к': 'K',
+    'К': 'K', 'к': 'K', 'Р': 'P', 'р': 'P', 'С': 'C', 'с': 'C',
 }
+
+
+def compact_place_codes():
+    """Нормализовать омоглифы, починить location у столов, перенумеровать T1..Tn / L1..Ln без пропусков."""
+    from collections import defaultdict
+
+    from internal.layout.codes import (
+        normalize_code_chars,
+        resolve_location_for_layout_place,
+    )
+    from internal.layout.store import _save_layout
+    from internal.models.coworking import Location
+    from internal.models.place import Place
+
+    layout = load_layout()
+    places = list(layout.get('places', []))
+    if not places:
+        return {'renamed': 0, 'locations_fixed': 0}
+
+    locations_fixed = 0
+    for p in places:
+        if p.get('kind') == 'desk':
+            loc = resolve_location_for_layout_place(p, places)
+            if loc and p.get('location') != loc:
+                p['location'] = loc
+                locations_fixed += 1
+
+    renames = []
+    by_group = defaultdict(list)
+
+    for p in places:
+        code = p.get('code')
+        if not code:
+            continue
+        kind = p.get('kind', 'desk')
+        tag = _code_tag_for_kind(kind)
+        loc = normalize_code_chars(p.get('location') or str(code).split('-')[0])
+        if not Location.query.filter_by(code=loc).first():
+            loc = normalize_code_chars(str(code).split('-')[0])
+        idx = _place_code_index(code, loc, tag)
+        sort_key = (idx if idx is not None else 9999, code)
+        by_group[(loc, tag)].append((sort_key, p))
+
+    for (loc, tag), group in by_group.items():
+        group.sort(key=lambda item: item[0])
+        for i, (_, p) in enumerate(group, 1):
+            new_code = f'{loc}-{tag}{i}'
+            old_code = p.get('code')
+            if old_code and old_code != new_code:
+                renames.append((old_code, new_code))
+
+    if not renames:
+        if locations_fixed:
+            layout['places'] = places
+            _save_layout(layout)
+            reload_layout()
+        return {'renamed': 0, 'locations_fixed': locations_fixed, 'db_updated': 0, 'samples': []}
+
+    temp_map = {old: f'temp_{old}' for old, _ in renames}
+
+    for p in places:
+        if p.get('code') in temp_map:
+            p['code'] = temp_map[p['code']]
+        cc = p.get('container_code')
+        if cc in temp_map:
+            p['container_code'] = temp_map[cc]
+
+    for old, new in renames:
+        temp = temp_map[old]
+        for p in places:
+            if p.get('code') == temp:
+                p['code'] = new
+            if p.get('container_code') == temp:
+                p['container_code'] = new
+
+    layout['places'] = places
+    _save_layout(layout)
+    reload_layout()
+
+    db_renamed = 0
+    for old, new in renames:
+        place = Place.query.filter_by(code=old).first()
+        if place:
+            place.code = temp_map[old]
+    db.session.flush()
+
+    for old, new in renames:
+        temp = temp_map[old]
+        place = Place.query.filter_by(code=temp).first()
+        if place:
+            place.code = new
+            db_renamed += 1
+        for child in Place.query.filter_by(container_code=old).all():
+            child.container_code = new
+        for child in Place.query.filter_by(container_code=temp).all():
+            child.container_code = new
+
+    db.session.commit()
+    return {
+        'renamed': len(renames),
+        'locations_fixed': locations_fixed,
+        'db_updated': db_renamed,
+        'samples': [f'{a} → {b}' for a, b in renames[:8]],
+    }
 
 
 def _normalize_zone_letter(letter):

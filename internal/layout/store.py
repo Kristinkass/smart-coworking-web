@@ -71,24 +71,31 @@ def reload_layout():
 
 
 def get_place_geometry(code):
-    """Вернёт {x, y, width, height} для места по его коду."""
-    for p in load_layout().get('places', []):
-        if p['code'] == code:
+    """Вернёт {x, y, width, height} для места по его коду или None."""
+    from internal.layout.codes import resolve_layout_place_code
+
+    layout_places = load_layout().get('places', [])
+    canonical = resolve_layout_place_code(code, layout_places)
+    if not canonical:
+        return None
+    for p in layout_places:
+        if p.get('code') == canonical:
             return {
                 'x': p['x'], 'y': p['y'],
                 'width': p['width'], 'height': p['height'],
                 'rotation': p.get('rotation', 0),
                 'floor': p.get('floor', 1),
             }
-    return {'x': 0, 'y': 0, 'width': 100, 'height': 100, 'rotation': 0, 'floor': 1}
+    return None
 
 
 def get_layout_place_meta(code):
     """Метаданные места из layout.json (container_code, enclosed и т.д.)."""
-    for p in load_layout().get('places', []):
-        if p.get('code') == code:
-            return p
-    return {}
+    from internal.layout.codes import find_layout_place
+
+    layout_places = load_layout().get('places', [])
+    place, _ = find_layout_place(code, layout_places)
+    return place or {}
 
 
 def migrate_rooms_to_spaces_in_layout():
@@ -107,9 +114,15 @@ def migrate_rooms_to_spaces_in_layout():
 
 
 def save_place_geometry(code, x, y, floor=None):
+    from internal.layout.codes import resolve_layout_place_code
+
     def mutate(layout):
-        for p in layout.get('places', []):
-            if p['code'] == code:
+        places = layout.get('places', [])
+        canonical = resolve_layout_place_code(code, places)
+        if not canonical:
+            return False
+        for p in places:
+            if p.get('code') == canonical:
                 p['x'] = float(x)
                 p['y'] = float(y)
                 if floor is not None:
@@ -263,9 +276,15 @@ def resize_place(code, width, height):
 
 
 def rotate_place(code, rotation):
+    from internal.layout.codes import resolve_layout_place_code
+
     layout = load_layout()
-    for p in layout.get('places', []):
-        if p['code'] == code:
+    places = layout.get('places', [])
+    canonical = resolve_layout_place_code(code, places)
+    if not canonical:
+        return False
+    for p in places:
+        if p.get('code') == canonical:
             p['rotation'] = float(rotation) % 360
             break
     else:

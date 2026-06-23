@@ -279,7 +279,9 @@ class Place(db.Model):
 
     def to_dict(self):
         # Геометрия из layout.json
-        geometry = get_place_geometry(self.code)
+        geometry = get_place_geometry(self.code) or {
+            'x': 0, 'y': 0, 'width': 100, 'height': 100, 'rotation': 0, 'floor': 1,
+        }
 
         # Вместимость из категории
         effective_capacity = 1

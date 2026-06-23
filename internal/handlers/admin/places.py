@@ -618,6 +618,17 @@ def register_admin_place_routes(app):
             db.session.rollback()
             return jsonify({'success': False, 'error': _api_error(e)}), 500
 
+    @app.route('/api/admin/places/reindex-codes', methods=['POST'])
+    @admin_required
+    def admin_reindex_place_codes():
+        """Починить location, нормализовать омоглифы, перенумеровать коды подряд (1A-T1, 1A-T2, …)."""
+        try:
+            stats = models.compact_place_codes()
+            return jsonify({'success': True, 'message': 'Коды мест обновлены', **stats})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': _api_error(e)}), 500
+
     @app.route('/api/admin/place/move', methods=['POST'])
     @admin_required
     def admin_move_place():
@@ -632,11 +643,18 @@ def register_admin_place_routes(app):
             if not code or x is None or y is None:
                 return jsonify({'success': False, 'error': 'Не указаны код, координаты X или Y'}), 400
 
+            from internal.layout.codes import resolve_layout_place_code
+            canonical = resolve_layout_place_code(code)
+            if canonical:
+                code = canonical
+
             place = PlaceRepository.sync_by_code(code)
             if not place:
                 return jsonify({'success': False, 'error': f'Место с кодом {code} не найдено в layout'}), 404
 
             geom = models.get_place_geometry(place.code)
+            if not geom:
+                return jsonify({'success': False, 'error': 'Геометрия места не найдена на карте'}), 404
             w, h = geom['width'], geom['height']
             floor_num = int(floor) if floor is not None else int(geom.get('floor', 1))
             layout_places = LayoutRepository.load().get('places', [])
@@ -766,9 +784,14 @@ def register_admin_place_routes(app):
             if not code or rotation is None:
                 return jsonify({'success': False, 'error': 'Не указаны код или угол поворота'}), 400
 
+            from internal.layout.codes import resolve_layout_place_code
+            canonical = resolve_layout_place_code(code)
+            if canonical:
+                code = canonical
+
             geom = models.get_place_geometry(code)
             if not geom:
-                return jsonify({'success': False, 'error': 'Место не найдено'}), 404
+                return jsonify({'success': False, 'error': 'Место не найдено на карте'}), 404
             meta = models.get_layout_place_meta(code) or {}
             rotation = int(float(rotation)) % 360
             floor_num = int(geom.get('floor', 1))
