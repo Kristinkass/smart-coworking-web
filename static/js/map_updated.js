@@ -193,7 +193,7 @@ function placesForCurrentView() {
     return result;
 }
 
-// Текущее время — всегда с клиента (SERVER_NOW устаревает после загрузки страницы)
+// Текущее время — всегда с клиента (локальный часовой пояс браузера)
 function getNow() {
     return new Date();
 }
@@ -204,6 +204,14 @@ function localDateStr(d) {
     const m = String(dt.getMonth() + 1).padStart(2, '0');
     const day = String(dt.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+function initBookingDate() {
+    const dateEl = document.getElementById('booking-date');
+    if (!dateEl) return;
+    const today = localDateStr(new Date());
+    dateEl.min = today;
+    dateEl.value = today;
 }
 
 const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
@@ -303,6 +311,7 @@ document.addEventListener('click', (e) => {
 
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', function () {
+    initBookingDate();
     initTimeSelects();
     setupEventListeners();
     setupMapEventDelegation();
@@ -556,7 +565,6 @@ function isStartTimeUnavailable(totalMinutes) {
     if (window.currentBookingTimegrid && window.currentBookingTimegrid.length) {
         const slot = timegridSlotAt(totalMinutes);
         if (!slot) return true;
-        if (slot.is_past) return true;
         if (slot.status === 'full' || slot.available <= 0) return true;
         return false;
     }

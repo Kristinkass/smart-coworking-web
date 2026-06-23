@@ -6,6 +6,7 @@
 
 from datetime import datetime, date, time, timedelta
 from typing import List, Dict, Tuple, Optional
+from zoneinfo import ZoneInfo
 from dataclasses import dataclass
 from enum import Enum
 
@@ -811,8 +812,9 @@ def get_timegrid_for_place(place_id: int, booking_date: date) -> Dict:
             'slots': [],
         }
 
-    from datetime import datetime
-    now = datetime.now()
+    from internal.config import Config
+    tz = ZoneInfo(Config.APP_TIMEZONE)
+    now = datetime.now(tz)
     is_today = booking_date == now.date()
     current_time = now.time()
 

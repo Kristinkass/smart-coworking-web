@@ -170,13 +170,10 @@ def register_pages_routes(app):
     def map_view():
         """Карта пространства с бронированием"""
         try:
-            now = datetime.now()
-            today = now.strftime('%Y-%m-%d')
-            now_str = now.strftime('%Y-%m-%dT%H:%M')
+            today = datetime.now().strftime('%Y-%m-%d')
 
             return render_template('mapp.html',
                                    today=today,
-                                   now_str=now_str,
                                    is_admin=current_user.is_admin(),
                                    is_manager=current_user.is_manager(),
                                    get_type_name=get_type_name,

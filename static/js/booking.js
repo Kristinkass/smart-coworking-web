@@ -185,7 +185,7 @@ function renderTimegrid(data) {
         slot.dataset.index = slotIndex;
         slot.dataset.time = timeStr;
 
-        if (slotData.is_past || (isToday && totalMinutes < currentTotalMinutes)) {
+        if (isToday && totalMinutes < currentTotalMinutes) {
             slot.classList.add('past');
         } else if (slotData.status === 'full') {
             slot.classList.add('occupied');

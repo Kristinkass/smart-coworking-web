@@ -548,19 +548,38 @@
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
             .form-row-2 { grid-template-columns: 1fr; }
             .time-picker-box {
-                flex-wrap: wrap;
-                justify-content: center;
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: flex-end;
+                gap: 6px;
+                padding: 10px 8px;
+            }
+            .time-picker-field {
+                flex: 1;
+                min-width: 0;
+            }
+            .time-picker-label {
+                font-size: 10px;
+                margin-bottom: 2px;
+            }
+            .time-picker-selects {
+                gap: 2px;
+            }
+            .time-picker-selects select {
+                font-size: 14px;
+                max-width: 52px;
+                min-width: 44px;
+                padding: 5px 2px;
             }
             .time-picker-arrow {
-                width: 100%;
-                text-align: center;
-                padding: 2px 0;
-            }
-            .time-picker-box {
-                display: none;
+                flex-shrink: 0;
+                width: auto;
+                font-size: 16px;
+                padding: 0 2px;
+                margin-bottom: 8px;
             }
             .clock-time-box {
-                display: flex;
+                display: none;
             }
             #timegrid-container,
             #hourly-hint,
@@ -895,7 +914,6 @@
         const IS_ADMIN = JSON.parse('{{ "true" if is_admin else "false" }}');
         const IS_MANAGER = JSON.parse('{{ "true" if is_manager else "false" }}');
         const IS_STAFF = JSON.parse('{{ "true" if is_admin or is_manager else "false" }}');
-        const SERVER_NOW = '{{ now_str }}';
     </script>
     <!-- Модальное окно циферблата -->
     <div id="clock-picker-modal" class="clock-modal" role="dialog" aria-modal="true">
@@ -923,11 +941,11 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=10"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=11"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=27"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=28"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

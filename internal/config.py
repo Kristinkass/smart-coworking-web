@@ -28,6 +28,8 @@ class Config:
     WTF_CSRF_ENABLED = True
     DEBUG = True
 
+    APP_TIMEZONE = os.environ.get('APP_TIMEZONE', 'Europe/Moscow')
+
 
 class TestConfig(Config):
     """Конфигурация для unit-тестов (SQLite in-memory)."""
