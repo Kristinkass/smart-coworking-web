@@ -6,6 +6,8 @@ const MINUTE_OPTIONS = ['00', '15', '30', '45'];
 let currentTimegrid = null;
 let selectedStartIndex = null;
 let selectedDurationSlots = 4;
+let timegridLoadGeneration = 0;
+window.bookingTimeControlsEnabled = false;
 
 function roundToSlotMinutes(totalMinutes) {
     return Math.ceil(totalMinutes / SLOT_DURATION) * SLOT_DURATION;
@@ -16,6 +18,7 @@ function setBookingTimeControlsEnabled(enabled) {
     const isHourly = tariffType === 'hourly';
     if (!isHourly) return;
 
+    window.bookingTimeControlsEnabled = !!enabled;
     if (enabled) {
         showHourlyBookingTimeUI();
     } else {
@@ -59,11 +62,13 @@ function hideHourlyBookingTimeUI() {
     const timegrid = document.getElementById('timegrid-container');
     const durationBtns = document.getElementById('duration-buttons-row');
     const durationRow = document.getElementById('duration-row');
+    const hourlyHint = document.getElementById('hourly-hint');
 
     if (timePicker) timePicker.style.display = 'none';
     if (timegrid) timegrid.style.display = 'none';
     if (durationBtns) durationBtns.style.display = 'none';
     if (durationRow) durationRow.style.display = 'none';
+    if (hourlyHint) hourlyHint.style.display = 'none';
 }
 
 function showScheduleStatus(message, type = 'info') {
@@ -98,8 +103,15 @@ async function loadTimegrid(placeId, date) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     if (tariffType !== 'hourly') return;
     const isMobile = typeof isMobileViewport === 'function' && isMobileViewport();
+    const loadGen = ++timegridLoadGeneration;
 
     hideScheduleStatus();
+    setBookingTimeControlsEnabled(false);
+    currentTimegrid = null;
+    window.currentBookingTimegrid = null;
+    selectedStartIndex = null;
+    const totalEl = document.getElementById('total-price');
+    if (totalEl) totalEl.textContent = '-';
     if (timeline && !isMobile) {
         timeline.innerHTML = '<div class="timeline-loading">Загрузка расписания…</div>';
     }
@@ -107,6 +119,7 @@ async function loadTimegrid(placeId, date) {
     try {
         const r = await fetch(`/api/booking/timegrid/${placeId}?date=${date}`);
         const d = await r.json();
+        if (loadGen !== timegridLoadGeneration) return;
 
         if (!d.success) {
             window.currentSchedule = null;
@@ -185,7 +198,11 @@ async function loadTimegrid(placeId, date) {
 
         hideScheduleStatus();
         setBookingTimeControlsEnabled(true);
+        if (typeof schedulePriceDisplayUpdate === 'function') {
+            schedulePriceDisplayUpdate();
+        }
     } catch (err) {
+        if (loadGen !== timegridLoadGeneration) return;
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;

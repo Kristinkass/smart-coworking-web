@@ -205,8 +205,8 @@ const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
 const KIND_STROKE = { desk: '#16a34a', room: '#0284c7', space: '#0284c7' };
 const DESK_ZONE_FILL = '#DDB892';
 const DESK_ZONE_STROKE = '#7C5C3A';
-const AMENITY_FILL = '#e5e7eb';
-const AMENITY_STROKE = '#4b5563';
+const AMENITY_FILL = '#334155';
+const AMENITY_STROKE = '#111827';
 
 function isDeskZoneSpace(place) {
     if (!isSpaceContainer(place)) return false;
@@ -565,9 +565,13 @@ function firstEnabledOption(selectEl) {
 
 function onBookingDateChange() {
     const dateEl = document.getElementById('booking-date');
-    if (dateEl) filterPastHours(dateEl.value);
+    if (typeof setBookingTimeControlsEnabled === 'function') {
+        setBookingTimeControlsEnabled(false);
+    }
     if (typeof loadTimegrid === 'function' && selectedPlace && dateEl?.value) {
         loadTimegrid(selectedPlace.id, dateEl.value);
+    } else if (dateEl) {
+        filterPastHours(dateEl.value);
     }
     updateBookingPeriodDisplay();
     schedulePriceDisplayUpdate();
@@ -1043,7 +1047,7 @@ function renderFloorPlan() {
         nameText.setAttribute('y', y + h / 2 + (showDeskOnMap(place) ? 0 : -4));
         nameText.setAttribute('text-anchor', 'middle');
         nameText.setAttribute('dominant-baseline', 'middle');
-        nameText.setAttribute('fill', isAmenityPlace(place) ? '#374151' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
+        nameText.setAttribute('fill', isAmenityPlace(place) ? '#f8fafc' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
         nameText.setAttribute('font-size', showDeskOnMap(place)
             ? Math.min(12, Math.max(9, Math.min(w, h) / 5))
             : Math.min(13, Math.max(9, w / 10)));
@@ -1068,7 +1072,7 @@ function renderFloorPlan() {
                 capText.setAttribute('font-weight', '600');
                 capText.textContent = `${place.partial_occupancy.occupied}/${place.partial_occupancy.capacity} занято`;
             } else if (isAmenityPlace(place)) {
-                capText.setAttribute('fill', '#4b5563');
+                capText.setAttribute('fill', '#e5e7eb');
                 capText.textContent = 'служебная зона';
             } else if (place.is_meeting_room) {
                 capText.setAttribute('fill', '#475569');
@@ -1432,7 +1436,11 @@ function onTariffChange() {
 
     if (fixedHint) fixedHint.style.display = isHourly ? 'none' : 'block';
     if (hourlyHint) hourlyHint.style.display = isHourly ? 'block' : 'none';
-    if (!isHourly && typeof hideHourlyBookingTimeUI === 'function') {
+    if (isHourly) {
+        if (typeof setBookingTimeControlsEnabled === 'function') {
+            setBookingTimeControlsEnabled(false);
+        }
+    } else if (typeof hideHourlyBookingTimeUI === 'function') {
         hideHourlyBookingTimeUI();
     }
 
@@ -1454,6 +1462,10 @@ function onTariffChange() {
         if (date && typeof loadTimegrid === 'function') {
             loadTimegrid(selectedPlace.id, date);
         }
+    } else if (!isHourly) {
+        const bookBtn = document.getElementById('book-btn');
+        const noTariff = document.getElementById('no-tariff-hint')?.style.display === 'block';
+        if (bookBtn) bookBtn.disabled = !!noTariff;
     }
 
     updateBookingPeriodDisplay();
@@ -1475,7 +1487,7 @@ function initTariffsForPlace(place) {
         const defaultTariff = availableTariffs.find(t => t.tariff_type === 'hourly') || availableTariffs[0];
         document.getElementById('tariff-type').value = defaultTariff.tariff_type;
         if (bookBtn) {
-            bookBtn.disabled = false;
+            bookBtn.disabled = defaultTariff.tariff_type === 'hourly';
             bookBtn.title = '';
         }
         if (noTariffHint) noTariffHint.style.display = 'none';
@@ -1682,6 +1694,10 @@ async function updatePriceDisplay() {
     if (!totalEl) return;
 
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
+    if (tariffType === 'hourly' && !window.bookingTimeControlsEnabled) {
+        totalEl.textContent = '-';
+        return;
+    }
     const startTime = getStartTime();
     const endTime = getEndTime();
     const [sh, sm] = startTime.split(':').map(Number);
@@ -1806,6 +1822,10 @@ async function handleBooking() {
     const [eh, em] = endTime.split(':').map(Number);
 
     if (tariffType === 'hourly') {
+        if (!window.bookingTimeControlsEnabled) {
+            showAlert('На выбранную дату нет доступного времени для бронирования', 'warning');
+            return;
+        }
         if (!isValid15MinTime(sh, sm) || !isValid15MinTime(eh, em)) {
             showAlert('Время должно быть кратно 15 минутам', 'warning');
             return;
