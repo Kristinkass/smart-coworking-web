@@ -19,7 +19,7 @@ function applyEffectiveRectDelta(x, y, effX, effY, w, h, rotation = 0) {
     return { x: +x + (effX - orig.x), y: +y + (effY - orig.y) };
 }
 
-function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh, gap = 2) {
+function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh, gap = 0) {
     return ax < bx + bw - gap && ax + aw > bx + gap && ay < by + bh - gap && ay + ah > by + gap;
 }
 
@@ -79,4 +79,42 @@ function clampRectToFloorRotated(x, y, w, h, rotation, canvasW, canvasH, inset =
     const effX = Math.max(inset, Math.min(eff.x, maxX));
     const effY = Math.max(inset, Math.min(eff.y, maxY));
     return applyEffectiveRectDelta(x, y, effX, effY, w, h, rotation);
+}
+
+/** Сдвинуть прямоугольник от пересекающихся столов (скольжение вдоль граней). */
+function slideRectOffDesks(x, y, w, h, rotation, deskCode, others, gap = 0) {
+    let rx = +x;
+    let ry = +y;
+    const rot = parseInt(rotation, 10) || 0;
+    const list = (others || []).filter(p =>
+        p && p.kind === 'desk' && p.code !== deskCode && p.width != null && p.height != null,
+    );
+
+    for (let pass = 0; pass < 20; pass++) {
+        let moved = false;
+        const eff = effectiveRectForRotation(rx, ry, w, h, rot);
+        for (const o of list) {
+            const oeff = effectiveRectForRotation(o.x, o.y, o.width, o.height, o.rotation || 0);
+            if (!rectsOverlap(eff.x, eff.y, eff.w, eff.h, oeff.x, oeff.y, oeff.w, oeff.h, gap)) {
+                continue;
+            }
+            const pushLeft = (eff.x + eff.w) - oeff.x + gap;
+            const pushRight = (oeff.x + oeff.w) - eff.x + gap;
+            const pushUp = (eff.y + eff.h) - oeff.y + gap;
+            const pushDown = (oeff.y + oeff.h) - eff.y + gap;
+            const options = [
+                { dx: -pushLeft, dy: 0, cost: pushLeft },
+                { dx: pushRight, dy: 0, cost: pushRight },
+                { dx: 0, dy: -pushUp, cost: pushUp },
+                { dx: 0, dy: pushDown, cost: pushDown },
+            ].filter(o => o.cost > 0).sort((a, b) => a.cost - b.cost);
+            if (!options.length) continue;
+            const best = options[0];
+            rx += best.dx;
+            ry += best.dy;
+            moved = true;
+        }
+        if (!moved) break;
+    }
+    return { x: rx, y: ry };
 }

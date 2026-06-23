@@ -7,3 +7,4 @@ psycopg2-binary>=2.9.12
 reportlab==4.0.7
 waitress==3.0.2
 tzdata>=2024.1
+pytest>=8.0.0

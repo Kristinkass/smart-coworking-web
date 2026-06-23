@@ -6,7 +6,7 @@ CANVAS_WIDTH = 2240
 CANVAS_HEIGHT = 1344
 WALL_HALF_WIDTH = 8
 FLOOR_INSET = WALL_HALF_WIDTH
-WALL_PENETRATION = WALL_HALF_WIDTH
+WALL_PENETRATION = 0
 PARENT_INSET = 8
 
 
@@ -180,7 +180,7 @@ def rect_overlaps_walls_rotated(x, y, width, height, rotation, walls, floor=1):
     return rect_overlaps_walls(eff_x, eff_y, eff_w, eff_h, walls, floor)
 
 
-def rects_overlap(ax, ay, aw, ah, bx, by, bw, bh, gap=2):
+def rects_overlap(ax, ay, aw, ah, bx, by, bw, bh, gap=0):
     """Прямоугольники пересекаются (gap — минимальный зазор)."""
     return (
         ax < bx + bw - gap
@@ -346,7 +346,7 @@ def find_place_overlap(
             continue
         irot = int(float(item.get('rotation') or 0))
         iex, iey, iew, ieh = effective_rect_for_rotation(ix, iy, iw, ih, irot)
-        if rects_overlap(eff_x, eff_y, eff_w, eff_h, iex, iey, iew, ieh, gap=2):
+        if rects_overlap(eff_x, eff_y, eff_w, eff_h, iex, iey, iew, ieh, gap=0):
             return f'Пересечение с «{item.get("code", "?")}»'
     return None
 
@@ -459,7 +459,7 @@ OPEN_ZONE_PAD = 8
 ZONE_WALL_SNAP_DIST = 28
 
 
-def desks_overlap_each_other(desks, gap=2):
+def desks_overlap_each_other(desks, gap=0):
     """Пересекаются ли столы в списке (с учётом поворота)."""
     items = list(desks or [])
     for i, a in enumerate(items):

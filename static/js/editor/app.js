@@ -5,7 +5,7 @@
   'use strict';
 
   const SVG_W = 2240, SVG_H = 1344, SCALE = 100;
-  const WALL_HALF = 8, FLOOR_INSET = 8, PARENT_INSET = 8, WALL_PENETRATION = 8;
+  const WALL_HALF = 8, FLOOR_INSET = 8, PARENT_INSET = 8, WALL_PENETRATION = 0;
   const DOOR_W_1M = 100, DOOR_W_15M = 150;
 
   let places = [], walls = [], doors = [], wallRooms = [];
@@ -219,7 +219,7 @@
     return place && (place.kind === 'space' || place.kind === 'room');
   }
 
-  const DESK_GAP = 8;
+  const DESK_GAP = 0;
 
   function desksEffectiveOverlap(ax, ay, aw, ah, aRot, bx, by, bw, bh, bRot, gap = DESK_GAP) {
     const a = effectiveRectForRotation(ax, ay, aw, ah, aRot);
@@ -377,6 +377,12 @@
     if (tryX.ok) return tryX;
     if (tryY.ok) return tryY;
 
+    const slid = slideRectOffDesks(
+      nx, ny, w, h, rot, desk?.code, floorPlaces(), DESK_GAP,
+    );
+    const slideCheck = tryAt(slid.x, slid.y);
+    if (slideCheck.ok) return slideCheck;
+
     const offsets = [8, 16, 24, 36, 48, 64, 84, 108];
     let best = null;
     const remember = candidate => {
@@ -393,6 +399,11 @@
       if (best && best.dist <= d * 1.5) return best;
     }
     if (best) return best;
+    if (lastX != null && lastY != null) {
+      const stick = tryAt(lastX, lastY);
+      if (stick.ok) return stick;
+      return { ok: true, x: lastX, y: lastY };
+    }
     return check;
   }
 
@@ -1633,6 +1644,7 @@
         nx, ny, p.width, p.height, currentFloor, p, lastX, lastY,
       );
       if (!check.ok) {
+        if (check.x === lastX && check.y === lastY) return;
         toastLimited('desk-drag-limit', check.error || 'Стол нельзя поставить в это место', 'warning');
         return;
       }
