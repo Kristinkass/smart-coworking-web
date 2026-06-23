@@ -212,11 +212,31 @@ def register_admin_place_routes(app):
             place.apply_maintenance(maintenance)
             db.session.commit()
 
+            parent = place.get_container_place()
+            inherited = bool(
+                not maintenance
+                and parent
+                and parent.maintenance
+                and place.is_desk()
+            )
+            effective = place.is_on_maintenance()
+            if maintenance:
+                message = f'Место "{place.name}" переведено на обслуживание'
+            elif inherited:
+                message = (
+                    f'С места "{place.name}" снято обслуживание, '
+                    f'но зона «{parent.name}» всё ещё на обслуживании'
+                )
+            else:
+                message = f'Место "{place.name}" снято с обслуживания'
+
             return jsonify({
                 'success': True,
-                'maintenance': place.maintenance,
+                'maintenance': effective,
+                'own_maintenance': place.maintenance,
+                'inherited_from_parent': inherited,
                 'status': place.status,
-                'message': f'Место "{place.name}" {"переведено на обслуживание" if place.maintenance else "снято с обслуживания"}'
+                'message': message,
             })
         except Exception as e:
             db.session.rollback()

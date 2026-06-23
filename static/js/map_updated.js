@@ -8,8 +8,8 @@ let editSelectedPlace = null;
 let wallsData = [];
 let doorsData = [];
 let currentFloor = 1;
-let zoomLevel = 1;
-let minZoomLevel = 1;
+const DEFAULT_MAP_ZOOM = 1;
+let zoomLevel = DEFAULT_MAP_ZOOM;
 let spaceEntryZoomLevel = null;
 let activeSpace = null; // Просмотр внутри помещения
 let userSubscriptions = []; // Активные абонементы пользователя
@@ -221,16 +221,17 @@ const STATUS_OVERLAY = {
 
 // Время работы коворкинга - динамическое из расписания
 function getCoworkingHours() {
-    // Если есть текущее расписание - используем его
     if (window.currentSchedule && window.currentSchedule.open && window.currentSchedule.close) {
         const [openH, openM] = window.currentSchedule.open.split(':').map(Number);
-        const [closeH, closeM] = window.currentSchedule.close.split(':').map(Number);
-        return {
-            open: openH * 60 + openM,
-            close: closeH * 60 + closeM
-        };
+        const closeRaw = window.currentSchedule.close.trim();
+        const [closeH, closeM] = closeRaw.split(':').map(Number);
+        const open = openH * 60 + openM;
+        let close = closeH * 60 + closeM;
+        if (closeRaw === '24:00' || (close === 0 && open > 0)) {
+            close = 24 * 60;
+        }
+        return { open, close };
     }
-    // Дефолт 08:00 - 22:00
     return { open: 8 * 60, close: 22 * 60 };
 }
 
@@ -375,6 +376,165 @@ function timegridSlotAt(totalMinutes) {
     return slots.find(slot => slot.time === time) || null;
 }
 
+const MIN_BOOKING_MINUTES = 30;
+
+function getStartTotalMinutes() {
+    const startH = document.getElementById('start-hour');
+    const startM = document.getElementById('start-min');
+    if (!startH || !startM) return 0;
+    return parseInt(startH.value, 10) * 60 + parseInt(startM.value, 10);
+}
+
+function getEndTotalMinutes() {
+    const endH = document.getElementById('end-hour');
+    const endM = document.getElementById('end-min');
+    if (!endH || !endM) return 0;
+    return parseInt(endH.value, 10) * 60 + parseInt(endM.value, 10);
+}
+
+function isEndTimeValid(endTotal, startTotal) {
+    const hours = getCoworkingHours();
+    if (endTotal <= startTotal || endTotal - startTotal < MIN_BOOKING_MINUTES) return false;
+    if (endTotal > hours.close) return false;
+
+    const now = getNow();
+    const todayVal = document.getElementById('booking-date')?.value;
+    const isToday = todayVal === now.toISOString().split('T')[0];
+    if (isToday && endTotal <= roundUpTo15(now.getHours() * 60 + now.getMinutes())) {
+        return false;
+    }
+    return true;
+}
+
+function buildEndHourList(hourList, startTotal) {
+    return hourList.filter(h =>
+        SLOT_MINUTES.some(m => isEndTimeValid(h * 60 + m, startTotal))
+    );
+}
+
+function firstAvailableStartTotal() {
+    const startH = document.getElementById('start-hour');
+    if (!startH) return null;
+    for (const opt of startH.options) {
+        const h = parseInt(opt.value, 10);
+        for (const m of SLOT_MINUTES) {
+            const total = h * 60 + m;
+            if (!isStartTimeUnavailable(total)) return total;
+        }
+    }
+    return null;
+}
+
+function firstAvailableEndTotal(startTotal) {
+    const hours = getCoworkingHours();
+    let candidate = Math.min(startTotal + 60, hours.close);
+    candidate = Math.max(candidate, startTotal + MIN_BOOKING_MINUTES);
+    candidate = roundUpTo15(candidate);
+    if (!isEndTimeValid(candidate, startTotal)) {
+        for (let total = startTotal + MIN_BOOKING_MINUTES; total <= hours.close; total += 15) {
+            if (isEndTimeValid(total, startTotal)) return total;
+        }
+        return null;
+    }
+    return candidate;
+}
+
+function setTimeFromTotal(prefix, totalMinutes) {
+    const hEl = document.getElementById(`${prefix}-hour`);
+    const mEl = document.getElementById(`${prefix}-min`);
+    if (!hEl || !mEl || totalMinutes == null) return;
+    hEl.value = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    mEl.value = String(totalMinutes % 60).padStart(2, '0');
+}
+
+function rebuildEndHourSelect() {
+    const startH = document.getElementById('start-hour');
+    const endH = document.getElementById('end-hour');
+    if (!startH || !endH || !startH.options.length) return false;
+
+    const hourList = Array.from(startH.options).map(opt => parseInt(opt.value, 10));
+    const startTotal = getStartTotalMinutes();
+    const endHourList = buildEndHourList(hourList, startTotal);
+    if (!endHourList.length) return false;
+
+    const prevEndH = endH.value;
+    fillHourSelect(endH, endHourList);
+    if (endHourList.some(h => String(h).padStart(2, '0') === prevEndH)) {
+        endH.value = prevEndH;
+    }
+    return true;
+}
+
+function ensureValidBookingTimeRange() {
+    const startH = document.getElementById('start-hour');
+    const endH = document.getElementById('end-hour');
+    if (!startH || !endH || !startH.options.length) return false;
+
+    let startTotal = getStartTotalMinutes();
+    if (isStartTimeUnavailable(startTotal)) {
+        startTotal = firstAvailableStartTotal();
+        if (startTotal == null) return false;
+        setTimeFromTotal('start', startTotal);
+    }
+
+    if (!rebuildEndHourSelect()) return false;
+
+    const validStartTotal = getStartTotalMinutes();
+    let endTotal = getEndTotalMinutes();
+    if (!isEndTimeValid(endTotal, validStartTotal)) {
+        endTotal = firstAvailableEndTotal(startTotal);
+        if (endTotal == null) return false;
+        setTimeFromTotal('end', endTotal);
+    }
+
+    applyMinuteFilters();
+    return true;
+}
+
+function applyMinuteFilters() {
+    const startH = document.getElementById('start-hour');
+    const startM = document.getElementById('start-min');
+    const endH = document.getElementById('end-hour');
+    const endM = document.getElementById('end-min');
+    if (!startH || !startM) return;
+
+    const selH = parseInt(startH.value, 10) * 60;
+
+    const disabledStartMinutes = new Set();
+    ['00', '15', '30', '45'].forEach(mm => {
+        const m = parseInt(mm, 10);
+        if (isStartTimeUnavailable(selH + m)) disabledStartMinutes.add(mm);
+    });
+    setDisabledOptionValues(startM, disabledStartMinutes);
+    if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('start', disabledStartMinutes);
+
+    if (disabledStartMinutes.has(startM.value)) {
+        startM.value = firstEnabledOption(startM) || startM.value;
+    }
+
+    if (endH && endM) {
+        const startTotal = getStartTotalMinutes();
+        rebuildEndHourSelect();
+        const disabledEndMinutes = new Set();
+        ['00', '15', '30', '45'].forEach(mm => {
+            const m = parseInt(mm, 10);
+            const endTotal = parseInt(endH.value, 10) * 60 + m;
+            if (!isEndTimeValid(endTotal, startTotal)) disabledEndMinutes.add(mm);
+        });
+        setDisabledOptionValues(endM, disabledEndMinutes);
+        if (disabledEndMinutes.has(endM.value)) {
+            endM.value = firstEnabledOption(endM) || endM.value;
+        }
+        if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('end', disabledEndMinutes);
+    }
+
+    if (window.ClockTimePicker) ClockTimePicker.refresh();
+}
+
+function filterPastMinuteOptions() {
+    ensureValidBookingTimeRange();
+}
+
 function isStartTimeUnavailable(totalMinutes) {
     const hours = getCoworkingHours();
     if (totalMinutes < hours.open || totalMinutes >= hours.close) return true;
@@ -398,46 +558,6 @@ function isStartTimeUnavailable(totalMinutes) {
 
 function firstEnabledOption(selectEl) {
     return Array.from(selectEl?.options || []).find(opt => !opt.disabled)?.value || null;
-}
-
-function filterPastMinuteOptions() {
-    const startH = document.getElementById('start-hour');
-    const startM = document.getElementById('start-min');
-    const endH = document.getElementById('end-hour');
-    const endM = document.getElementById('end-min');
-    if (!startH || !startM) return;
-
-    const selH = parseInt(startH.value, 10) * 60;
-
-    const disabledStartMinutes = new Set();
-    ['00', '15', '30', '45'].forEach(mm => {
-        const m = parseInt(mm, 10);
-        if (isStartTimeUnavailable(selH + m)) disabledStartMinutes.add(mm);
-    });
-    setDisabledOptionValues(startM, disabledStartMinutes);
-    if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('start', disabledStartMinutes);
-
-    if (disabledStartMinutes.has(startM.value)) {
-        startM.value = firstEnabledOption(startM) || startM.value;
-    }
-
-    if (endH && endM) {
-        const startTotal = parseInt(startH.value, 10) * 60 + parseInt(startM.value, 10);
-        const disabledEndMinutes = new Set();
-        ['00', '15', '30', '45'].forEach(mm => {
-            const m = parseInt(mm, 10);
-            const endTotal = parseInt(endH.value, 10) * 60 + m;
-            const hours = getCoworkingHours();
-            if (endTotal <= startTotal || endTotal > hours.close) disabledEndMinutes.add(mm);
-        });
-        setDisabledOptionValues(endM, disabledEndMinutes);
-        if (disabledEndMinutes.has(endM.value)) {
-            endM.value = firstEnabledOption(endM) || endM.value;
-        }
-        if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('end', disabledEndMinutes);
-    }
-
-    if (window.ClockTimePicker) ClockTimePicker.refresh();
 }
 
 function onBookingDateChange() {
@@ -478,16 +598,8 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const startHourList = hourList.filter(h =>
         SLOT_MINUTES.some(m => !isStartTimeUnavailable(h * 60 + m))
     );
-    const endHourList = hourList.filter(h =>
-        SLOT_MINUTES.some(m => {
-            const total = h * 60 + m;
-            if (total > hours.close) return false;
-            if (isToday && total < nowRounded) return false;
-            return total > hours.open;
-        })
-    );
 
-    if (!startHourList.length || !endHourList.length) {
+    if (!startHourList.length) {
         fillHourSelect(startH, []);
         fillHourSelect(endH, []);
         fillMinuteSelect(startM);
@@ -507,18 +619,8 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     }
 
     fillHourSelect(startH, startHourList);
-    fillHourSelect(endH, endHourList);
     fillMinuteSelect(startM);
     fillMinuteSelect(endM);
-    if (window.ClockTimePicker) {
-        ClockTimePicker.setAvailableHours('start', startHourList);
-        ClockTimePicker.setAvailableHours('end', endHourList);
-    }
-
-    if (window.ClockTimePicker) {
-        ClockTimePicker.setDisabledHours('start', new Set());
-        ClockTimePicker.setDisabledHours('end', new Set());
-    }
 
     let defaultStart = null;
     for (const h of startHourList) {
@@ -549,11 +651,39 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
 
     startH.value = pickHourValue(prevStart, defaultStartH, startHourList);
     startM.value = ['00', '15', '30', '45'].includes(prevStartM) ? prevStartM : defaultStartM;
+    if (isStartTimeUnavailable(getStartTotalMinutes())) {
+        setTimeFromTotal('start', defaultStart);
+    }
+
+    const endHourList = buildEndHourList(hourList, getStartTotalMinutes());
+    if (!endHourList.length) {
+        fillHourSelect(endH, []);
+        if (window.ClockTimePicker) {
+            ClockTimePicker.setAvailableHours('start', startHourList);
+            ClockTimePicker.setAvailableHours('end', []);
+            ClockTimePicker.refresh();
+        }
+        if (typeof showScheduleStatus === 'function') {
+            showScheduleStatus('Нет доступного будущего времени для бронирования', 'error');
+        }
+        if (typeof setBookingTimeControlsEnabled === 'function') {
+            setBookingTimeControlsEnabled(false);
+        }
+        return;
+    }
+
+    fillHourSelect(endH, endHourList);
+    if (window.ClockTimePicker) {
+        ClockTimePicker.setAvailableHours('start', startHourList);
+        ClockTimePicker.setAvailableHours('end', endHourList);
+        ClockTimePicker.setDisabledHours('start', new Set());
+        ClockTimePicker.setDisabledHours('end', new Set());
+    }
 
     endH.value = pickHourValue(prevEnd, defaultEndH, endHourList);
     endM.value = ['00', '15', '30', '45'].includes(prevEndM) ? prevEndM : defaultEndM;
 
-    filterPastMinuteOptions();
+    ensureValidBookingTimeRange();
     if (window.ClockTimePicker) ClockTimePicker.refresh();
     if (typeof syncTimelineWithSelects === 'function') syncTimelineWithSelects();
 }
@@ -564,7 +694,7 @@ function initTimeSelects() {
 }
 
 function onTimeChange() {
-    filterPastMinuteOptions();
+    ensureValidBookingTimeRange();
     if (typeof syncTimelineWithSelects === 'function') syncTimelineWithSelects();
     if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
     schedulePriceDisplayUpdate();
@@ -712,18 +842,18 @@ function hideTooltip() {
 
 // ================== ОТРИСОВКА КАРТЫ ==================
 function placeFill(place) {
-    if (isAmenityPlace(place)) return AMENITY_FILL;
     const st = effectivePlaceStatus(place);
     if (st === 'maintenance') return STATUS_OVERLAY.maintenance.fill;
+    if (isAmenityPlace(place)) return AMENITY_FILL;
     if (st === 'occupied') return STATUS_OVERLAY.occupied.fill;
     if (st === 'partial') return STATUS_OVERLAY.partial.fill;
     if (isDeskZoneSpace(place)) return DESK_ZONE_FILL;
     return KIND_FILL[place.kind] || '#e5e7eb';
 }
 function placeStroke(place) {
-    if (isAmenityPlace(place)) return AMENITY_STROKE;
     const st = effectivePlaceStatus(place);
     if (st === 'maintenance') return STATUS_OVERLAY.maintenance.stroke;
+    if (isAmenityPlace(place)) return AMENITY_STROKE;
     if (st === 'occupied') return STATUS_OVERLAY.occupied.stroke;
     if (st === 'partial') return STATUS_OVERLAY.partial.stroke;
     if (isDeskZoneSpace(place)) return DESK_ZONE_STROKE;
@@ -879,7 +1009,8 @@ function renderFloorPlan() {
     const sortedPlaces = [...viewPlaces].sort((a, b) => {
         const aDesk = isDesk(a) ? 1 : 0;
         const bDesk = isDesk(b) ? 1 : 0;
-        return aDesk - bDesk;
+        // В режиме обслуживания зоны/помещения поверх столов — проще выбрать контейнер целиком
+        return editMode ? bDesk - aDesk : aDesk - bDesk;
     });
     const fragment = document.createDocumentFragment();
     sortedPlaces.forEach(place => {
@@ -1090,6 +1221,10 @@ function updateEditSelectionHighlight() {
 }
 
 function selectPlaceForEdit(place) {
+    if (!place?.id) {
+        showAlert('Для этого объекта нельзя включить обслуживание (нет записи в базе)', 'warning');
+        return;
+    }
     editSelectedPlace = place;
     document.getElementById('edit-place-name').textContent = placeLabelWithCode(place);
     document.getElementById('maintenance-toggle-input').checked = !!place.maintenance;
@@ -1101,10 +1236,12 @@ function selectPlaceForEdit(place) {
 function toggleEditMode() {
     editMode = !editMode;
     invalidateViewCache();
+    document.body.classList.toggle('edit-mode', editMode);
     document.getElementById('edit-mode-bar').classList.toggle('active', editMode);
     document.getElementById('toggle-edit-mode')?.classList.toggle('active', editMode);
     if (!editMode) {
         editSelectedPlace = null;
+        document.body.classList.remove('edit-mode');
         document.getElementById('maintenance-panel').classList.remove('active');
     }
     renderFloorPlan();
@@ -1112,19 +1249,47 @@ function toggleEditMode() {
 }
 
 async function applyMaintenance() {
-    if (!editSelectedPlace) return;
-    const maintenance = document.getElementById('maintenance-toggle-input').checked;
+    if (!editSelectedPlace?.id) {
+        showAlert('Сначала выберите место на карте', 'warning');
+        document.getElementById('maintenance-toggle-input').checked = false;
+        return;
+    }
+
+    const placeId = editSelectedPlace.id;
+    const toggle = document.getElementById('maintenance-toggle-input');
+    const maintenance = !!toggle?.checked;
+
     try {
-        const r = await fetch(`/api/admin/places/${editSelectedPlace.id}/maintenance`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ maintenance })
+        const r = await fetch(`/api/admin/places/${placeId}/maintenance`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ maintenance }),
         });
-        const d = await r.json();
-        if (d.success) {
-            showAlert(maintenance ? 'Место переведено на обслуживание' : 'Обслуживание снято', 'success');
-            loadPlaces();
-        } else showAlert(d.error || 'Ошибка', 'error');
-    } catch { showAlert('Ошибка обновления', 'error'); }
+        let d = null;
+        try {
+            d = await r.json();
+        } catch {
+            d = null;
+        }
+        if (!r.ok || !d?.success) {
+            if (toggle) toggle.checked = !maintenance;
+            showAlert(d?.error || `Ошибка сервера (${r.status})`, 'error');
+            return;
+        }
+        showAlert(
+            d.message || (maintenance ? 'Место переведено на обслуживание' : 'Обслуживание снято'),
+            d.inherited_from_parent ? 'warning' : 'success',
+        );
+        await loadPlaces();
+        if (editMode) {
+            const updated = places.find(p => p.id === placeId);
+            if (updated) selectPlaceForEdit(updated);
+        }
+    } catch {
+        if (toggle) toggle.checked = !maintenance;
+        showAlert('Ошибка обновления', 'error');
+    }
 }
 
 // ================== ТАРИФЫ ==================
@@ -1378,24 +1543,12 @@ async function selectPlaceForBooking(place) {
         document.getElementById('current-occupation').style.display = 'none';
     }
 
-    // Обновляем минимальный час при выборе сегодня
-    const dateEl = document.getElementById('booking-date');
-    filterPastHours(dateEl.value);
-    schedulePriceDisplayUpdate();
-    
     initTariffsForPlace(place);
 
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const payCb = document.getElementById('pay-without-subscription');
     if (payCb) payCb.checked = false;
-    if (tariffType === 'hourly') {
-        const date = document.getElementById('booking-date')?.value;
-        if (date && typeof loadTimegrid === 'function') {
-            loadTimegrid(place.id, date);
-        } else if (typeof rebuildTimeSelects === 'function') {
-            rebuildTimeSelects();
-        }
-    }
+    schedulePriceDisplayUpdate();
     const timegridContainer = document.getElementById('timegrid-container');
     if (timegridContainer && tariffType === 'hourly' && !(typeof isMobileViewport === 'function' && isMobileViewport())) {
         if (typeof updateTimegridCapacity === 'function') {
@@ -1885,39 +2038,32 @@ function setMapFloor(floor) {
 }
 
 // ================== ZOOM ==================
-function calculateMinZoomLevel() {
-    const svg = document.getElementById('floor-plan');
-    const container = document.querySelector('.floor-plan-container');
-    if (!svg || !container) return 1;
-
-    const baseWidth = svg.offsetWidth || 2240;
-    const baseHeight = svg.offsetHeight || 1344;
-    const availableWidth = Math.max(1, container.clientWidth);
-    const availableHeight = Math.max(1, container.clientHeight);
-    const fitZoom = Math.min(availableWidth / baseWidth, availableHeight / baseHeight, 1);
-    return Math.max(0.1, fitZoom);
+function clampZoomLevel(level) {
+    return Math.min(Math.max(level, DEFAULT_MAP_ZOOM), 3);
 }
 
-function updateMinZoomLevel() {
-    minZoomLevel = calculateMinZoomLevel();
-    if (zoomLevel < minZoomLevel) zoomLevel = minZoomLevel;
-}
-
-function zoomIn()    { updateMinZoomLevel(); zoomLevel = Math.min(zoomLevel * 1.25, 3); applyZoom(); }
-function zoomOut()   { updateMinZoomLevel(); zoomLevel = Math.max(zoomLevel / 1.25, minZoomLevel); applyZoom(); }
-function zoomReset() {
-    zoomLevel = (activeSpace && spaceEntryZoomLevel != null) ? spaceEntryZoomLevel : 1;
+function zoomIn() {
+    zoomLevel = clampZoomLevel(zoomLevel * 1.25);
     applyZoom();
 }
+
+function zoomOut() {
+    zoomLevel = clampZoomLevel(zoomLevel / 1.25);
+    applyZoom();
+}
+
+function zoomReset() {
+    zoomLevel = (activeSpace && spaceEntryZoomLevel != null) ? spaceEntryZoomLevel : DEFAULT_MAP_ZOOM;
+    applyZoom();
+}
+
 function applyZoom() {
     const svg = document.getElementById('floor-plan');
     if (!svg) return;
-    updateMinZoomLevel();
+    zoomLevel = clampZoomLevel(zoomLevel);
     svg.style.transform = `scale(${zoomLevel})`;
     svg.style.transformOrigin = 'top left';
 }
-
-window.addEventListener('resize', applyZoom);
 
 // ================== МЕНЕДЖЕРСКИЙ СПИСОК ==================
 function updateManagerStatusList() {

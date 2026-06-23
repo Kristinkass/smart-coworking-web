@@ -102,11 +102,26 @@ async function loadTimegrid(placeId, date) {
         };
         showScheduleHoursInfo(data.open_time, data.close_time);
 
-        if (!data.is_bookable || !data.slots || data.slots.length === 0) {
+        if (!data.slots || data.slots.length === 0) {
             currentTimegrid = null;
             window.currentBookingTimegrid = null;
             selectedStartIndex = null;
             if (timeline && !isMobile) timeline.innerHTML = '';
+            showScheduleStatus(
+                data.schedule_message || 'Бронирование недоступно в этот день',
+                'error',
+            );
+            setBookingTimeControlsEnabled(false);
+            return;
+        }
+
+        if (!data.is_bookable) {
+            currentTimegrid = data.slots;
+            window.currentBookingTimegrid = data.slots;
+            selectedStartIndex = null;
+            if (timeline && !isMobile) {
+                timeline.innerHTML = '<div class="timeline-empty">На сегодня бронирование уже недоступно</div>';
+            }
             showScheduleStatus(
                 data.schedule_message || 'Бронирование недоступно в этот день',
                 'error',
@@ -168,6 +183,7 @@ function renderTimegrid(data) {
     const selectedDate = document.getElementById('booking-date')?.value || today;
     const isToday = selectedDate === today;
     const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+    const minFutureMinutes = isToday ? roundToSlotMinutes(currentTotalMinutes) : 0;
 
     if (!data.slots || data.slots.length === 0) {
         timeline.innerHTML = '<div class="timeline-empty">Нет доступных слотов на этот день</div>';
@@ -175,19 +191,31 @@ function renderTimegrid(data) {
         return;
     }
 
-    data.slots.forEach((slotData, slotIndex) => {
+    const visibleSlots = data.slots
+        .map((slotData, slotIndex) => ({ slotData, slotIndex }))
+        .filter(({ slotData }) => {
+            if (slotData.is_past) return false;
+            const [hour, minute] = slotData.time.split(':').map(Number);
+            const totalMinutes = hour * 60 + minute;
+            if (isToday && totalMinutes < minFutureMinutes) return false;
+            return true;
+        });
+
+    if (!visibleSlots.length) {
+        timeline.innerHTML = '<div class="timeline-empty">На сегодня бронирование уже недоступно</div>';
+        setBookingTimeControlsEnabled(false);
+        return;
+    }
+
+    visibleSlots.forEach(({ slotData, slotIndex }) => {
         const timeStr = slotData.time;
-        const [hour, minute] = timeStr.split(':').map(Number);
-        const totalMinutes = hour * 60 + minute;
 
         const slot = document.createElement('div');
         slot.className = 'timeline-slot';
         slot.dataset.index = slotIndex;
         slot.dataset.time = timeStr;
 
-        if (slotData.is_past || (isToday && totalMinutes < currentTotalMinutes)) {
-            slot.classList.add('past');
-        } else if (slotData.status === 'full') {
+        if (slotData.status === 'full') {
             slot.classList.add('occupied');
         } else if (slotData.status === 'partial') {
             slot.classList.add('partial');
@@ -196,7 +224,7 @@ function renderTimegrid(data) {
         }
 
         slot.addEventListener('click', function () {
-            if (this.classList.contains('past') || this.classList.contains('occupied')) {
+            if (this.classList.contains('occupied')) {
                 if (typeof showAlert === 'function') showAlert('Это время недоступно', 'warning');
                 return;
             }
@@ -206,7 +234,7 @@ function renderTimegrid(data) {
         timeline.appendChild(slot);
     });
 
-    addTimelineLabels(data.slots);
+    addTimelineLabels(visibleSlots.map(({ slotData }) => slotData));
 }
 
 function addTimelineLabels(slots) {
@@ -391,6 +419,7 @@ function syncTimelineWithSelects() {
 
     const startTotalMinutes = startH * 60 + startM;
     const endTotalMinutes = endH * 60 + endM;
+    if (endTotalMinutes <= startTotalMinutes) return;
 
     const firstSlot = currentTimegrid[0];
     const [fh, fm] = firstSlot.time.split(':').map(Number);
