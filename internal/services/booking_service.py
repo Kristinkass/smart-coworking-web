@@ -816,26 +816,6 @@ def get_timegrid_for_place(place_id: int, booking_date: date) -> Dict:
     is_today = booking_date == now.date()
     current_time = now.time()
 
-    if not is_bookable:
-        close_label = format_close_time(open_time, close_time)
-        return {
-            'place_id': place_id,
-            'place_code': place.code,
-            'place_name': place.name,
-            'capacity': effective_capacity,
-            'zone_capacity': effective_capacity if is_desk_zone else None,
-            'date': booking_date.strftime('%Y-%m-%d'),
-            'open_time': open_time.strftime('%H:%M'),
-            'close_time': close_label,
-            'is_bookable': False,
-            'schedule_message': f'Бронирование закрыто (режим {open_time.strftime("%H:%M")}–{close_label})',
-            'slot_duration_minutes': SLOT_DURATION_MINUTES,
-            'slots': [],
-        }
-
-    close_limit = effective_close_minutes(open_time, close_time)
-    now_minutes = time_to_minutes(current_time) if is_today else None
-
     slots_data = []
     for slot in schedule:
         is_past = False
@@ -854,21 +834,6 @@ def get_timegrid_for_place(place_id: int, booking_date: date) -> Dict:
             'is_past': is_past
         })
 
-    has_future_bookable = any(
-        not s['is_past'] and s['status'] != 'full' and s['available'] > 0
-        for s in slots_data
-    )
-    if is_today and now_minutes is not None and now_minutes >= close_limit:
-        has_future_bookable = False
-
-    schedule_message = None
-    if not has_future_bookable:
-        close_label = format_close_time(open_time, close_time)
-        if is_today and now_minutes is not None and now_minutes >= close_limit:
-            schedule_message = f'Коворкинг уже закрыт (режим {open_time.strftime("%H:%M")}–{close_label})'
-        else:
-            schedule_message = 'Нет доступного времени для бронирования на этот день'
-
     return {
         'place_id': place_id,
         'place_code': place.code,
@@ -878,8 +843,8 @@ def get_timegrid_for_place(place_id: int, booking_date: date) -> Dict:
         'date': booking_date.strftime('%Y-%m-%d'),
         'open_time': open_time.strftime('%H:%M'),
         'close_time': format_close_time(open_time, close_time),
-        'is_bookable': has_future_bookable,
-        'schedule_message': schedule_message,
+        'is_bookable': True,
+        'schedule_message': None,
         'slot_duration_minutes': SLOT_DURATION_MINUTES,
         'slots': slots_data,
     }

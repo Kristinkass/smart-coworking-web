@@ -6,8 +6,6 @@ const MINUTE_OPTIONS = ['00', '15', '30', '45'];
 let currentTimegrid = null;
 let selectedStartIndex = null;
 let selectedDurationSlots = 4;
-let timegridLoadGeneration = 0;
-window.bookingTimeControlsEnabled = false;
 
 function roundToSlotMinutes(totalMinutes) {
     return Math.ceil(totalMinutes / SLOT_DURATION) * SLOT_DURATION;
@@ -16,59 +14,28 @@ function roundToSlotMinutes(totalMinutes) {
 function setBookingTimeControlsEnabled(enabled) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const isHourly = tariffType === 'hourly';
-    if (!isHourly) return;
 
-    window.bookingTimeControlsEnabled = !!enabled;
-    if (enabled) {
-        showHourlyBookingTimeUI();
-    } else {
-        hideHourlyBookingTimeUI();
+    if (isHourly) {
+        const timePicker = document.getElementById('time-picker-row');
+        const timegrid = document.getElementById('timegrid-container');
+        const durationBtns = document.getElementById('duration-buttons-row');
+        const durationRow = document.getElementById('duration-row');
+        const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
+        if (timePicker) timePicker.style.display = enabled ? '' : 'none';
+        if (timegrid) timegrid.style.display = (enabled && !hideTimeline) ? 'block' : 'none';
+        if (durationBtns) durationBtns.style.display = (enabled && !hideTimeline) ? 'flex' : 'none';
+        if (durationRow) durationRow.style.display = enabled ? 'flex' : 'none';
     }
 
     ['start-hour', 'start-min', 'end-hour', 'end-min'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = !enabled;
     });
-    document.querySelectorAll('.clock-time-btn').forEach(btn => {
-        btn.disabled = !enabled;
-    });
     if (window.ClockTimePicker) ClockTimePicker.setEnabled(enabled);
 
     const bookBtn = document.getElementById('book-btn');
     const noTariff = document.getElementById('no-tariff-hint')?.style.display === 'block';
     if (bookBtn) bookBtn.disabled = !enabled || noTariff;
-}
-
-function showHourlyBookingTimeUI() {
-    const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
-    if (tariffType !== 'hourly') return;
-
-    const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
-    const timePicker = document.getElementById('time-picker-row');
-    const timegrid = document.getElementById('timegrid-container');
-    const durationBtns = document.getElementById('duration-buttons-row');
-    const durationRow = document.getElementById('duration-row');
-    const hourlyHint = document.getElementById('hourly-hint');
-
-    if (timePicker) timePicker.style.display = '';
-    if (timegrid && !hideTimeline) timegrid.style.display = 'block';
-    if (durationBtns && !hideTimeline) durationBtns.style.display = 'flex';
-    if (durationRow) durationRow.style.display = 'flex';
-    if (hourlyHint) hourlyHint.style.display = 'block';
-}
-
-function hideHourlyBookingTimeUI() {
-    const timePicker = document.getElementById('time-picker-row');
-    const timegrid = document.getElementById('timegrid-container');
-    const durationBtns = document.getElementById('duration-buttons-row');
-    const durationRow = document.getElementById('duration-row');
-    const hourlyHint = document.getElementById('hourly-hint');
-
-    if (timePicker) timePicker.style.display = 'none';
-    if (timegrid) timegrid.style.display = 'none';
-    if (durationBtns) durationBtns.style.display = 'none';
-    if (durationRow) durationRow.style.display = 'none';
-    if (hourlyHint) hourlyHint.style.display = 'none';
 }
 
 function showScheduleStatus(message, type = 'info') {
@@ -103,15 +70,8 @@ async function loadTimegrid(placeId, date) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     if (tariffType !== 'hourly') return;
     const isMobile = typeof isMobileViewport === 'function' && isMobileViewport();
-    const loadGen = ++timegridLoadGeneration;
 
     hideScheduleStatus();
-    setBookingTimeControlsEnabled(false);
-    currentTimegrid = null;
-    window.currentBookingTimegrid = null;
-    selectedStartIndex = null;
-    const totalEl = document.getElementById('total-price');
-    if (totalEl) totalEl.textContent = '-';
     if (timeline && !isMobile) {
         timeline.innerHTML = '<div class="timeline-loading">Загрузка расписания…</div>';
     }
@@ -119,7 +79,6 @@ async function loadTimegrid(placeId, date) {
     try {
         const r = await fetch(`/api/booking/timegrid/${placeId}?date=${date}`);
         const d = await r.json();
-        if (loadGen !== timegridLoadGeneration) return;
 
         if (!d.success) {
             window.currentSchedule = null;
@@ -143,7 +102,7 @@ async function loadTimegrid(placeId, date) {
         };
         showScheduleHoursInfo(data.open_time, data.close_time);
 
-        if (!data.slots || data.slots.length === 0) {
+        if (!data.is_bookable || !data.slots || data.slots.length === 0) {
             currentTimegrid = null;
             window.currentBookingTimegrid = null;
             selectedStartIndex = null;
@@ -156,53 +115,24 @@ async function loadTimegrid(placeId, date) {
             return;
         }
 
-        if (!data.is_bookable) {
-            currentTimegrid = data.slots;
-            window.currentBookingTimegrid = data.slots;
-            selectedStartIndex = null;
-            showScheduleStatus(
-                data.schedule_message || 'Бронирование недоступно в этот день',
-                'error',
-            );
-            setBookingTimeControlsEnabled(false);
-            return;
-        }
-
+        hideScheduleStatus();
+        setBookingTimeControlsEnabled(true);
         currentTimegrid = data.slots;
         window.currentBookingTimegrid = data.slots;
 
-        let timesOk = true;
         if (typeof rebuildTimeSelects === 'function') {
-            timesOk = rebuildTimeSelects(data.open_time, data.close_time);
+            rebuildTimeSelects(data.open_time, data.close_time);
         }
-
-        let timelineOk = true;
         if (!isMobile) {
             if (typeof updateTimegridCapacity === 'function') {
                 updateTimegridCapacity(data);
             }
-            timelineOk = renderTimegrid(data);
+            renderTimegrid(data);
         } else {
             selectedStartIndex = null;
             if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
         }
-
-        if (!timesOk || !timelineOk) {
-            showScheduleStatus(
-                data.schedule_message || 'Нет доступного времени для бронирования',
-                'error',
-            );
-            setBookingTimeControlsEnabled(false);
-            return;
-        }
-
-        hideScheduleStatus();
-        setBookingTimeControlsEnabled(true);
-        if (typeof schedulePriceDisplayUpdate === 'function') {
-            schedulePriceDisplayUpdate();
-        }
     } catch (err) {
-        if (loadGen !== timegridLoadGeneration) return;
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;
@@ -226,7 +156,7 @@ function updateTimegridCapacity(data) {
 
 function renderTimegrid(data) {
     const timeline = document.getElementById('booking-timeline');
-    if (!timeline) return false;
+    if (!timeline) return;
 
     currentTimegrid = data.slots;
     window.currentBookingTimegrid = data.slots;
@@ -234,40 +164,30 @@ function renderTimegrid(data) {
     selectedStartIndex = null;
 
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const selectedDate = document.getElementById('booking-date')?.value || today;
     const isToday = selectedDate === today;
     const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
-    const minFutureMinutes = isToday ? roundToSlotMinutes(currentTotalMinutes) : 0;
 
     if (!data.slots || data.slots.length === 0) {
-        return false;
+        timeline.innerHTML = '<div class="timeline-empty">Нет доступных слотов на этот день</div>';
+        setBookingTimeControlsEnabled(false);
+        return;
     }
 
-    const visibleSlots = data.slots
-        .map((slotData, slotIndex) => ({ slotData, slotIndex }))
-        .filter(({ slotData }) => {
-            if (slotData.is_past) return false;
-            const [hour, minute] = slotData.time.split(':').map(Number);
-            const totalMinutes = hour * 60 + minute;
-            if (isToday && totalMinutes < minFutureMinutes) return false;
-            if (slotData.status === 'full' || slotData.available <= 0) return false;
-            return true;
-        });
-
-    if (!visibleSlots.length) {
-        return false;
-    }
-
-    visibleSlots.forEach(({ slotData, slotIndex }) => {
+    data.slots.forEach((slotData, slotIndex) => {
         const timeStr = slotData.time;
+        const [hour, minute] = timeStr.split(':').map(Number);
+        const totalMinutes = hour * 60 + minute;
 
         const slot = document.createElement('div');
         slot.className = 'timeline-slot';
         slot.dataset.index = slotIndex;
         slot.dataset.time = timeStr;
 
-        if (slotData.status === 'full') {
+        if (slotData.is_past || (isToday && totalMinutes < currentTotalMinutes)) {
+            slot.classList.add('past');
+        } else if (slotData.status === 'full') {
             slot.classList.add('occupied');
         } else if (slotData.status === 'partial') {
             slot.classList.add('partial');
@@ -276,7 +196,7 @@ function renderTimegrid(data) {
         }
 
         slot.addEventListener('click', function () {
-            if (this.classList.contains('occupied')) {
+            if (this.classList.contains('past') || this.classList.contains('occupied')) {
                 if (typeof showAlert === 'function') showAlert('Это время недоступно', 'warning');
                 return;
             }
@@ -286,8 +206,7 @@ function renderTimegrid(data) {
         timeline.appendChild(slot);
     });
 
-    addTimelineLabels(visibleSlots.map(({ slotData }) => slotData));
-    return true;
+    addTimelineLabels(data.slots);
 }
 
 function addTimelineLabels(slots) {
@@ -472,7 +391,6 @@ function syncTimelineWithSelects() {
 
     const startTotalMinutes = startH * 60 + startM;
     const endTotalMinutes = endH * 60 + endM;
-    if (endTotalMinutes <= startTotalMinutes) return;
 
     const firstSlot = currentTimegrid[0];
     const [fh, fm] = firstSlot.time.split(':').map(Number);

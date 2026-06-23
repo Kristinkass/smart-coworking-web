@@ -193,12 +193,17 @@ function placesForCurrentView() {
     return result;
 }
 
-// Текущее время с сервера (или клиентское как запасной вариант)
+// Текущее время — всегда с клиента (SERVER_NOW устаревает после загрузки страницы)
 function getNow() {
-    if (typeof SERVER_NOW !== 'undefined' && SERVER_NOW) {
-        return new Date(SERVER_NOW);
-    }
     return new Date();
+}
+
+function localDateStr(d) {
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 }
 
 const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
@@ -401,7 +406,7 @@ function isEndTimeValid(endTotal, startTotal) {
 
     const now = getNow();
     const todayVal = document.getElementById('booking-date')?.value;
-    const isToday = todayVal === now.toISOString().split('T')[0];
+    const isToday = todayVal === localDateStr(now);
     if (isToday && endTotal <= roundUpTo15(now.getHours() * 60 + now.getMinutes())) {
         return false;
     }
@@ -543,7 +548,7 @@ function isStartTimeUnavailable(totalMinutes) {
 
     const now = getNow();
     const todayVal = document.getElementById('booking-date')?.value;
-    const isToday = todayVal === now.toISOString().split('T')[0];
+    const isToday = todayVal === localDateStr(now);
     if (isToday && totalMinutes < roundUpTo15(now.getHours() * 60 + now.getMinutes())) {
         return true;
     }
@@ -565,13 +570,12 @@ function firstEnabledOption(selectEl) {
 
 function onBookingDateChange() {
     const dateEl = document.getElementById('booking-date');
-    if (typeof setBookingTimeControlsEnabled === 'function') {
-        setBookingTimeControlsEnabled(false);
-    }
-    if (typeof loadTimegrid === 'function' && selectedPlace && dateEl?.value) {
-        loadTimegrid(selectedPlace.id, dateEl.value);
-    } else if (dateEl) {
-        filterPastHours(dateEl.value);
+    const dateVal = dateEl?.value;
+    const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
+    if (tariffType === 'hourly' && typeof loadTimegrid === 'function' && selectedPlace && dateVal) {
+        loadTimegrid(selectedPlace.id, dateVal);
+    } else if (dateVal) {
+        filterPastHours(dateVal);
     }
     updateBookingPeriodDisplay();
     schedulePriceDisplayUpdate();
@@ -590,7 +594,7 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
 
     const now = getNow();
     const todayVal = document.getElementById('booking-date')?.value;
-    const isToday = todayVal === now.toISOString().split('T')[0];
+    const isToday = todayVal === localDateStr(now);
     const nowTotal = now.getHours() * 60 + now.getMinutes();
     const nowRounded = roundUpTo15(nowTotal);
 
@@ -1430,19 +1434,21 @@ function onTariffChange() {
         }[tariffType] || tariffType;
     }
 
+    const timeSection = document.getElementById('timegrid-container');
+    const durationRow = document.getElementById('duration-row');
+    const durationBtns = document.getElementById('duration-buttons-row');
+    const timePickerRow = document.getElementById('time-picker-row');
     const fixedHint = document.getElementById('fixed-tariff-hint');
     const hourlyHint = document.getElementById('hourly-hint');
+    const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
     const isHourly = tariffType === 'hourly';
 
+    if (timeSection) timeSection.style.display = (isHourly && !hideTimeline) ? 'block' : 'none';
+    if (durationBtns) durationBtns.style.display = (isHourly && !hideTimeline) ? 'flex' : 'none';
+    if (durationRow) durationRow.style.display = isHourly ? 'flex' : 'none';
+    if (timePickerRow) timePickerRow.style.display = isHourly ? '' : 'none';
     if (fixedHint) fixedHint.style.display = isHourly ? 'none' : 'block';
     if (hourlyHint) hourlyHint.style.display = isHourly ? 'block' : 'none';
-    if (isHourly) {
-        if (typeof setBookingTimeControlsEnabled === 'function') {
-            setBookingTimeControlsEnabled(false);
-        }
-    } else if (typeof hideHourlyBookingTimeUI === 'function') {
-        hideHourlyBookingTimeUI();
-    }
 
     if (!isHourly && window.currentSchedule) {
         const [openH, openM] = window.currentSchedule.open.split(':');
@@ -1462,10 +1468,6 @@ function onTariffChange() {
         if (date && typeof loadTimegrid === 'function') {
             loadTimegrid(selectedPlace.id, date);
         }
-    } else if (!isHourly) {
-        const bookBtn = document.getElementById('book-btn');
-        const noTariff = document.getElementById('no-tariff-hint')?.style.display === 'block';
-        if (bookBtn) bookBtn.disabled = !!noTariff;
     }
 
     updateBookingPeriodDisplay();
@@ -1487,7 +1489,7 @@ function initTariffsForPlace(place) {
         const defaultTariff = availableTariffs.find(t => t.tariff_type === 'hourly') || availableTariffs[0];
         document.getElementById('tariff-type').value = defaultTariff.tariff_type;
         if (bookBtn) {
-            bookBtn.disabled = defaultTariff.tariff_type === 'hourly';
+            bookBtn.disabled = false;
             bookBtn.title = '';
         }
         if (noTariffHint) noTariffHint.style.display = 'none';
@@ -1569,6 +1571,9 @@ async function selectPlaceForBooking(place) {
     }
 
     initTariffsForPlace(place);
+
+    const dateEl = document.getElementById('booking-date');
+    filterPastHours(dateEl?.value);
 
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const payCb = document.getElementById('pay-without-subscription');
@@ -1694,10 +1699,6 @@ async function updatePriceDisplay() {
     if (!totalEl) return;
 
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
-    if (tariffType === 'hourly' && !window.bookingTimeControlsEnabled) {
-        totalEl.textContent = '-';
-        return;
-    }
     const startTime = getStartTime();
     const endTime = getEndTime();
     const [sh, sm] = startTime.split(':').map(Number);
@@ -1756,14 +1757,15 @@ async function checkAvailability() {
     if (!bookingDate) { showAlert('Укажите дату', 'warning'); return; }
 
     const now = getNow();
-    if (bookingDate < now.toISOString().split('T')[0]) {
+    const todayStr = localDateStr(now);
+    if (bookingDate < todayStr) {
         showAlert('Нельзя бронировать на прошедшую дату', 'warning');
         return;
     }
 
     const [sh, sm] = startTime.split(':').map(Number);
     const [eh, em] = endTime.split(':').map(Number);
-    if (bookingDate === now.toISOString().split('T')[0] && (sh * 60 + sm) < now.getHours() * 60 + now.getMinutes()) {
+    if (bookingDate === todayStr && (sh * 60 + sm) < now.getHours() * 60 + now.getMinutes()) {
         showAlert('Нельзя бронировать на прошедшее время', 'warning');
         return;
     }
@@ -1822,10 +1824,6 @@ async function handleBooking() {
     const [eh, em] = endTime.split(':').map(Number);
 
     if (tariffType === 'hourly') {
-        if (!window.bookingTimeControlsEnabled) {
-            showAlert('На выбранную дату нет доступного времени для бронирования', 'warning');
-            return;
-        }
         if (!isValid15MinTime(sh, sm) || !isValid15MinTime(eh, em)) {
             showAlert('Время должно быть кратно 15 минутам', 'warning');
             return;
@@ -1852,11 +1850,12 @@ async function handleBooking() {
     }
 
     const now = getNow();
-    if (bookingDate < now.toISOString().split('T')[0]) {
+    const todayStr = localDateStr(now);
+    if (bookingDate < todayStr) {
         showAlert('Нельзя бронировать на прошедшую дату', 'warning');
         return;
     }
-    if (tariffType === 'hourly' && bookingDate === now.toISOString().split('T')[0]) {
+    if (tariffType === 'hourly' && bookingDate === todayStr) {
         const [sh, sm] = startTime.split(':').map(Number);
         const startMins = sh * 60 + sm;
         const nowMins = now.getHours() * 60 + now.getMinutes();
@@ -1981,7 +1980,7 @@ async function refreshBookingSubscriptions(targetUserId) {
 
 // Проверить, есть ли подходящий абонемент для места данного типа
 function getApplicableSubscription(placeKind) {
-    const now = new Date().toISOString().split('T')[0];
+    const now = localDateStr(new Date());
     return userSubscriptions.find(sub => {
         // Проверяем дату
         if (sub.start_date > now || sub.end_date < now) return false;
