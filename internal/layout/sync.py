@@ -978,18 +978,76 @@ def _max_place_code_index(location_code, tag, existing_codes):
     return max_n
 
 
-def generate_place_code(kind, location_code):
-    """Уникальный код: локация 1A-L1, стол 1A-T1 (этаж+зона+тип+номер)."""
+def _place_code_index(code, location_code, tag):
+    """Номер из {location}-{tag}N; для столов учитываем старый формат {location}-N."""
+    if not code:
+        return None
+    prefix = f'{location_code}-{tag}'
+    legacy_prefix = f'{location_code}-'
+    if code.startswith(prefix):
+        suffix = code[len(prefix):]
+        return int(suffix) if suffix.isdigit() else None
+    if tag == 'T' and code.startswith(legacy_prefix):
+        suffix = code[len(legacy_prefix):]
+        return int(suffix) if suffix.isdigit() else None
+    return None
+
+
+def _occupied_place_codes(location_code):
+    """Коды, занятые сейчас: на карте (layout) или активные в БД.
+
+    Неактивные записи (удалённые столы) не раздувают следующий номер.
+    """
     from internal.models.place import Place
 
+    prefix = f'{location_code}-'
+    codes = {
+        p['code'] for p in load_layout().get('places', [])
+        if p.get('code') and str(p['code']).startswith(prefix)
+    }
+    for (code,) in (
+        Place.query.filter(
+            Place.code.like(prefix + '%'),
+            Place.active.is_(True),
+        ).with_entities(Place.code)
+    ):
+        codes.add(code)
+    return codes
+
+
+def _reserved_place_codes(location_code):
+    """Все коды, которые нельзя вернуть из-за unique constraint в БД."""
+    from internal.models.place import Place
+
+    prefix = f'{location_code}-'
+    codes = {
+        p['code'] for p in load_layout().get('places', [])
+        if p.get('code') and str(p['code']).startswith(prefix)
+    }
+    for (code,) in (
+        Place.query.filter(Place.code.like(prefix + '%')).with_entities(Place.code)
+    ):
+        codes.add(code)
+    return codes
+
+
+def generate_place_code(kind, location_code):
+    """Уникальный код: локация 1A-L1, стол 1A-T1 (этаж+зона+тип+номер)."""
     tag = _code_tag_for_kind(kind)
-    layout = load_layout()
-    existing = {p['code'] for p in layout.get('places', []) if p.get('code')}
-    prefix = location_code + '-'
-    for (code,) in Place.query.filter(Place.code.like(prefix + '%')).with_entities(Place.code):
-        existing.add(code)
-    max_n = _max_place_code_index(location_code, tag, existing)
-    return f'{location_code}-{tag}{max_n + 1}'
+    occupied = _occupied_place_codes(location_code)
+    reserved = _reserved_place_codes(location_code)
+    occupied_indexes = {
+        idx for idx in (
+            _place_code_index(code, location_code, tag) for code in occupied
+        )
+        if idx is not None and idx > 0
+    }
+    n = 1
+    while True:
+        candidate = f'{location_code}-{tag}{n}'
+        if n not in occupied_indexes and candidate not in reserved:
+            return candidate
+        n += 1
 
 
 def place_allows_child_desks(place):

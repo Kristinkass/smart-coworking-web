@@ -34,4 +34,10 @@ for attempt in range(60):
         time.sleep(1)
 PY
 
+if [ -n "$LAYOUT_PATH" ] && [ ! -f "$LAYOUT_PATH" ]; then
+    echo "Инициализация layout.json: $LAYOUT_PATH"
+    mkdir -p "$(dirname "$LAYOUT_PATH")"
+    cp /app/static/layout.json "$LAYOUT_PATH"
+fi
+
 exec "$@"

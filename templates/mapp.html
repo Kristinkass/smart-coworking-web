@@ -143,25 +143,25 @@
 
         /* Timeline - одна длинная полоса с 15-минутными слотами */
         .timeline-container { position: relative; margin: 20px 0; }
-        .booking-timeline { 
-            display: flex; 
-            height: 50px; 
-            background: #f3f4f6; 
+        .booking-timeline {
+            display: flex;
+            height: 50px;
+            background: #f3f4f6;
             border-radius: 8px;
-            overflow: hidden; 
-            margin: 15px 0; 
+            overflow: hidden;
+            margin: 15px 0;
             position: relative;
             border: 1px solid #d1d5db;
         }
-        
+
         /* 15-минутные слоты */
-        .timeline-slot { 
-            flex: 1; 
-            height: 100%; 
-            border-right: 1px solid #d1d5db; 
+        .timeline-slot {
+            flex: 1;
+            height: 100%;
+            border-right: 1px solid #d1d5db;
             position: relative;
-            cursor: pointer; 
-            transition: all 0.2s ease; 
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         .timeline-slot:last-child { border-right: none; }
         .timeline-slot:hover { transform: scaleY(1.1); z-index: 10; }
@@ -169,15 +169,15 @@
         .timeline-slot.partial { background: #FDE047; }
         .timeline-slot.available { background: #86EFAC; }
         .timeline-slot.past { background: #E5E7EB; cursor: not-allowed; }
-        
+
         /* Метки времени под timeline */
-        .timeline-labels { 
-            display: flex; 
+        .timeline-labels {
+            display: flex;
             margin-top: 8px;
-            font-size: 11px; 
+            font-size: 11px;
             color: #6b7280;
         }
-        .timeline-label { 
+        .timeline-label {
             flex: 1;
             text-align: left;
             padding-left: 2px;
@@ -185,21 +185,21 @@
             color: #6b7280;
             overflow: hidden;
         }
-        
+
         /* Выделенный диапазон */
         .timeline-slot.selected { background: #8fa67a !important; }
-        .timeline-slot.selected-start { 
+        .timeline-slot.selected-start {
             background: #6f855c !important;
             border-left: 3px solid #5a7048;
         }
-        .timeline-slot.selected-end { 
+        .timeline-slot.selected-end {
             background: #6f855c !important;
             border-right: 3px solid #5a7048;
         }
-        .timeline-slot.in-range { 
-            background: #d4dfc8 !important; 
+        .timeline-slot.in-range {
+            background: #d4dfc8 !important;
         }
-        
+
         /* Tooltip на слоте */
         .timeline-slot::after {
             content: attr(data-time);
@@ -260,7 +260,7 @@
             cursor: not-allowed;
         }
         .clock-time-box {
-            display: flex;
+            display: none;
             align-items: stretch;
             justify-content: space-between;
             gap: 8px;
@@ -336,6 +336,28 @@
             margin-bottom: 16px;
             color: #1e293b;
         }
+        .clock-modal-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .clock-modal-value {
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 30px;
+            font-weight: 800;
+            padding: 0 2px;
+            cursor: pointer;
+        }
+        .clock-modal-value.active {
+            color: #4d8f5f;
+        }
+        .clock-modal-sep {
+            color: #94a3b8;
+            font-size: 28px;
+            font-weight: 800;
+        }
         .clock-dial {
             display: flex;
             justify-content: center;
@@ -381,9 +403,10 @@
             pointer-events: none;
         }
         .clock-minutes {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
+            display: block;
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
             margin-bottom: 16px;
         }
         .clock-min-btn {
@@ -532,6 +555,12 @@
                 width: 100%;
                 text-align: center;
                 padding: 2px 0;
+            }
+            .time-picker-box {
+                display: none;
+            }
+            .clock-time-box {
+                display: flex;
             }
             #timegrid-container,
             #hourly-hint,
@@ -738,6 +767,25 @@
                     </div>
                     <div id="time-picker-row">
                         <label class="form-label">Время</label>
+                        <div class="time-picker-box">
+                            <div class="time-picker-field">
+                                <div class="time-picker-label">Начало</div>
+                                <div class="time-picker-selects">
+                                    <select id="start-hour" class="form-control" aria-label="Часы начала" onchange="onTimeChange()"></select>
+                                    <span class="time-picker-sep">:</span>
+                                    <select id="start-min" class="form-control" aria-label="Минуты начала" onchange="onTimeChange()"></select>
+                                </div>
+                            </div>
+                            <span class="time-picker-arrow">→</span>
+                            <div class="time-picker-field">
+                                <div class="time-picker-label">Конец</div>
+                                <div class="time-picker-selects">
+                                    <select id="end-hour" class="form-control" aria-label="Часы окончания" onchange="onTimeChange()"></select>
+                                    <span class="time-picker-sep">:</span>
+                                    <select id="end-min" class="form-control" aria-label="Минуты окончания" onchange="onTimeChange()"></select>
+                                </div>
+                            </div>
+                        </div>
                         <div class="clock-time-box">
                             <button type="button" class="clock-time-btn" id="clock-start-btn" onclick="openClockPicker('start')">
                                 <i class="fas fa-clock"></i>
@@ -751,10 +799,6 @@
                                 <small>Конец</small>
                             </button>
                         </div>
-                        <input type="hidden" id="start-hour" value="10">
-                        <input type="hidden" id="start-min" value="00">
-                        <input type="hidden" id="end-hour" value="11">
-                        <input type="hidden" id="end-min" value="00">
                     </div>
                 </div>
 

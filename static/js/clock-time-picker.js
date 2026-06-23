@@ -12,6 +12,7 @@
     let disabledEndMinutes = new Set();
     let selectedHour = 10;
     let selectedMinute = '00';
+    let pickerStep = 'hour';
 
     function $(id) { return document.getElementById(id); }
 
@@ -43,11 +44,47 @@
         if (endEl) endEl.textContent = `${end.hour}:${end.minute}`;
     }
 
+    function syncSelectedFromField() {
+        if (!activeField) return;
+        const vals = getFieldValues(activeField);
+        selectedHour = parseInt(vals.hour, 10) || selectedHour;
+        selectedMinute = vals.minute || selectedMinute;
+    }
+
+    function minuteOptions() {
+        return ['00', '15', '30', '45'];
+    }
+
+    function renderPickerHeader() {
+        const title = $('clock-modal-title');
+        if (!title) return;
+        const fieldLabel = activeField === 'start' ? 'Начало' : 'Конец';
+        title.innerHTML = `
+            <div class="clock-modal-label">${fieldLabel}</div>
+            <button type="button" class="clock-modal-value ${pickerStep === 'hour' ? 'active' : ''}" data-step="hour">${pad2(selectedHour)}</button>
+            <span class="clock-modal-sep">:</span>
+            <button type="button" class="clock-modal-value ${pickerStep === 'minute' ? 'active' : ''}" data-step="minute">${selectedMinute}</button>
+        `;
+        title.querySelectorAll('[data-step]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pickerStep = btn.dataset.step;
+                renderDial();
+                renderMinutes();
+            });
+        });
+    }
+
     function renderDial() {
         const dial = $('clock-dial');
         if (!dial) return;
         dial.innerHTML = '';
-        const disabled = activeField === 'start' ? disabledStartHours : disabledEndHours;
+        renderPickerHeader();
+
+        const isMinuteStep = pickerStep === 'minute';
+        const values = isMinuteStep ? minuteOptions() : availableHours;
+        const disabled = isMinuteStep
+            ? (activeField === 'start' ? disabledStartMinutes : disabledEndMinutes)
+            : (activeField === 'start' ? disabledStartHours : disabledEndHours);
         const size = 220;
         const cx = size / 2;
         const cy = size / 2;
@@ -58,24 +95,39 @@
         face.style.width = `${size}px`;
         face.style.height = `${size}px`;
 
-        availableHours.forEach((h, i) => {
-            const angle = (i / availableHours.length) * 2 * Math.PI - Math.PI / 2;
+        values.forEach((value, i) => {
+            const angle = (i / values.length) * 2 * Math.PI - Math.PI / 2;
             const x = cx + radius * Math.cos(angle);
             const y = cy + radius * Math.sin(angle);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'clock-hour-btn';
-            btn.textContent = pad2(h);
+            btn.textContent = isMinuteStep ? value : pad2(value);
             btn.style.left = `${x}px`;
             btn.style.top = `${y}px`;
-            if (disabled.has(h)) {
+            const disabledKey = isMinuteStep ? value : value;
+            if (disabled.has(disabledKey)) {
                 btn.disabled = true;
                 btn.classList.add('disabled');
             }
-            if (parseInt(selectedHour, 10) === h) btn.classList.add('active');
+            if ((isMinuteStep && selectedMinute === value) ||
+                (!isMinuteStep && parseInt(selectedHour, 10) === value)) {
+                btn.classList.add('active');
+            }
             btn.addEventListener('click', () => {
-                if (disabled.has(h)) return;
-                selectedHour = h;
+                if (disabled.has(disabledKey)) return;
+                if (isMinuteStep) {
+                    selectedMinute = value;
+                    setFieldValues(activeField, selectedHour, selectedMinute);
+                    if (typeof onTimeChange === 'function') onTimeChange();
+                    syncSelectedFromField();
+                } else {
+                    selectedHour = value;
+                    setFieldValues(activeField, selectedHour, selectedMinute);
+                    if (typeof onTimeChange === 'function') onTimeChange();
+                    syncSelectedFromField();
+                    pickerStep = 'minute';
+                }
                 renderDial();
                 renderMinutes();
             });
@@ -92,29 +144,7 @@
     function renderMinutes() {
         const row = $('clock-minutes');
         if (!row) return;
-        row.innerHTML = '';
-        const disabled = activeField === 'start' ? disabledStartMinutes : disabledEndMinutes;
-        ['00', '15', '30', '45'].forEach(mm => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'clock-min-btn';
-            btn.textContent = mm;
-            btn.dataset.min = mm;
-            if (disabled.has(mm)) {
-                btn.disabled = true;
-                btn.classList.add('disabled');
-            }
-            if (selectedMinute === mm) btn.classList.add('active');
-            btn.addEventListener('click', () => {
-                if (disabled.has(mm)) return;
-                selectedMinute = mm;
-                setFieldValues(activeField, selectedHour, selectedMinute);
-                renderDial();
-                renderMinutes();
-                if (typeof onTimeChange === 'function') onTimeChange();
-            });
-            row.appendChild(btn);
-        });
+        row.textContent = pickerStep === 'hour' ? 'Выберите час' : 'Выберите минуты';
     }
 
     function openClockPicker(field) {
@@ -122,8 +152,7 @@
         const vals = getFieldValues(field);
         selectedHour = parseInt(vals.hour, 10) || availableHours[0] || 10;
         selectedMinute = vals.minute || '00';
-        const title = $('clock-modal-title');
-        if (title) title.textContent = field === 'start' ? 'Время начала' : 'Время окончания';
+        pickerStep = 'hour';
         const modal = $('clock-picker-modal');
         if (modal) modal.classList.add('visible');
         renderDial();

@@ -337,6 +337,65 @@ function fillMinuteSelect(selectEl) {
     });
 }
 
+function fillHourSelect(selectEl, hours) {
+    if (!selectEl) return;
+    const previous = selectEl.value;
+    selectEl.innerHTML = '';
+    hours.forEach(h => {
+        const value = String(h).padStart(2, '0');
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = value;
+        selectEl.appendChild(opt);
+    });
+    if (hours.some(h => String(h).padStart(2, '0') === previous)) {
+        selectEl.value = previous;
+    }
+}
+
+function setDisabledOptionValues(selectEl, disabledValues) {
+    if (!selectEl) return;
+    Array.from(selectEl.options).forEach(opt => {
+        opt.disabled = disabledValues.has(opt.value);
+    });
+}
+
+function minutesToTime(totalMinutes) {
+    return String(Math.floor(totalMinutes / 60)).padStart(2, '0') +
+        ':' + String(totalMinutes % 60).padStart(2, '0');
+}
+
+function timegridSlotAt(totalMinutes) {
+    const slots = window.currentBookingTimegrid || [];
+    const time = minutesToTime(totalMinutes);
+    return slots.find(slot => slot.time === time) || null;
+}
+
+function isStartTimeUnavailable(totalMinutes) {
+    const hours = getCoworkingHours();
+    if (totalMinutes < hours.open || totalMinutes >= hours.close) return true;
+
+    const now = getNow();
+    const todayVal = document.getElementById('booking-date')?.value;
+    const isToday = todayVal === now.toISOString().split('T')[0];
+    if (isToday && totalMinutes < roundUpTo15(now.getHours() * 60 + now.getMinutes())) {
+        return true;
+    }
+
+    if (window.currentBookingTimegrid && window.currentBookingTimegrid.length) {
+        const slot = timegridSlotAt(totalMinutes);
+        if (!slot) return true;
+        if (slot.is_past) return true;
+        if (slot.status === 'full' || slot.available <= 0) return true;
+    }
+
+    return false;
+}
+
+function firstEnabledOption(selectEl) {
+    return Array.from(selectEl?.options || []).find(opt => !opt.disabled)?.value || null;
+}
+
 function filterPastMinuteOptions() {
     const startH = document.getElementById('start-hour');
     const startM = document.getElementById('start-min');
@@ -344,26 +403,18 @@ function filterPastMinuteOptions() {
     const endM = document.getElementById('end-min');
     if (!startH || !startM) return;
 
-    const now = getNow();
-    const todayVal = document.getElementById('booking-date')?.value;
-    const isToday = todayVal === now.toISOString().split('T')[0];
-    const nowTotal = roundUpTo15(now.getHours() * 60 + now.getMinutes());
     const selH = parseInt(startH.value, 10) * 60;
 
     const disabledStartMinutes = new Set();
     ['00', '15', '30', '45'].forEach(mm => {
         const m = parseInt(mm, 10);
-        if (isToday && (selH + m < nowTotal)) disabledStartMinutes.add(mm);
+        if (isStartTimeUnavailable(selH + m)) disabledStartMinutes.add(mm);
     });
+    setDisabledOptionValues(startM, disabledStartMinutes);
     if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('start', disabledStartMinutes);
 
-    if (isToday) {
-        const cur = selH + parseInt(startM.value, 10);
-        if (cur < nowTotal) {
-            const rounded = nowTotal;
-            startH.value = String(Math.floor(rounded / 60)).padStart(2, '0');
-            startM.value = String(rounded % 60).padStart(2, '0');
-        }
+    if (disabledStartMinutes.has(startM.value)) {
+        startM.value = firstEnabledOption(startM) || startM.value;
     }
 
     if (endH && endM) {
@@ -372,8 +423,13 @@ function filterPastMinuteOptions() {
         ['00', '15', '30', '45'].forEach(mm => {
             const m = parseInt(mm, 10);
             const endTotal = parseInt(endH.value, 10) * 60 + m;
-            if (endTotal <= startTotal) disabledEndMinutes.add(mm);
+            const hours = getCoworkingHours();
+            if (endTotal <= startTotal || endTotal > hours.close) disabledEndMinutes.add(mm);
         });
+        setDisabledOptionValues(endM, disabledEndMinutes);
+        if (disabledEndMinutes.has(endM.value)) {
+            endM.value = firstEnabledOption(endM) || endM.value;
+        }
         if (window.ClockTimePicker) ClockTimePicker.setDisabledMinutes('end', disabledEndMinutes);
     }
 
@@ -408,15 +464,23 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
 
     const prevStart = startH.value;
     const prevEnd = endH.value;
+    const prevStartM = startM.value;
+    const prevEndM = endM.value;
 
     const hourList = [];
     for (let h = openHour; h <= closeHour; h++) hourList.push(h);
+    fillHourSelect(startH, hourList);
+    fillHourSelect(endH, hourList);
+    fillMinuteSelect(startM);
+    fillMinuteSelect(endM);
     if (window.ClockTimePicker) ClockTimePicker.setAvailableHours(hourList);
 
     const disabledStart = new Set();
     hourList.forEach(h => {
-        if (isToday && h * 60 + 45 < nowTotal) disabledStart.add(h);
+        const allMinutesDisabled = SLOT_MINUTES.every(m => isStartTimeUnavailable(h * 60 + m));
+        if (allMinutesDisabled || (isToday && h * 60 + 45 < nowTotal)) disabledStart.add(h);
     });
+    setDisabledOptionValues(startH, new Set(Array.from(disabledStart).map(h => String(h).padStart(2, '0'))));
     if (window.ClockTimePicker) ClockTimePicker.setDisabledHours('start', disabledStart);
 
     let defaultStart = roundUpTo15(isToday ? Math.max(openHour * 60, nowTotal) : openHour * 60 + 60);
@@ -437,10 +501,10 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const defaultEndH = String(Math.floor(defaultEnd / 60)).padStart(2, '0');
 
     startH.value = pickHourValue(prevStart, defaultStartH, disabledStart);
-    startM.value = ['00', '15', '30', '45'].includes(startM.value) ? startM.value : defaultStartM;
+    startM.value = ['00', '15', '30', '45'].includes(prevStartM) ? prevStartM : defaultStartM;
 
     endH.value = pickHourValue(prevEnd, defaultEndH, new Set());
-    endM.value = ['00', '15', '30', '45'].includes(endM.value) ? endM.value : defaultEndM;
+    endM.value = ['00', '15', '30', '45'].includes(prevEndM) ? prevEndM : defaultEndM;
 
     filterPastMinuteOptions();
     if (window.ClockTimePicker) ClockTimePicker.refresh();

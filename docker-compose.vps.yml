@@ -33,11 +33,12 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@coworking.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       ADMIN_NAME: ${ADMIN_NAME:-Администратор}
+      LAYOUT_PATH: /app/data/layout.json
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./static/layout.json:/app/static/layout.json
+      - ./data:/app/data
 
 volumes:
   pgdata:

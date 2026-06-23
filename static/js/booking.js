@@ -83,6 +83,7 @@ async function loadTimegrid(placeId, date) {
         if (!d.success) {
             window.currentSchedule = null;
             currentTimegrid = null;
+            window.currentBookingTimegrid = null;
             selectedStartIndex = null;
             if (timeline && !isMobile) {
                 timeline.innerHTML = '';
@@ -103,6 +104,7 @@ async function loadTimegrid(placeId, date) {
 
         if (!data.is_bookable || !data.slots || data.slots.length === 0) {
             currentTimegrid = null;
+            window.currentBookingTimegrid = null;
             selectedStartIndex = null;
             if (timeline && !isMobile) timeline.innerHTML = '';
             showScheduleStatus(
@@ -126,6 +128,7 @@ async function loadTimegrid(placeId, date) {
             renderTimegrid(data);
         } else {
             currentTimegrid = data.slots;
+            window.currentBookingTimegrid = data.slots;
             selectedStartIndex = null;
             if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
         }
@@ -133,6 +136,7 @@ async function loadTimegrid(placeId, date) {
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;
+        window.currentBookingTimegrid = null;
         if (timeline && !isMobile) timeline.innerHTML = '';
         showScheduleStatus('Не удалось загрузить расписание', 'error');
         setBookingTimeControlsEnabled(false);
@@ -155,6 +159,7 @@ function renderTimegrid(data) {
     if (!timeline) return;
 
     currentTimegrid = data.slots;
+    window.currentBookingTimegrid = data.slots;
     timeline.innerHTML = '';
     selectedStartIndex = null;
 

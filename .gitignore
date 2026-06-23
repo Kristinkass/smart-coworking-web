@@ -34,6 +34,7 @@ instance/
 
 # Docker (локальные override)
 docker-compose.override.yml
+data/
 
 # Случайные вложенные клоны — не хранить в проекте
 /smart-coworking/
