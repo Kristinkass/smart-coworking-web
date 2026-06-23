@@ -205,8 +205,8 @@ const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
 const KIND_STROKE = { desk: '#16a34a', room: '#0284c7', space: '#0284c7' };
 const DESK_ZONE_FILL = '#DDB892';
 const DESK_ZONE_STROKE = '#7C5C3A';
-const AMENITY_FILL = '#f3e8ff';
-const AMENITY_STROKE = '#7e22ce';
+const AMENITY_FILL = '#e5e7eb';
+const AMENITY_STROKE = '#4b5563';
 
 function isDeskZoneSpace(place) {
     if (!isSpaceContainer(place)) return false;
@@ -1043,7 +1043,7 @@ function renderFloorPlan() {
         nameText.setAttribute('y', y + h / 2 + (showDeskOnMap(place) ? 0 : -4));
         nameText.setAttribute('text-anchor', 'middle');
         nameText.setAttribute('dominant-baseline', 'middle');
-        nameText.setAttribute('fill', isAmenityPlace(place) ? '#581c87' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
+        nameText.setAttribute('fill', isAmenityPlace(place) ? '#374151' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
         nameText.setAttribute('font-size', showDeskOnMap(place)
             ? Math.min(12, Math.max(9, Math.min(w, h) / 5))
             : Math.min(13, Math.max(9, w / 10)));
@@ -1068,7 +1068,7 @@ function renderFloorPlan() {
                 capText.setAttribute('font-weight', '600');
                 capText.textContent = `${place.partial_occupancy.occupied}/${place.partial_occupancy.capacity} занято`;
             } else if (isAmenityPlace(place)) {
-                capText.setAttribute('fill', '#7e22ce');
+                capText.setAttribute('fill', '#4b5563');
                 capText.textContent = 'служебная зона';
             } else if (place.is_meeting_room) {
                 capText.setAttribute('fill', '#475569');

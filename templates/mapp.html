@@ -99,7 +99,7 @@
         .legend-box.occupied   { background: #fecaca; border-color: #dc2626; }
         .legend-box.partial    { background: #fde68a; border-color: #d97706; }
         .legend-box.maintenance{ background: #d1d5db; border-color: #6b7280; }
-        .legend-box.amenity    { background: rgba(148,163,184,0.22); border-color: #64748b; }
+        .legend-box.amenity    { background: #e5e7eb; border-color: #4b5563; }
 
         .space-view-bar {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -766,7 +766,7 @@
                                min="{{ today }}" value="{{ today }}" onchange="onBookingDateChange()">
                         <small id="booking-period-hint" style="display:none; color:#6f855c; font-size:12px; font-weight:600; margin-top:4px;"></small>
                     </div>
-                    <div id="time-picker-row">
+                    <div id="time-picker-row" style="display:none;">
                         <label class="form-label">Время</label>
                         <div class="time-picker-box">
                             <div class="time-picker-field">
@@ -837,7 +837,7 @@
                     </div>
 
                     <!-- Выбор длительности -->
-                    <div id="duration-buttons-row" style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:12px 0;">
+                    <div id="duration-buttons-row" style="display:none; gap:6px; flex-wrap:wrap; justify-content:center; margin:12px 0;">
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDuration(30)">30 мин</button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDuration(60)">1 ч</button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDuration(90)">1.5 ч</button>
@@ -859,14 +859,14 @@
                     </div>
                 </div>
 
-                <div id="hourly-hint" style="font-size:12px; color:#64748b; margin-top:8px;">
+                <div id="hourly-hint" style="display:none; font-size:12px; color:#64748b; margin-top:8px;">
                     <i class="fas fa-info-circle"></i> Минимум 30 минут, шаг 15 минут. Прошедшее время недоступно.
                 </div>
 
                 <div class="time-info-box">
                     <div class="row" id="people-summary-row" style="display:none;"><span>Количество человек:</span><span id="people-count-display">1</span></div>
                     <div class="row" id="booking-period-row" style="display:none;"><span>Срок:</span><span id="booking-period-display">-</span></div>
-                    <div class="row" id="duration-row"><span>Длительность:</span><span id="duration-display">-</span></div>
+                    <div class="row" id="duration-row" style="display:none;"><span>Длительность:</span><span id="duration-display">-</span></div>
                     <div class="row"><span>Стоимость:</span><span id="total-price">-</span></div>
                     <div class="row" id="pay-without-subscription-row" style="display:none; margin-top:8px;">
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#475569;">
@@ -922,11 +922,12 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=7"></script>
+    <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=8"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=24"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=25"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;
