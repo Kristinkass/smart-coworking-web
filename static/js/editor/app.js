@@ -1268,7 +1268,7 @@
       rect.setAttribute('height', p.height);
       let fill = 'rgba(34,197,94,0.1)';
       let stroke = '#22c55e';
-      if (amenity) { fill = 'rgba(148,163,184,0.18)'; stroke = '#64748b'; }
+      if (amenity) { fill = '#e8edf2'; stroke = '#64748b'; }
       else if (meeting) { fill = 'rgba(99,102,241,0.14)'; stroke = '#6366f1'; }
       rect.setAttribute('fill', fill);
       rect.setAttribute('stroke', selected ? '#f59e0b' : stroke);
@@ -1282,11 +1282,11 @@
       g.appendChild(rect);
       const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       lbl.setAttribute('x', p.x + p.width / 2);
-      lbl.setAttribute('y', p.y + 18);
+      lbl.setAttribute('y', p.y + 22);
       lbl.setAttribute('text-anchor', 'middle');
-      lbl.setAttribute('font-size', 12);
+      lbl.setAttribute('font-size', 22);
       lbl.setAttribute('font-weight', '600');
-      lbl.setAttribute('fill', amenity ? '#475569' : (meeting ? '#4338ca' : '#15803d'));
+      lbl.setAttribute('fill', amenity ? '#111827' : (meeting ? '#4338ca' : '#15803d'));
       lbl.setAttribute('pointer-events', 'none');
       lbl.setAttribute('class', 'map-place-label');
       lbl.setAttribute('style', 'user-select:none;-webkit-user-select:none;pointer-events:none;');

@@ -99,7 +99,7 @@
         .legend-box.occupied   { background: #fecaca; border-color: #dc2626; }
         .legend-box.partial    { background: #fde68a; border-color: #d97706; }
         .legend-box.maintenance{ background: #d1d5db; border-color: #6b7280; }
-        .legend-box.amenity    { background: #334155; border-color: #111827; }
+        .legend-box.amenity    { background: #e8edf2; border-color: #64748b; }
 
         .space-view-bar {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -945,7 +945,7 @@
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=28"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=29"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

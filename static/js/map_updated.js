@@ -218,8 +218,8 @@ const KIND_FILL   = { desk: '#bbf7d0', room: '#bae6fd', space: '#bae6fd' };
 const KIND_STROKE = { desk: '#16a34a', room: '#0284c7', space: '#0284c7' };
 const DESK_ZONE_FILL = '#DDB892';
 const DESK_ZONE_STROKE = '#7C5C3A';
-const AMENITY_FILL = '#334155';
-const AMENITY_STROKE = '#111827';
+const AMENITY_FILL = '#e8edf2';
+const AMENITY_STROKE = '#64748b';
 
 function isDeskZoneSpace(place) {
     if (!isSpaceContainer(place)) return false;
@@ -1059,10 +1059,10 @@ function renderFloorPlan() {
         nameText.setAttribute('y', y + h / 2 + (showDeskOnMap(place) ? 0 : -4));
         nameText.setAttribute('text-anchor', 'middle');
         nameText.setAttribute('dominant-baseline', 'middle');
-        nameText.setAttribute('fill', isAmenityPlace(place) ? '#f8fafc' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
+        nameText.setAttribute('fill', isAmenityPlace(place) ? '#111827' : (showDeskOnMap(place) ? '#14532d' : '#1e293b'));
         nameText.setAttribute('font-size', showDeskOnMap(place)
             ? Math.min(12, Math.max(9, Math.min(w, h) / 5))
-            : Math.min(13, Math.max(9, w / 10)));
+            : Math.min(26, Math.max(16, w / 5)));
         nameText.setAttribute('font-weight', '700');
         nameText.setAttribute('pointer-events', 'none');
         nameText.setAttribute('style', '-webkit-user-select:none;user-select:none;');
@@ -1074,17 +1074,17 @@ function renderFloorPlan() {
             const capText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             capText.setAttribute('pointer-events', 'none');
             capText.setAttribute('x', x + w / 2);
-            capText.setAttribute('y', y + h / 2 + 10);
+            capText.setAttribute('y', y + h / 2 + 18);
             capText.setAttribute('text-anchor', 'middle');
             capText.setAttribute('dominant-baseline', 'middle');
-            capText.setAttribute('font-size', Math.min(10, Math.max(8, w / 12)));
+            capText.setAttribute('font-size', Math.min(20, Math.max(14, w / 6)));
 
             if (place.partial_occupancy) {
                 capText.setAttribute('fill', st === 'partial' ? '#d97706' : '#dc2626');
                 capText.setAttribute('font-weight', '600');
                 capText.textContent = `${place.partial_occupancy.occupied}/${place.partial_occupancy.capacity} занято`;
             } else if (isAmenityPlace(place)) {
-                capText.setAttribute('fill', '#e5e7eb');
+                capText.setAttribute('fill', '#334155');
                 capText.textContent = 'служебная зона';
             } else if (place.is_meeting_room) {
                 capText.setAttribute('fill', '#475569');
