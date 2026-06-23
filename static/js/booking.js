@@ -14,28 +14,40 @@ function roundToSlotMinutes(totalMinutes) {
 function setBookingTimeControlsEnabled(enabled) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const isHourly = tariffType === 'hourly';
+    if (!isHourly) return;
 
-    if (isHourly) {
-        const timePicker = document.getElementById('time-picker-row');
-        const timegrid = document.getElementById('timegrid-container');
-        const durationBtns = document.getElementById('duration-buttons-row');
-        const durationRow = document.getElementById('duration-row');
-        const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
-        if (timePicker) timePicker.style.display = enabled ? '' : 'none';
-        if (timegrid) timegrid.style.display = (enabled && !hideTimeline) ? 'block' : 'none';
-        if (durationBtns) durationBtns.style.display = (enabled && !hideTimeline) ? 'flex' : 'none';
-        if (durationRow) durationRow.style.display = enabled ? 'flex' : 'none';
-    }
+    showHourlyBookingTimeUI();
 
     ['start-hour', 'start-min', 'end-hour', 'end-min'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = !enabled;
+    });
+    document.querySelectorAll('.clock-time-btn').forEach(btn => {
+        btn.disabled = !enabled;
     });
     if (window.ClockTimePicker) ClockTimePicker.setEnabled(enabled);
 
     const bookBtn = document.getElementById('book-btn');
     const noTariff = document.getElementById('no-tariff-hint')?.style.display === 'block';
     if (bookBtn) bookBtn.disabled = !enabled || noTariff;
+}
+
+function showHourlyBookingTimeUI() {
+    const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
+    if (tariffType !== 'hourly') return;
+
+    const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
+    const timePicker = document.getElementById('time-picker-row');
+    const timegrid = document.getElementById('timegrid-container');
+    const durationBtns = document.getElementById('duration-buttons-row');
+    const durationRow = document.getElementById('duration-row');
+    const hourlyHint = document.getElementById('hourly-hint');
+
+    if (timePicker) timePicker.style.display = '';
+    if (timegrid && !hideTimeline) timegrid.style.display = 'block';
+    if (durationBtns && !hideTimeline) durationBtns.style.display = 'flex';
+    if (durationRow) durationRow.style.display = 'flex';
+    if (hourlyHint) hourlyHint.style.display = 'block';
 }
 
 function showScheduleStatus(message, type = 'info') {
@@ -119,9 +131,16 @@ async function loadTimegrid(placeId, date) {
             currentTimegrid = data.slots;
             window.currentBookingTimegrid = data.slots;
             selectedStartIndex = null;
-            if (timeline && !isMobile) {
-                timeline.innerHTML = '<div class="timeline-empty">На сегодня бронирование уже недоступно</div>';
+            if (typeof rebuildTimeSelects === 'function') {
+                rebuildTimeSelects(data.open_time, data.close_time);
             }
+            if (!isMobile) {
+                if (typeof updateTimegridCapacity === 'function') {
+                    updateTimegridCapacity(data);
+                }
+                renderTimegrid(data);
+            }
+            showHourlyBookingTimeUI();
             showScheduleStatus(
                 data.schedule_message || 'Бронирование недоступно в этот день',
                 'error',
@@ -131,6 +150,7 @@ async function loadTimegrid(placeId, date) {
         }
 
         hideScheduleStatus();
+        showHourlyBookingTimeUI();
         setBookingTimeControlsEnabled(true);
         currentTimegrid = data.slots;
         window.currentBookingTimegrid = data.slots;
@@ -187,7 +207,6 @@ function renderTimegrid(data) {
 
     if (!data.slots || data.slots.length === 0) {
         timeline.innerHTML = '<div class="timeline-empty">Нет доступных слотов на этот день</div>';
-        setBookingTimeControlsEnabled(false);
         return;
     }
 
@@ -203,7 +222,6 @@ function renderTimegrid(data) {
 
     if (!visibleSlots.length) {
         timeline.innerHTML = '<div class="timeline-empty">На сегодня бронирование уже недоступно</div>';
-        setBookingTimeControlsEnabled(false);
         return;
     }
 

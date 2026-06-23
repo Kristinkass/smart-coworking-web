@@ -550,9 +550,11 @@ function isStartTimeUnavailable(totalMinutes) {
 
     if (window.currentBookingTimegrid && window.currentBookingTimegrid.length) {
         const slot = timegridSlotAt(totalMinutes);
-        if (!slot) return true;
-        if (slot.is_past) return true;
-        if (slot.status === 'full' || slot.available <= 0) return true;
+        if (slot) {
+            if (slot.is_past) return true;
+            if (slot.status === 'full' || slot.available <= 0) return true;
+            return false;
+        }
     }
 
     return false;
@@ -601,7 +603,13 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
         SLOT_MINUTES.some(m => !isStartTimeUnavailable(h * 60 + m))
     );
 
-    if (!startHourList.length) {
+    const fallbackStartHours = hourList.filter(h => {
+        if (!isToday) return true;
+        return h * 60 + 45 >= nowRounded;
+    });
+    const effectiveStartHours = startHourList.length ? startHourList : fallbackStartHours;
+
+    if (!effectiveStartHours.length) {
         fillHourSelect(startH, []);
         fillHourSelect(endH, []);
         fillMinuteSelect(startM);
@@ -620,12 +628,12 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
         return;
     }
 
-    fillHourSelect(startH, startHourList);
+    fillHourSelect(startH, effectiveStartHours);
     fillMinuteSelect(startM);
     fillMinuteSelect(endM);
 
     let defaultStart = null;
-    for (const h of startHourList) {
+    for (const h of effectiveStartHours) {
         const minute = SLOT_MINUTES.find(m => !isStartTimeUnavailable(h * 60 + m));
         if (minute != null) {
             defaultStart = h * 60 + minute;
@@ -651,7 +659,7 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const defaultStartH = String(Math.floor(defaultStart / 60)).padStart(2, '0');
     const defaultEndH = String(Math.floor(defaultEnd / 60)).padStart(2, '0');
 
-    startH.value = pickHourValue(prevStart, defaultStartH, startHourList);
+    startH.value = pickHourValue(prevStart, defaultStartH, effectiveStartHours);
     startM.value = ['00', '15', '30', '45'].includes(prevStartM) ? prevStartM : defaultStartM;
     if (isStartTimeUnavailable(getStartTotalMinutes())) {
         setTimeFromTotal('start', defaultStart);
@@ -659,33 +667,37 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
 
     const endHourList = buildEndHourList(hourList, getStartTotalMinutes());
     if (!endHourList.length) {
-        fillHourSelect(endH, []);
-        if (window.ClockTimePicker) {
-            ClockTimePicker.setAvailableHours('start', startHourList);
-            ClockTimePicker.setAvailableHours('end', []);
-            ClockTimePicker.refresh();
+        const fallbackEndHours = effectiveStartHours.filter(h => h * 60 > getStartTotalMinutes());
+        if (fallbackEndHours.length) {
+            fillHourSelect(endH, fallbackEndHours);
+        } else {
+            fillHourSelect(endH, []);
+            if (typeof showScheduleStatus === 'function') {
+                showScheduleStatus('Нет доступного времени окончания', 'error');
+            }
+            if (typeof setBookingTimeControlsEnabled === 'function') {
+                setBookingTimeControlsEnabled(false);
+            }
+            return;
         }
-        if (typeof showScheduleStatus === 'function') {
-            showScheduleStatus('Нет доступного будущего времени для бронирования', 'error');
-        }
-        if (typeof setBookingTimeControlsEnabled === 'function') {
-            setBookingTimeControlsEnabled(false);
-        }
-        return;
+    } else {
+        fillHourSelect(endH, endHourList);
     }
 
-    fillHourSelect(endH, endHourList);
+    const endHoursForPicker = endHourList.length ? endHourList : Array.from(endH.options).map(o => parseInt(o.value, 10));
     if (window.ClockTimePicker) {
-        ClockTimePicker.setAvailableHours('start', startHourList);
-        ClockTimePicker.setAvailableHours('end', endHourList);
+        ClockTimePicker.setAvailableHours('start', effectiveStartHours);
+        ClockTimePicker.setAvailableHours('end', endHoursForPicker);
         ClockTimePicker.setDisabledHours('start', new Set());
         ClockTimePicker.setDisabledHours('end', new Set());
     }
 
-    endH.value = pickHourValue(prevEnd, defaultEndH, endHourList);
+    endH.value = pickHourValue(prevEnd, defaultEndH, endHoursForPicker);
     endM.value = ['00', '15', '30', '45'].includes(prevEndM) ? prevEndM : defaultEndM;
 
     ensureValidBookingTimeRange();
+    if (typeof showHourlyBookingTimeUI === 'function') showHourlyBookingTimeUI();
+    if (typeof setBookingTimeControlsEnabled === 'function') setBookingTimeControlsEnabled(true);
     if (window.ClockTimePicker) ClockTimePicker.refresh();
     if (typeof syncTimelineWithSelects === 'function') syncTimelineWithSelects();
 }
@@ -1446,9 +1458,12 @@ function onTariffChange() {
 
     if (timeSection) timeSection.style.display = (isHourly && !hideTimeline) ? 'block' : 'none';
     if (durationRow) durationRow.style.display = isHourly ? 'flex' : 'none';
-    if (timePickerRow) timePickerRow.style.display = isHourly ? 'block' : 'none';
+    if (timePickerRow) timePickerRow.style.display = isHourly ? '' : 'none';
     if (fixedHint) fixedHint.style.display = isHourly ? 'none' : 'block';
     if (hourlyHint) hourlyHint.style.display = isHourly ? 'block' : 'none';
+    if (isHourly && typeof showHourlyBookingTimeUI === 'function') {
+        showHourlyBookingTimeUI();
+    }
 
     if (!isHourly && window.currentSchedule) {
         const [openH, openM] = window.currentSchedule.open.split(':');
@@ -1573,6 +1588,9 @@ async function selectPlaceForBooking(place) {
     initTariffsForPlace(place);
 
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
+    if (tariffType === 'hourly' && typeof showHourlyBookingTimeUI === 'function') {
+        showHourlyBookingTimeUI();
+    }
     const payCb = document.getElementById('pay-without-subscription');
     if (payCb) payCb.checked = false;
     schedulePriceDisplayUpdate();
