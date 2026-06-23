@@ -248,15 +248,9 @@
   }
 
   function deskOverlapsOthers(desk, x, y, w, h, rotation = 0) {
-    const parent = desk?.container_code || null;
     return floorPlaces().some(p => {
       if (p.kind !== 'desk' || p.code === desk.code) return false;
       if (p.width == null || p.height == null) return false;
-      if (parent) {
-        if (p.container_code !== parent) return false;
-      } else if (p.container_code) {
-        return false;
-      }
       return desksEffectiveOverlap(
         x, y, w, h, rotation,
         p.x, p.y, p.width, p.height, p.rotation || 0,
@@ -354,27 +348,27 @@
     return { ok: true, x: Math.round(moved.x), y: Math.round(moved.y) };
   }
 
-  function resolveDeskDragPosition(parent, nx, ny, w, h, floor, desk, lastX, lastY) {
+  function resolveDeskDragPosition(nx, ny, w, h, floor, desk, lastX, lastY) {
     const rot = desk?.rotation || 0;
-    const tryAt = (x, y, par) => {
-      if (!par) return validateDeskInCorridor(x, y, w, h, floor, desk, rot);
-      if (par && !allowsDesks(par)) {
-        const effAt = effectiveRectForRotation(x, y, w, h, rot);
-        const cx = effAt.x + effAt.w / 2, cy = effAt.y + effAt.h / 2;
-        const newPar = findDeskParentAt(cx, cy, w, h);
-        if (newPar && allowsDesks(newPar)) {
-          return validateDeskInParent(newPar, x, y, w, h, floor, desk, rot);
-        }
-        return { ok: false, error: deskBlockedMessage(par) + ' Переместите в зону столов или коридор.' };
+    const tryAt = (x, y) => {
+      const effAt = effectiveRectForRotation(x, y, w, h, rot);
+      const cx = effAt.x + effAt.w / 2, cy = effAt.y + effAt.h / 2;
+      const blocked = findBlockedDeskContainerAt(cx, cy);
+      if (blocked) {
+        return { ok: false, error: deskBlockedMessage(blocked) };
       }
-      return validateDeskInParent(par, x, y, w, h, floor, desk, rot);
+      const targetParent = findDeskParentAt(cx, cy, w, h);
+      if (targetParent && allowsDesks(targetParent)) {
+        return validateDeskInParent(targetParent, x, y, w, h, floor, desk, rot);
+      }
+      return validateDeskInCorridor(x, y, w, h, floor, desk, rot);
     };
 
-    let check = tryAt(nx, ny, parent);
+    let check = tryAt(nx, ny);
     if (check.ok) return check;
 
-    const tryX = tryAt(nx, lastY, parent);
-    const tryY = tryAt(lastX, ny, parent);
+    const tryX = tryAt(nx, lastY);
+    const tryY = tryAt(lastX, ny);
     if (tryX.ok && tryY.ok) {
       const dX = Math.abs(nx - tryX.x) + Math.abs(ny - tryX.y);
       const dY = Math.abs(nx - tryY.x) + Math.abs(ny - tryY.y);
@@ -395,7 +389,7 @@
         [nx - d, ny], [nx + d, ny], [nx, ny - d], [nx, ny + d],
         [lastX, ny - d], [lastX, ny + d], [nx - d, lastY], [nx + d, lastY],
         [nx - d, ny - d], [nx + d, ny - d], [nx - d, ny + d], [nx + d, ny + d],
-      ].forEach(([x, y]) => remember(tryAt(x, y, parent)));
+      ].forEach(([x, y]) => remember(tryAt(x, y)));
       if (best && best.dist <= d * 1.5) return best;
     }
     if (best) return best;
@@ -1628,7 +1622,6 @@
     const ox = p.x, oy = p.y;
     const start = svgPoint(evt);
     const dragG = evt.target.closest('g');
-    let parent = deskParent(p);
     let lastX = ox, lastY = oy;
     let moved = false;
     function mv(e) {
@@ -1637,7 +1630,7 @@
       const nx = ox + cur.x - start.x, ny = oy + cur.y - start.y;
       if (p.width == null || p.height == null) return;
       const check = resolveDeskDragPosition(
-        parent, nx, ny, p.width, p.height, currentFloor, p, lastX, lastY,
+        nx, ny, p.width, p.height, currentFloor, p, lastX, lastY,
       );
       if (!check.ok) {
         toastLimited('desk-drag-limit', check.error || 'Стол нельзя поставить в это место', 'warning');
@@ -1647,7 +1640,6 @@
       p.y = check.y;
       lastX = p.x;
       lastY = p.y;
-      parent = deskParent(p);
       if (dragG) {
         const rect = dragG.querySelector('rect');
         const lbl = dragG.querySelector('text');

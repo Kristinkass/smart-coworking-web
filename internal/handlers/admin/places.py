@@ -44,6 +44,31 @@ def _desk_center_in_rect(fx, fy, w, h, rx, ry, rw, rh):
     return rx <= cx <= rx + rw and ry <= cy <= ry + rh
 
 
+def _desk_target_container_code(layout_places, fx, fy, w, h, floor_num):
+    """Контейнер под центром стола в новой позиции или ошибка для служебной зоны."""
+    matches = []
+    for lp in layout_places:
+        if lp.get('kind') not in ('room', 'space'):
+            continue
+        if int(lp.get('floor', 1)) != int(floor_num):
+            continue
+        if not _desk_center_in_rect(
+            fx, fy, w, h, lp['x'], lp['y'], lp['width'], lp['height'],
+        ):
+            continue
+        matches.append((lp['width'] * lp['height'], lp))
+
+    if not matches:
+        return None, None
+
+    matches.sort(key=lambda item: item[0])
+    target = matches[0][1]
+    container = PlaceRepository.sync_by_code(target.get('code'))
+    if container and not container.allows_child_desks():
+        return None, _desk_blocked_message(container)
+    return target.get('code') if container else None, None
+
+
 def _desk_effective_in_parent(fx, fy, w, h, rotation, rx, ry, rw, rh, inset=0):
     """Проверить, что повёрнутый стол целиком внутри родительской локации."""
     from internal.layout.geometry import effective_rect_for_rotation
@@ -602,6 +627,12 @@ def register_admin_place_routes(app):
             wall_bound_enclosed = False
 
             if place.kind == 'desk':
+                target_container_code, target_err = _desk_target_container_code(
+                    layout_places, fx, fy, w, h, floor_num,
+                )
+                if target_err:
+                    return jsonify({'success': False, 'error': target_err}), 400
+                container_code = target_container_code
                 parent_meta = {}
                 if container_code:
                     parent_meta = models.get_layout_place_meta(container_code) or {}
@@ -642,24 +673,6 @@ def register_admin_place_routes(app):
                 if overlap_err:
                     return jsonify({'success': False, 'error': overlap_err}), 400
 
-            if place.kind == 'desk' and not meta.get('visual_only'):
-                cx, cy = fx + w / 2, fy + h / 2
-                for lp in LayoutRepository.load().get('places', []):
-                    if lp.get('kind') not in ('room', 'space'):
-                        continue
-                    if int(lp.get('floor', 1)) != floor_num:
-                        continue
-                    if not _desk_center_in_rect(
-                        fx, fy, w, h, lp['x'], lp['y'], lp['width'], lp['height'],
-                    ):
-                        continue
-                    container = PlaceRepository.get_by_code(lp['code'])
-                    if container and not container.allows_child_desks():
-                        return jsonify({
-                            'success': False,
-                            'error': _desk_blocked_message(container),
-                        }), 400
-
             ok = LayoutRepository.save_place_geometry(place.code, fx, fy, floor=floor)
             if not ok:
                 return jsonify({'success': False, 'error': 'Не удалось сохранить координаты на карте'}), 500
@@ -676,7 +689,8 @@ def register_admin_place_routes(app):
             return jsonify({
                 'success': True,
                 'message': f'Место "{place.name}" перемещено (x={fx:.1f}, y={fy:.1f}, floor={floor})',
-                'code': code, 'x': fx, 'y': fy, 'floor': floor
+                'code': code, 'x': fx, 'y': fy, 'floor': floor,
+                'container_code': place.container_code,
             })
         except Exception as e:
             db.session.rollback()

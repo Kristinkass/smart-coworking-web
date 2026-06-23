@@ -117,6 +117,8 @@ async function loadTimegrid(placeId, date) {
 
         hideScheduleStatus();
         setBookingTimeControlsEnabled(true);
+        currentTimegrid = data.slots;
+        window.currentBookingTimegrid = data.slots;
 
         if (typeof rebuildTimeSelects === 'function') {
             rebuildTimeSelects(data.open_time, data.close_time);
@@ -127,8 +129,6 @@ async function loadTimegrid(placeId, date) {
             }
             renderTimegrid(data);
         } else {
-            currentTimegrid = data.slots;
-            window.currentBookingTimegrid = data.slots;
             selectedStartIndex = null;
             if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
         }

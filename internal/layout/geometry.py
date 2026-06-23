@@ -338,9 +338,6 @@ def find_place_overlap(
         if kind == 'desk':
             if item_kind != 'desk':
                 continue
-            if container_code:
-                if item.get('container_code') != container_code:
-                    continue
         else:
             continue
         ix, iy = item.get('x'), item.get('y')

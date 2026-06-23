@@ -5,7 +5,7 @@
 
 (function () {
     let activeField = null;
-    let availableHours = [];
+    let availableHours = { start: [], end: [] };
     let disabledStartHours = new Set();
     let disabledEndHours = new Set();
     let disabledStartMinutes = new Set();
@@ -55,6 +55,10 @@
         return ['00', '15', '30', '45'];
     }
 
+    function hoursForField(field) {
+        return availableHours[field] || [];
+    }
+
     function renderPickerHeader() {
         const title = $('clock-modal-title');
         if (!title) return;
@@ -81,7 +85,7 @@
         renderPickerHeader();
 
         const isMinuteStep = pickerStep === 'minute';
-        const values = isMinuteStep ? minuteOptions() : availableHours;
+        const values = isMinuteStep ? minuteOptions() : hoursForField(activeField);
         const disabled = isMinuteStep
             ? (activeField === 'start' ? disabledStartMinutes : disabledEndMinutes)
             : (activeField === 'start' ? disabledStartHours : disabledEndHours);
@@ -150,7 +154,7 @@
     function openClockPicker(field) {
         activeField = field;
         const vals = getFieldValues(field);
-        selectedHour = parseInt(vals.hour, 10) || availableHours[0] || 10;
+        selectedHour = parseInt(vals.hour, 10) || hoursForField(field)[0] || 10;
         selectedMinute = vals.minute || '00';
         pickerStep = 'hour';
         const modal = $('clock-picker-modal');
@@ -165,8 +169,13 @@
         activeField = null;
     }
 
-    function setAvailableHours(hours) {
-        availableHours = hours.slice();
+    function setAvailableHours(field, hours) {
+        if (Array.isArray(field)) {
+            availableHours.start = field.slice();
+            availableHours.end = field.slice();
+            return;
+        }
+        availableHours[field] = Array.isArray(hours) ? hours.slice() : [];
     }
 
     function setDisabledHours(field, hoursSet) {

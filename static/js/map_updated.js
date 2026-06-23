@@ -356,7 +356,9 @@ function fillHourSelect(selectEl, hours) {
 function setDisabledOptionValues(selectEl, disabledValues) {
     if (!selectEl) return;
     Array.from(selectEl.options).forEach(opt => {
-        opt.disabled = disabledValues.has(opt.value);
+        const disabled = disabledValues.has(opt.value);
+        opt.disabled = disabled;
+        opt.hidden = disabled;
     });
 }
 
@@ -461,6 +463,7 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
     const todayVal = document.getElementById('booking-date')?.value;
     const isToday = todayVal === now.toISOString().split('T')[0];
     const nowTotal = now.getHours() * 60 + now.getMinutes();
+    const nowRounded = roundUpTo15(nowTotal);
 
     const prevStart = startH.value;
     const prevEnd = endH.value;
@@ -469,41 +472,83 @@ function rebuildTimeSelects(openTimeStr, closeTimeStr) {
 
     const hourList = [];
     for (let h = openHour; h <= closeHour; h++) hourList.push(h);
-    fillHourSelect(startH, hourList);
-    fillHourSelect(endH, hourList);
+
+    const startHourList = hourList.filter(h =>
+        SLOT_MINUTES.some(m => !isStartTimeUnavailable(h * 60 + m))
+    );
+    const endHourList = hourList.filter(h =>
+        SLOT_MINUTES.some(m => {
+            const total = h * 60 + m;
+            if (total > hours.close) return false;
+            if (isToday && total < nowRounded) return false;
+            return total > hours.open;
+        })
+    );
+
+    if (!startHourList.length || !endHourList.length) {
+        fillHourSelect(startH, []);
+        fillHourSelect(endH, []);
+        fillMinuteSelect(startM);
+        fillMinuteSelect(endM);
+        if (window.ClockTimePicker) {
+            ClockTimePicker.setAvailableHours('start', []);
+            ClockTimePicker.setAvailableHours('end', []);
+            ClockTimePicker.refresh();
+        }
+        if (typeof showScheduleStatus === 'function') {
+            showScheduleStatus('Нет доступного будущего времени для бронирования', 'error');
+        }
+        if (typeof setBookingTimeControlsEnabled === 'function') {
+            setBookingTimeControlsEnabled(false);
+        }
+        return;
+    }
+
+    fillHourSelect(startH, startHourList);
+    fillHourSelect(endH, endHourList);
     fillMinuteSelect(startM);
     fillMinuteSelect(endM);
-    if (window.ClockTimePicker) ClockTimePicker.setAvailableHours(hourList);
+    if (window.ClockTimePicker) {
+        ClockTimePicker.setAvailableHours('start', startHourList);
+        ClockTimePicker.setAvailableHours('end', endHourList);
+    }
 
-    const disabledStart = new Set();
-    hourList.forEach(h => {
-        const allMinutesDisabled = SLOT_MINUTES.every(m => isStartTimeUnavailable(h * 60 + m));
-        if (allMinutesDisabled || (isToday && h * 60 + 45 < nowTotal)) disabledStart.add(h);
-    });
-    setDisabledOptionValues(startH, new Set(Array.from(disabledStart).map(h => String(h).padStart(2, '0'))));
-    if (window.ClockTimePicker) ClockTimePicker.setDisabledHours('start', disabledStart);
+    if (window.ClockTimePicker) {
+        ClockTimePicker.setDisabledHours('start', new Set());
+        ClockTimePicker.setDisabledHours('end', new Set());
+    }
 
-    let defaultStart = roundUpTo15(isToday ? Math.max(openHour * 60, nowTotal) : openHour * 60 + 60);
+    let defaultStart = null;
+    for (const h of startHourList) {
+        const minute = SLOT_MINUTES.find(m => !isStartTimeUnavailable(h * 60 + m));
+        if (minute != null) {
+            defaultStart = h * 60 + minute;
+            break;
+        }
+    }
+    if (defaultStart == null) {
+        defaultStart = roundUpTo15(isToday ? Math.max(openHour * 60, nowTotal) : openHour * 60 + 60);
+    }
     if (defaultStart >= hours.close) defaultStart = Math.max(openHour * 60, hours.close - 60);
     const defaultEnd = Math.min(defaultStart + 60, hours.close);
 
     const defaultStartM = String(defaultStart % 60).padStart(2, '0');
     const defaultEndM = String(defaultEnd % 60).padStart(2, '0');
 
-    const pickHourValue = (preferred, fallback, disabledSet) => {
+    const pickHourValue = (preferred, fallback, sourceHours) => {
         const p = parseInt(preferred, 10);
-        if (preferred && hourList.includes(p) && !disabledSet.has(p)) return preferred;
-        const enabled = hourList.find(h => !disabledSet.has(h));
+        if (preferred && sourceHours.includes(p)) return preferred;
+        const enabled = sourceHours[0];
         return enabled != null ? String(enabled).padStart(2, '0') : fallback;
     };
 
     const defaultStartH = String(Math.floor(defaultStart / 60)).padStart(2, '0');
     const defaultEndH = String(Math.floor(defaultEnd / 60)).padStart(2, '0');
 
-    startH.value = pickHourValue(prevStart, defaultStartH, disabledStart);
+    startH.value = pickHourValue(prevStart, defaultStartH, startHourList);
     startM.value = ['00', '15', '30', '45'].includes(prevStartM) ? prevStartM : defaultStartM;
 
-    endH.value = pickHourValue(prevEnd, defaultEndH, new Set());
+    endH.value = pickHourValue(prevEnd, defaultEndH, endHourList);
     endM.value = ['00', '15', '30', '45'].includes(prevEndM) ? prevEndM : defaultEndM;
 
     filterPastMinuteOptions();
@@ -1393,8 +1438,8 @@ function applyInitialMapFocus(params) {
 }
 
 function filterPastHours(dateVal) {
-    const openTime = window.currentSchedule?.open_time;
-    const closeTime = window.currentSchedule?.close_time;
+    const openTime = window.currentSchedule?.open;
+    const closeTime = window.currentSchedule?.close;
     if (typeof rebuildTimeSelects === 'function' && openTime && closeTime) {
         rebuildTimeSelects(openTime, closeTime);
         return;
