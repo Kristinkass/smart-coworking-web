@@ -267,6 +267,7 @@ def register_place_routes(app):
                     'show_list_price': show_list_price,
                     'active': p.get('active', True),
                     'maintenance': db_place.is_on_maintenance() if db_place else False,
+                    'own_maintenance': db_place.maintenance if db_place else False,
                     'status': live['status'],
                     'current_occupancy': live.get('current_occupancy', 0),
                     'occupied_until': live.get('occupied_until'),

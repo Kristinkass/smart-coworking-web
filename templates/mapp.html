@@ -674,9 +674,10 @@
                     <span style="display:block; color:#94a3b8; font-size:12px; margin-bottom:4px;">Выбранное место</span>
                     <strong id="edit-place-name">-</strong>
                 </div>
-                <div class="maintenance-toggle">
+                <div class="maintenance-toggle" id="maintenance-toggle-row">
                     <div class="toggle-label">
                         <strong>На обслуживании</strong>
+                        <small id="maintenance-inherited-hint" style="display:none; color:#fbbf24;"></small>
                         <small>Место станет серым и недоступным для бронирования</small>
                     </div>
                     <label class="toggle-switch">
@@ -925,7 +926,7 @@
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=21"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=22"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

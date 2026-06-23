@@ -143,7 +143,9 @@ function isOrphanDesk(place) {
 }
 
 function showDeskOnMap(place) {
-    return isDesk(place) && (activeSpace || isOrphanDesk(place));
+    if (!isDesk(place)) return false;
+    if (activeSpace || isOrphanDesk(place)) return true;
+    return editMode && IS_STAFF;
 }
 
 function isAmenityPlace(place) {
@@ -1009,8 +1011,8 @@ function renderFloorPlan() {
     const sortedPlaces = [...viewPlaces].sort((a, b) => {
         const aDesk = isDesk(a) ? 1 : 0;
         const bDesk = isDesk(b) ? 1 : 0;
-        // В режиме обслуживания зоны/помещения поверх столов — проще выбрать контейнер целиком
-        return editMode ? bDesk - aDesk : aDesk - bDesk;
+        // Столы поверх зон — в режиме обслуживания можно выбрать и зону, и отдельный стол
+        return aDesk - bDesk;
     });
     const fragment = document.createDocumentFragment();
     sortedPlaces.forEach(place => {
@@ -1220,6 +1222,28 @@ function updateEditSelectionHighlight() {
     });
 }
 
+function scrollToMaintenancePanel() {
+    const target = document.getElementById('maintenance-toggle-row')
+        || document.getElementById('maintenance-panel');
+    if (!target) return;
+    requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+}
+
+function updateMaintenanceInheritedHint(place) {
+    const hint = document.getElementById('maintenance-inherited-hint');
+    if (!hint) return;
+    const ownMaint = place.own_maintenance ?? place.maintenance;
+    if (place.maintenance && !ownMaint) {
+        hint.style.display = 'block';
+        hint.textContent = 'Серым отображается из‑за обслуживания зоны. Переключатель ниже — только для этого места.';
+    } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+    }
+}
+
 function selectPlaceForEdit(place) {
     if (!place?.id) {
         showAlert('Для этого объекта нельзя включить обслуживание (нет записи в базе)', 'warning');
@@ -1227,10 +1251,13 @@ function selectPlaceForEdit(place) {
     }
     editSelectedPlace = place;
     document.getElementById('edit-place-name').textContent = placeLabelWithCode(place);
-    document.getElementById('maintenance-toggle-input').checked = !!place.maintenance;
+    const ownMaint = place.own_maintenance ?? place.maintenance;
+    document.getElementById('maintenance-toggle-input').checked = !!ownMaint;
     document.getElementById('maintenance-panel').classList.add('active');
+    updateMaintenanceInheritedHint(place);
     updateEditSelectionHighlight();
     updateManagerStatusList();
+    scrollToMaintenancePanel();
 }
 
 function toggleEditMode() {
