@@ -248,6 +248,16 @@
       .reduce((s, d) => s + (d.capacity || d.category?.capacity || 1), 0);
   }
 
+  function desksInLocation(space) {
+    if (!space?.code) return [];
+    return places.filter(p => p.kind === 'desk' && p.container_code === space.code);
+  }
+
+  function placeTitle(place) {
+    if (!place) return '–';
+    return place.name || place.category?.name || place.code || 'Без названия';
+  }
+
   function deskOverlapsOthers(desk, x, y, w, h, rotation = 0) {
     return floorPlaces().some(p => {
       if (p.kind !== 'desk' || p.code === desk.code) return false;
@@ -760,7 +770,7 @@
         $('prop-title').textContent = 'Новая локация (черновик)';
         $('prop-code-hint').textContent = 'Зафиксируйте или уберите черновик кнопкой ниже';
       } else if (p) {
-        $('prop-title').textContent = p.name + ' (' + p.code + ')';
+        $('prop-title').textContent = placeTitle(p) + ' (' + p.code + ')';
         $('prop-code-hint').textContent = 'Код: ' + p.code;
       }
       $('prop-size-m').value = wM + '×' + hM + ' м';
@@ -785,7 +795,7 @@
     }
 
     if (isDesk && p) {
-      $('prop-title').textContent = p.name + ' (' + p.code + ')';
+      $('prop-title').textContent = placeTitle(p) + ' (' + p.code + ')';
       $('prop-code-hint').textContent = p.container_code
         ? 'Стол ' + p.code + ' · помещение ' + p.container_code
         : 'Стол ' + p.code + ' · коридор · Ctrl+клик для выделения';
@@ -878,11 +888,23 @@
     const metrics = $('helper-metrics');
     const options = $('helper-options');
     if (!selection || selection.type !== 'location') {
+      variantsRequestSeq++;
       helper.style.display = 'none';
       return;
     }
     helper.style.display = 'block';
     $('layout-helper-title').textContent = 'Варианты размещения';
+    const initialZone = selectedZone();
+    const initialFlags = zoneKindFlags(initialZone);
+    if (!selection.draft && selection.place && initialFlags.desk && desksInLocation(selection.place).length > 0) {
+      variantsRequestSeq++;
+      variants = [];
+      variantMode = 'desks';
+      const count = desksInLocation(selection.place).length;
+      metrics.innerHTML = `${initialFlags.label} · уже размещено столов: ${count}`;
+      options.innerHTML = '<div class="metric">Варианты предлагаются только для пустых помещений. Чтобы применить новую раскладку, сначала очистите или удалите текущие столы.</div>';
+      return;
+    }
     const requestId = ++variantsRequestSeq;
     const selectionKey = [
       selection.room?.room_key || '',
@@ -1123,7 +1145,7 @@
             r.place && (r.place.code === p.code || r.place.code === zRes.old_code)
           );
           if (wr) wr.place = p;
-          $('prop-title').textContent = p.name + ' (' + p.code + ')';
+          $('prop-title').textContent = placeTitle(p) + ' (' + p.code + ')';
           $('prop-code-hint').textContent = 'Код: ' + p.code;
         }
         if (zRes.renamed) toast(zRes.message, 'success');
@@ -1285,7 +1307,7 @@
       label.setAttribute('fill', '#475569');
       label.setAttribute('pointer-events', 'none');
       label.textContent = room.registered
-        ? (room.place.name + ' (' + room.place.code + ')')
+        ? (placeTitle(room.place) + ' (' + room.place.code + ')')
         : 'Комната · не зарегистрирована';
       layer.appendChild(label);
     });
@@ -1330,7 +1352,7 @@
       lbl.setAttribute('pointer-events', 'none');
       lbl.setAttribute('class', 'map-place-label');
       lbl.setAttribute('style', 'user-select:none;-webkit-user-select:none;pointer-events:none;');
-      lbl.textContent = (p.name || p.code) + ' (' + p.code + ')';
+      lbl.textContent = placeTitle(p) + ' (' + p.code + ')';
       g.appendChild(lbl);
       layer.appendChild(g);
     });
@@ -1475,7 +1497,7 @@
     floorPlaces().filter(p => p.kind === 'space' || p.kind === 'room').forEach(p => {
       items.push({
         key: 'place-' + p.code,
-        title: p.name + ' (' + p.code + ')',
+        title: placeTitle(p) + ' (' + p.code + ')',
         sub: placeZoneSub(p),
         onClick: () => selectSpace(p),
       });

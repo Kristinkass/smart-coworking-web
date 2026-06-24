@@ -828,7 +828,7 @@ def _variant_quality(placed, room_w, room_h, margin):
 
 def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
                        room=None, doors=None, walls=None):
-    """Варианты размещения строго от категорий столов, без дублей стратегий."""
+    """Быстрые разные варианты из существующих категорий столов."""
     abs_room = room if room else {
         'x': 0, 'y': 0, 'width': room_w, 'height': room_h, 'floor': 1,
     }
@@ -838,44 +838,55 @@ def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
 
     w, h = abs_room['width'], abs_room['height']
     variants = []
-    seen_categories = set()
+    placed_variants = []
+    seen = set()
     cap_map = {c['id']: int(c.get('capacity', 1)) for c in cats}
     base_seed = int(w * 997 + h * 13 + len(cats) * 31)
+    strategy_runs = [
+        ('corner_first', 0, 45),
+        ('wall_ring', 0, 50),
+        ('center_island', 12, 45),
+        ('mixed_compact', 8, 45),
+        ('max_capacity', 8, 40),
+        ('sparse_comfort', 18, 60),
+        ('corner_first', 8, 55),
+        ('mixed_compact', 0, 50),
+        ('center_island', 0, 55),
+        ('max_capacity', 0, 45),
+    ]
 
-    for attempt, cat in enumerate(cats):
-        cat_key = (
-            int(cat.get('id') or 0),
-            int(cat.get('tw') or 0),
-            int(cat.get('th') or 0),
-            int(cat.get('capacity') or 1),
-        )
-        if cat_key in seen_categories:
-            continue
-        seen_categories.add(cat_key)
+    for attempt, (strategy, wall_margin, desk_gap) in enumerate(strategy_runs):
         seed = base_seed + attempt * 1009
         trial = pack_room_greedy_random(
-            w, h, [cat], DESK_GAP_PX, WALL_CLEARANCE_PX, seed,
-            strategy='max_capacity',
+            w, h, cats, desk_gap, wall_margin, seed, strategy=strategy,
         )
         if not trial:
             continue
+        sig = _layout_signature(trial, grid=12)
+        if sig in seen:
+            continue
+        if any(_layout_distance(trial, other) < 0.35 for other in placed_variants):
+            continue
+        seen.add(sig)
+        placed_variants.append([dict(p) for p in trial])
 
         mix_desc, total_cap = _mix_description(trial, cats)
         for p in trial:
             p['capacity'] = cap_map.get(p['category_id'], 1)
 
+        n = len(variants) + 1
         variants.append(_variant_from_positions(
             abs_room, trial,
-            title=f'{cat.get("name", "Стол")} · {len(trial)} шт.',
+            title=f'Вариант {n} · {len(trial)} столов',
             description=f'{total_cap} мест · {mix_desc}',
             extra={
-                'mixed': False,
-                'strategy': 'category',
-                'gap': DESK_GAP_PX,
-                'margin': WALL_CLEARANCE_PX,
+                'mixed': _count_mix_types(trial) >= 2,
+                'strategy': strategy,
+                'gap': desk_gap,
+                'margin': wall_margin,
                 'category_id': trial[0].get('category_id'),
                 'capacity_total': total_cap,
-                'quality_score': _variant_quality(trial, w, h, WALL_CLEARANCE_PX),
+                'quality_score': _variant_quality(trial, w, h, wall_margin),
                 'mix_breakdown': [
                     {'category_id': cid, 'count': cnt}
                     for cid, cnt in Counter(p['category_id'] for p in trial).most_common()
@@ -883,39 +894,13 @@ def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
             },
         ))
 
-    if len(cats) > 1:
-        mixed_trial = pack_room_greedy_random(
-            w, h, cats, DESK_GAP_PX, WALL_CLEARANCE_PX, base_seed + 9001,
-            strategy='mixed_compact',
-        )
-        if mixed_trial and _count_mix_types(mixed_trial) >= 2:
-            mix_desc, total_cap = _mix_description(mixed_trial, cats)
-            for p in mixed_trial:
-                p['capacity'] = cap_map.get(p['category_id'], 1)
-            variants.append(_variant_from_positions(
-                abs_room, mixed_trial,
-                title=f'Смешанный вариант · {len(mixed_trial)} столов',
-                description=f'{total_cap} мест · {mix_desc}',
-                extra={
-                    'mixed': True,
-                    'strategy': 'mixed_categories',
-                    'gap': DESK_GAP_PX,
-                    'margin': WALL_CLEARANCE_PX,
-                    'category_id': mixed_trial[0].get('category_id'),
-                    'capacity_total': total_cap,
-                    'quality_score': _variant_quality(mixed_trial, w, h, WALL_CLEARANCE_PX),
-                    'mix_breakdown': [
-                        {'category_id': cid, 'count': cnt}
-                        for cid, cnt in Counter(p['category_id'] for p in mixed_trial).most_common()
-                    ],
-                },
-            ))
-
     variants.sort(key=lambda v: (
         -v.get('capacity_total', 0),
         -v.get('quality_score', 0),
         -v.get('count', 0),
     ))
+    for i, v in enumerate(variants[:8], 1):
+        v['title'] = f'Вариант {i} · {v.get("count", 0)} столов'
     return variants[:8]
 
 
