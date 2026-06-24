@@ -1425,6 +1425,56 @@ body.nav-menu-open {
     display: block;
 }
 
+.staff-feedback-alert {
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    background: #f4f7f0;
+    border: 1px solid #c5d4b8;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 12px;
+}
+
+.staff-feedback-alert-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.staff-feedback-alert strong {
+    display: block;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.staff-feedback-alert p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.hub-card-with-badge {
+    position: relative;
+}
+
+.hub-card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #c45c4a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 22px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(47, 52, 40, 0.2);
+}
+
 .notify-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);

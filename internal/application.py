@@ -16,6 +16,7 @@ from internal.handlers import register_all_handlers
 from internal.models import User, db, init_db
 from internal.utils.formatters import (
     format_booking_location,
+    format_booking_tariff_label,
     format_duration,
     format_duration_mins,
     format_money,
@@ -64,6 +65,7 @@ def create_app(config_class=Config):
             'format_duration': format_duration,
             'format_duration_mins': format_duration_mins,
             'format_booking_location': format_booking_location,
+            'format_booking_tariff_label': format_booking_tariff_label,
             'format_place_code': format_place_code,
             'format_place_container': format_place_container,
             'format_place_full_code': format_place_full_code,

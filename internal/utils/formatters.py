@@ -191,6 +191,20 @@ def get_tariff_type_label(tariff_type):
     return labels.get(tariff_type, tariff_type or '-')
 
 
+def format_booking_tariff_label(booking):
+    """Подпись тарифа или абонемента для списков и истории."""
+    if not booking:
+        return '–'
+    if booking.subscription_id:
+        if booking.subscription:
+            return f'Абонемент: {booking.subscription.name}'
+        return 'Абонемент'
+    label = get_tariff_type_label(booking.tariff_type)
+    if booking.tariff_type in ('hourly', 'weekly', 'monthly'):
+        return f'{label} тариф'
+    return label
+
+
 REPORT_SECTIONS = [
     {'key': 'hourly', 'title': 'Почасовые бронирования', 'mode': 'time', 'value_label': 'Длительность'},
     {'key': 'subscription', 'title': 'Бронирования по абонементу', 'mode': 'subscription', 'value_label': ''},

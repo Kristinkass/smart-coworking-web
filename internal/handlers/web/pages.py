@@ -3,6 +3,7 @@ from datetime import date, datetime, time, timedelta
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
 
 from internal.handlers.deps import Booking, Place, User, db, models
 from internal.utils.formatters import (
@@ -73,7 +74,9 @@ def register_pages_routes(app):
             date_end = today
 
         # Активные бронирования (всегда показываем активные отдельно)
-        active_bookings = models.Booking.query.filter_by(
+        active_bookings = models.Booking.query.options(
+            joinedload(models.Booking.subscription),
+        ).filter_by(
             user_id=current_user.id,
             status='active'
         ).order_by(models.Booking.booking_date, models.Booking.start_time).all()
@@ -100,6 +103,7 @@ def register_pages_routes(app):
             history_page = history_pages
         history_bookings = (
             history_query
+            .options(joinedload(models.Booking.subscription))
             .order_by(models.Booking.created_at.desc())
             .offset((history_page - 1) * history_per_page)
             .limit(history_per_page)

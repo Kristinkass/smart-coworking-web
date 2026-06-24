@@ -24,7 +24,8 @@
       <i class="fas fa-users"></i><span>Клиенты</span>
       <small>Список клиентов и быстрая регистрация</small>
     </a>
-    <a href="{{ url_for('admin_notifications_page') }}" class="module-card">
+    <a href="{{ url_for('admin_notifications_page') }}" class="module-card hub-card-with-badge">
+      <span class="hub-card-badge" data-staff-feedback-badge hidden></span>
       <i class="fas fa-bell"></i><span>Уведомления и обратная связь</span>
       <small>Рассылки, ответы клиентам, архив обращений</small>
     </a>
@@ -42,4 +43,5 @@
   </div>
   <div class="module-note">Клиент бронирует на карте. Менеджер может оформить бронь за клиента.</div>
 </div>
+<script src="{{ url_for('static', filename='js/staff-feedback-indicators.js') }}"></script>
 {% endblock %}

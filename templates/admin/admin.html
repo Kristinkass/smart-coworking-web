@@ -109,9 +109,10 @@
                 <i class="fas fa-users" style="color:#6b8f9e;"></i>
                 <span>Пользователи</span>
             </a>
-            <a href="{{ url_for('admin_notifications_page') }}" class="action-card" style="border-left: 5px solid #6b8f9e;">
+            <a href="{{ url_for('admin_notifications_page') }}" class="action-card hub-card-with-badge" style="border-left: 5px solid #6b8f9e;">
+                <span class="hub-card-badge" data-staff-feedback-badge hidden></span>
                 <i class="fas fa-bell" style="color:#6b8f9e;"></i>
-                <span>Уведомления</span>
+                <span>Уведомления и обращения</span>
             </a>
         </div>
     </div>
@@ -516,6 +517,7 @@
 }
 </style>
 
+<script src="{{ url_for('static', filename='js/staff-feedback-indicators.js') }}"></script>
 <script>
 async function cancelAdminBooking(event) {
     event.preventDefault();

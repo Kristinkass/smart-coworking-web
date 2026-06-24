@@ -1021,6 +1021,7 @@
                                     {% endif %}
                                     <span><i class="fas fa-map-marker-alt"></i> {{ booking.location_label }}</span>
                                     <span><i class="fas fa-tag"></i> {{ get_type_name(booking.place.type) if booking.place else '' }}</span>
+                                    <span><i class="fas fa-receipt"></i> {{ format_booking_tariff_label(booking) }}</span>
                                 </div>
                             </div>
 
@@ -1095,6 +1096,7 @@
                                     <th>Место</th>
                                     <th>Дата</th>
                                     <th>Время</th>
+                                    <th>Тариф</th>
                                     <th>Стоимость</th>
                                     <th>Статус</th>
                                     <th>Оценка</th>
@@ -1121,6 +1123,9 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
+                                    <td>
+                                        <span class="history-tariff-label">{{ format_booking_tariff_label(booking) }}</span>
+                                    </td>
                                     <td><strong>{{ booking.total_price }} ₽</strong></td>
                                     <td>
                                         <span class="status-badge status-{{ booking.status }}">
@@ -1303,6 +1308,20 @@
                     </div>
                     {% endif %}
 
+                    {% if current_user.role != 'client' %}
+                    <div id="staff-feedback-alert" class="staff-feedback-alert" hidden>
+                        <div class="staff-feedback-alert-inner">
+                            <div>
+                                <strong><i class="fas fa-comment-dots"></i> Новые обращения клиентов</strong>
+                                <p id="staff-feedback-alert-text">Есть необработанные обращения</p>
+                            </div>
+                            <a href="{{ url_for('admin_notifications_page') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-arrow-right"></i> К обращениям
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div id="notify-section-system" class="notify-section-panel active">
                         <div id="notifications-system-container">
                             <div class="empty-state">
@@ -1379,6 +1398,7 @@
                 }
 
                 const FEEDBACK_CAN_MARK_READ = {{ 'true' if current_user.role != 'client' else 'false' }};
+                const IS_STAFF_USER = {{ 'true' if current_user.role != 'client' else 'false' }};
 
                 function switchNotifySection(section, btn) {
                     document.querySelectorAll('.notify-section-btn').forEach(el => el.classList.remove('active'));
@@ -1587,11 +1607,11 @@
                     const feedbackUnread = typeof data.feedback_unread_count === 'number'
                         ? data.feedback_unread_count
                         : feedbackItems.filter(n => n.staff_reply && !n.reply_read_by_client).length;
-                    const totalUnread = systemUnread + feedbackUnread;
+                    const tabBadgeCount = IS_STAFF_USER ? feedbackUnread : (systemUnread + feedbackUnread);
 
                     setUnreadBadge(
                         document.querySelector('.tab-btn[data-tab="notifications"]'),
-                        totalUnread
+                        tabBadgeCount
                     );
                     setUnreadBadge(
                         document.querySelector('.notify-section-btn[data-notify-section="system"]'),
@@ -1602,11 +1622,30 @@
                         feedbackUnread
                     );
 
+                    if (IS_STAFF_USER) {
+                        const alertEl = document.getElementById('staff-feedback-alert');
+                        const alertText = document.getElementById('staff-feedback-alert-text');
+                        if (alertEl) {
+                            alertEl.hidden = feedbackUnread <= 0;
+                        }
+                        if (alertText && feedbackUnread > 0) {
+                            const n = feedbackUnread;
+                            const tail = n % 10;
+                            const tail2 = n % 100;
+                            let word = 'обращений';
+                            if (tail2 < 11 || tail2 > 14) {
+                                if (tail === 1) word = 'обращение';
+                                else if (tail >= 2 && tail <= 4) word = 'обращения';
+                            }
+                            alertText.textContent = `У вас ${n} нов${n === 1 ? 'ое' : 'ых'} ${word} от клиентов`;
+                        }
+                    }
+
                     const mobileSelect = document.getElementById('tab-mobile-select');
                     const mobileOpt = mobileSelect?.querySelector('option[value="notifications"]');
                     if (mobileOpt) {
-                        mobileOpt.textContent = totalUnread > 0
-                            ? `Уведомления (${totalUnread > 9 ? '9+' : totalUnread})`
+                        mobileOpt.textContent = tabBadgeCount > 0
+                            ? `Уведомления (${tabBadgeCount > 9 ? '9+' : tabBadgeCount})`
                             : 'Уведомления';
                     }
                 }
