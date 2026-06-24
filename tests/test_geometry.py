@@ -13,11 +13,19 @@ _spec = importlib.util.spec_from_file_location(
 geometry = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(geometry)
 
+_room_spec = importlib.util.spec_from_file_location(
+    'room_geometry',
+    _ROOT / 'internal' / 'utils' / 'room_geometry.py',
+)
+room_geometry = importlib.util.module_from_spec(_room_spec)
+_room_spec.loader.exec_module(room_geometry)
+
 adjust_rect_from_walls = geometry.adjust_rect_from_walls
 desks_overlap_each_other = geometry.desks_overlap_each_other
 find_place_overlap = geometry.find_place_overlap
 rect_overlaps_walls = geometry.rect_overlaps_walls
 rects_overlap = geometry.rects_overlap
+detect_all_wall_rooms = room_geometry.detect_all_wall_rooms
 
 
 class TestRectsOverlap:
@@ -74,3 +82,22 @@ class TestWalls:
         x, y = adjust_rect_from_walls(190, 100, 100, 80, walls, 1)
         assert x == 208
         assert not rect_overlaps_walls(x, y, 100, 80, walls, 1)
+
+    def test_room_detected_when_wall_is_extended_in_segments(self):
+        walls = [
+            {'id': 1, 'x1': 0, 'y1': 0, 'x2': 800, 'y2': 0, 'floor': 1},
+            {'id': 2, 'x1': 0, 'y1': 500, 'x2': 800, 'y2': 500, 'floor': 1},
+            {'id': 3, 'x1': 0, 'y1': 0, 'x2': 0, 'y2': 500, 'floor': 1},
+            # Правая стена как на карте: верх уже был границей соседней комнаты,
+            # нижнюю часть пользователь дорисовал отдельно.
+            {'id': 4, 'x1': 800, 'y1': 0, 'x2': 800, 'y2': 300, 'floor': 1},
+            {'id': 5, 'x1': 800, 'y1': 300, 'x2': 800, 'y2': 500, 'floor': 1},
+        ]
+
+        rooms = detect_all_wall_rooms(walls, floor=1, apply_ignored=False)
+
+        assert any(
+            room['x'] == 0 and room['y'] == 0
+            and room['width'] == 800 and room['height'] == 500
+            for room in rooms
+        )

@@ -17,6 +17,38 @@ def _walls_on_floor(walls, floor):
     return [w for w in walls if int(w.get('floor', 1)) == int(floor)]
 
 
+def _merge_intervals(items, axis_key, start_key, end_key):
+    """Склеить коллинеарные куски стен в одну границу комнаты."""
+    grouped = {}
+    for item in items:
+        grouped.setdefault(item[axis_key], []).append(item)
+
+    merged = []
+    for axis_value, group in grouped.items():
+        group = sorted(group, key=lambda i: i[start_key])
+        current = None
+        for item in group:
+            if current is None:
+                current = {
+                    axis_key: axis_value,
+                    start_key: item[start_key],
+                    end_key: item[end_key],
+                }
+                continue
+            if item[start_key] <= current[end_key] + TOL:
+                current[end_key] = max(current[end_key], item[end_key])
+            else:
+                merged.append(current)
+                current = {
+                    axis_key: axis_value,
+                    start_key: item[start_key],
+                    end_key: item[end_key],
+                }
+        if current is not None:
+            merged.append(current)
+    return merged
+
+
 def _verticals(walls):
     out = []
     for w in walls:
@@ -26,7 +58,7 @@ def _verticals(walls):
                 'y1': min(w['y1'], w['y2']),
                 'y2': max(w['y1'], w['y2']),
             })
-    return out
+    return _merge_intervals(out, 'x', 'y1', 'y2')
 
 
 def _horizontals(walls):
@@ -38,7 +70,7 @@ def _horizontals(walls):
                 'x1': min(w['x1'], w['x2']),
                 'x2': max(w['x1'], w['x2']),
             })
-    return out
+    return _merge_intervals(out, 'y', 'x1', 'x2')
 
 
 def find_room_at_point(x, y, walls, floor=1, min_size=MIN_ROOM_SIZE):
