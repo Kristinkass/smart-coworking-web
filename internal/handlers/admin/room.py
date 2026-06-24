@@ -165,6 +165,19 @@ def api_editor_map():
     doors = layout.get('doors', [])
 
     floor_places = [p for p in layout_places if int(p.get('floor', 1)) == floor]
+    floor_walls = [w for w in walls if int(w.get('floor', 1)) == floor]
+    floor_doors = [d for d in doors if int(d.get('floor', 1)) == floor]
+    if not floor_walls and models.Floor.query.filter_by(number=floor).first():
+        LayoutRepository.provision_new_floor_layout(floor)
+        LayoutRepository.reload()
+        layout = LayoutRepository.load()
+        layout_places = layout.get('places', [])
+        walls = layout.get('walls', [])
+        doors = layout.get('doors', [])
+        floor_places = [p for p in layout_places if int(p.get('floor', 1)) == floor]
+        floor_walls = [w for w in walls if int(w.get('floor', 1)) == floor]
+        floor_doors = [d for d in doors if int(d.get('floor', 1)) == floor]
+
     db_map = PlaceRepository.get_by_codes([p.get('code') for p in floor_places])
 
     formatted = [
@@ -172,8 +185,6 @@ def api_editor_map():
         for p in floor_places
     ]
     containers = [f for f in formatted if f.get('kind') in ('space', 'room')]
-    floor_walls = [w for w in walls if int(w.get('floor', 1)) == floor]
-    floor_doors = [d for d in doors if int(d.get('floor', 1)) == floor]
     from internal.layout.geometry import repair_wall_gaps
     from internal.layout.store import save_walls
     if repair_wall_gaps(walls, floor=floor):

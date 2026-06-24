@@ -588,7 +588,7 @@
         toast(`${desks} столов · ${locs} локаций · ${drafts} черновиков`, 'success');
       }
     } catch (e) {
-      toast('Не удалось загрузить', 'error');
+      toast(e.message || 'Не удалось загрузить этаж', 'error');
     }
   }
 
