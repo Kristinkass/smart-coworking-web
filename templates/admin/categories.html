@@ -233,7 +233,10 @@ function renderCategories() {
         if (!tariffsText) tariffsText = '<span style="color:#94a3b8;">Нет тарифов</span>';
 
         const seats = cat.seat_count_display || cat.capacity;
-        const sizeLabel = cat.display_size_m || `${cat.width_m}×${cat.height_m} м`;
+        const sizeLabel = cat.template_size_m || cat.display_size_m || `${cat.width_m}×${cat.height_m} м`;
+        const placedSizeLine = cat.placed_size_m && cat.placed_size_m !== sizeLabel
+            ? `<br><small style="color:#d97706;"><i class="fas fa-ruler-combined"></i> Уже на карте: ${cat.placed_size_m}</small>`
+            : '';
         const codesLine = (cat.place_codes && cat.place_codes.length)
             ? cat.place_codes.join(', ')
             : 'нет привязанных мест';
@@ -252,6 +255,7 @@ function renderCategories() {
                         <i class="fas fa-map-pin"></i> Коды: ${codesLine}
                         ${(cat.location_codes && cat.location_codes.length) ? ' · локации ' + cat.location_codes.join(', ') : ''}
                     </small>
+                    ${placedSizeLine}
                     ${cat.description ? '<br><small style="color:#64748b;">' + cat.description + '</small>' : ''}
                 </div>
             </div>

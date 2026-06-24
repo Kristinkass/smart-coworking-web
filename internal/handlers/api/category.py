@@ -118,6 +118,7 @@ def _enrich_category(cat):
     from internal.models.layout import get_place_geometry
 
     data = cat.to_dict()
+    data['template_size_m'] = f'{cat.width_m}×{cat.height_m} м'
     places = Place.query.filter(
         Place.category_id == cat.id,
         Place.kind.in_(['desk', 'room']),
@@ -158,22 +159,21 @@ def _enrich_category(cat):
     else:
         data['seat_count_display'] = cat.capacity
 
+    data['display_size_m'] = data['template_size_m']
     if places_detail:
         from collections import Counter
         size_counts = Counter(
             d['size_label'] for d in places_detail if d['size_label'] != '–'
         )
         if len(size_counts) == 1:
-            data['display_size_m'] = next(iter(size_counts))
+            data['placed_size_m'] = next(iter(size_counts))
         elif size_counts:
             parts = [f'{sz} ({cnt} шт.)' for sz, cnt in size_counts.most_common(3)]
-            data['display_size_m'] = ', '.join(parts)
+            data['placed_size_m'] = ', '.join(parts)
             if len(size_counts) > 3:
-                data['display_size_m'] += f' +{len(size_counts) - 3} вариантов'
+                data['placed_size_m'] += f' +{len(size_counts) - 3} вариантов'
         else:
-            data['display_size_m'] = f'{cat.width_m}×{cat.height_m} м'
-    else:
-        data['display_size_m'] = f'{cat.width_m}×{cat.height_m} м'
+            data['placed_size_m'] = None
 
     return data
 
@@ -183,6 +183,12 @@ def _is_auto_zone_category(cat) -> bool:
     return is_auto_zone_category(cat)
 
 
+def _visible_categories(categories):
+    from internal.models.category import unique_template_categories
+    visible = [cat for cat in categories if not _is_auto_zone_category(cat)]
+    return unique_template_categories(visible)
+
+
 @category_bp.route('/api/admin/categories', methods=['GET'])
 def api_get_categories():
     """Список категорий (все, включая неактивные – для админки)."""
@@ -190,10 +196,9 @@ def api_get_categories():
         categories = PlaceCategory.query.order_by(
             PlaceCategory.kind, PlaceCategory.capacity
         ).all()
-        visible = [cat for cat in categories if not _is_auto_zone_category(cat)]
         return jsonify({
             'success': True,
-            'categories': [_enrich_category(cat) for cat in visible],
+            'categories': [_enrich_category(cat) for cat in _visible_categories(categories)],
         })
     except Exception as e:
         return jsonify({'success': False, 'error': user_error_message(e)}), 500

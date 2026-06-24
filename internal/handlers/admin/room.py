@@ -8,7 +8,11 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from internal import models
-from internal.models.category import is_desk_template_category
+from internal.models.category import (
+    is_auto_zone_category,
+    is_desk_template_category,
+    unique_template_categories,
+)
 from internal.models import PlaceCategory
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
@@ -74,7 +78,11 @@ def _resolve_zone_kind(place, zone_type_id=None):
 def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name=None):
     from internal.models.location_zone import is_amenity_zone_kind, ROOM_ZONE_KIND
 
-    cats = [c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()]
+    raw_cats = PlaceCategory.query.filter_by(active=True).all()
+    template_cats = unique_template_categories(
+        [c for c in raw_cats if not is_auto_zone_category(c)]
+    )
+    cats = [c.to_dict() for c in template_cats]
     if zone_kind and is_amenity_zone_kind(zone_kind):
         return 'amenity', [{
             'variant_type': 'amenity',

@@ -73,18 +73,16 @@ def is_auto_zone_category(cat) -> bool:
     if isinstance(cat, dict):
         name = (cat.get('name') or '').strip()
         desc = (cat.get('description') or '').strip()
-        w_m = float(cat.get('width_m') or 0)
-        h_m = float(cat.get('height_m') or 0)
+        kind = cat.get('kind')
     else:
         name = (cat.name or '').strip()
         desc = (cat.description or '').strip()
-        w_m = float(cat.width_m or 0)
-        h_m = float(cat.height_m or 0)
+        kind = cat.kind
+    if kind == 'room':
+        return False
     if name.startswith('Закрытая зона '):
         return True
     if desc.startswith('Зона на ') and 'рабочих мест' in desc:
-        return True
-    if w_m >= 3.5 and h_m >= 2.5:
         return True
     return False
 
@@ -95,6 +93,41 @@ def is_desk_template_category(cat) -> bool:
     if kind != 'desk':
         return False
     return not is_auto_zone_category(cat)
+
+
+def category_template_key(cat):
+    """Смысловой ключ категории для удаления дублей в UI/вариантах."""
+    if isinstance(cat, dict):
+        kind = cat.get('kind')
+        name = (cat.get('name') or '').strip().lower()
+        capacity = int(cat.get('capacity') or 0)
+    else:
+        kind = cat.kind
+        name = (cat.name or '').strip().lower()
+        capacity = int(cat.capacity or 0)
+    return kind, name, capacity
+
+
+def category_template_area(cat):
+    """Площадь шаблона: при дублях оставляем более полный/крупный вариант."""
+    if isinstance(cat, dict):
+        width = float(cat.get('width_m') or 0)
+        height = float(cat.get('height_m') or 0)
+    else:
+        width = float(cat.width_m or 0)
+        height = float(cat.height_m or 0)
+    return width * height
+
+
+def unique_template_categories(categories):
+    """Дедупликация категорий: один активный шаблон на тип+название+вместимость."""
+    by_key = {}
+    for cat in categories:
+        key = category_template_key(cat)
+        current = by_key.get(key)
+        if current is None or category_template_area(cat) > category_template_area(current):
+            by_key[key] = cat
+    return list(by_key.values())
 
 
 class CategoryTariff(db.Model):
