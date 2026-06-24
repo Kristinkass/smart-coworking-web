@@ -21,12 +21,11 @@ ZONE_KIND_LABELS = {
 }
 
 
-DEFAULT_ZONE_TYPE_LETTERS = frozenset({'A', 'B', 'C', 'R', 'K', 'W'})
+DEFAULT_ZONE_TYPE_LETTERS = frozenset({'A', 'B', 'R', 'K', 'W'})
 
 DEFAULT_ZONE_TYPES = (
     {'letter': 'A', 'name': 'Зона рабочих столов', 'kind': DESK_ZONE_KIND},
     {'letter': 'B', 'name': 'Зона переговорных', 'kind': ROOM_ZONE_KIND},
-    {'letter': 'C', 'name': 'Большие переговорные', 'kind': ROOM_ZONE_KIND},
     {'letter': 'R', 'name': 'Зона отдыха', 'kind': 'lounge_zone'},
     {'letter': 'K', 'name': 'Кухня', 'kind': 'kitchen_zone'},
     {'letter': 'W', 'name': 'Санузлы', 'kind': 'wc_zone'},
@@ -124,7 +123,7 @@ def parse_location_prefix(code):
 
 
 def ensure_default_zone_types():
-    """Создать 6 стандартных типов зон (A/B/C/R/K/W); лишние — в архив."""
+    """Создать стандартные типы зон (A/B/R/K/W); лишние — в архив."""
     changed = False
     for item in DEFAULT_ZONE_TYPES:
         existing = LocationZoneType.query.filter_by(letter=item['letter']).first()
@@ -139,6 +138,22 @@ def ensure_default_zone_types():
             continue
         db.session.add(LocationZoneType(**item, active=True))
         changed = True
+
+    deprecated_c = LocationZoneType.query.filter_by(letter='C').first()
+    if deprecated_c:
+        from internal.models.coworking import Location
+        for location in list(deprecated_c.locations):
+            if not location.places:
+                db.session.delete(location)
+                changed = True
+        db.session.flush()
+        linked_locations = Location.query.filter_by(zone_type_id=deprecated_c.id_zone_type).count()
+        if linked_locations == 0:
+            db.session.delete(deprecated_c)
+            changed = True
+        elif deprecated_c.active:
+            deprecated_c.active = False
+            changed = True
 
     for extra in LocationZoneType.query.filter(
         ~LocationZoneType.letter.in_(DEFAULT_ZONE_TYPE_LETTERS)

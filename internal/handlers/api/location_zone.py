@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from internal.models import LocationZoneType, db, get_layout_place_meta
+from internal.models.location_zone import ensure_default_zone_types
 from internal.models.sync import apply_place_location_zone
 from internal.repositories.place_repository import PlaceRepository
 
@@ -20,6 +21,7 @@ def require_admin_api():
 @location_zone_bp.route('/api/admin/location-zones', methods=['GET'])
 def api_get_location_zones():
     """Список зон. ?all=1 – включая архивные (для страницы управления)."""
+    ensure_default_zone_types()
     include_archived = request.args.get('all') in ('1', 'true', 'yes')
     query = LocationZoneType.query.order_by(LocationZoneType.letter)
     if not include_archived:

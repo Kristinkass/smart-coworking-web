@@ -34,7 +34,7 @@
             background: #fafbfc;
             box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
         }
-        .floor-plan-container { background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
+        .floor-plan-container { position: relative; background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
             padding: 15px; margin: 16px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: auto; }
         .floor-plan-svg { background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             width: 100%; min-width: 1100px; height: auto; user-select: none; overflow: visible; }
@@ -236,7 +236,7 @@
             margin-bottom: 4px;
         }
         .timeline-slot:hover::after { opacity: 1; }
-        .timeline-legend { display: flex; gap: 16px; margin-top: 24px; font-size: 12px; justify-content: center; }
+        .timeline-legend { display: flex; gap: 16px; margin-top: 24px; font-size: 12px; justify-content: center; flex-wrap: wrap; }
         .timeline-loading, .timeline-empty {
             padding: 24px 16px;
             text-align: center;
@@ -529,7 +529,7 @@
         .toggle-switch input:checked + .toggle-slider { background: #ef4444; }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
 
-        .zoom-controls { position: fixed; left: 20px; top: 92px; z-index: 900;
+        .zoom-controls { position: absolute; left: 10px; top: 10px; z-index: 20;
             display: flex; flex-direction: column; gap: 6px; }
         .zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: none; background: #1e293b;
             color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center;
@@ -553,16 +553,51 @@
             .map-container h1 { font-size: 1.35rem; }
             .map-legend { flex-wrap: wrap; gap: 8px 12px; }
             .legend-item { font-size: 12px; }
-            .zoom-controls { left: 12px; top: 82px; }
             .zoom-btn { width: 44px; height: 44px; }
         }
 
         @media (max-width: 768px) {
+            .flashes-container {
+                top: 64px;
+                right: 8px;
+                width: min(220px, calc(100vw - 16px));
+            }
+            .alert {
+                padding: 7px 8px;
+                margin-bottom: 5px;
+                border-radius: 8px;
+                border-left-width: 3px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            }
+            .alert-content {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+            .alert-close {
+                font-size: 14px;
+                padding-left: 6px;
+            }
             .map-container { padding: 12px 0; }
             .map-container h1 { font-size: 1.2rem; margin-bottom: 12px; }
             .view-toggle button { flex: 1; min-width: 0; padding: 10px 8px; font-size: 13px; }
             .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
+            .btn-edit-mode {
+                padding: 5px 8px;
+                font-size: 11px;
+                gap: 4px;
+            }
+            .maintenance-panel {
+                padding: 10px;
+                font-size: 12px;
+            }
+            .maintenance-panel h4 { font-size: 13px; }
+            .maintenance-toggle { padding: 10px; gap: 8px; }
+            .maintenance-toggle .toggle-label strong { font-size: 12px; }
+            .maintenance-toggle .toggle-label small { font-size: 10px; }
+            .toggle-switch { width: 42px; height: 24px; }
+            .toggle-slider:before { height: 16px; width: 16px; }
+            .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
             .form-row-2 { grid-template-columns: 1fr; }
             .time-picker-box {
                 display: flex;
@@ -599,12 +634,52 @@
                 display: none;
             }
             .timeline-scroll-hint { display: block; }
-            .floor-plan-container {
-                max-height: min(55vh, 420px);
+            .timeline-wrapper {
+                padding: 12px 8px;
+                overflow: hidden;
             }
+            .timeline-header {
+                gap: 8px;
+                align-items: flex-start;
+            }
+            .timeline-title { font-size: 13px; }
+            .capacity-badge {
+                font-size: 11px;
+                padding: 3px 8px;
+                white-space: nowrap;
+            }
+            .timeline-legend {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px 10px;
+                justify-content: stretch;
+                font-size: 11px;
+                margin-top: 14px;
+            }
+            .timeline-legend .legend-item {
+                min-width: 0;
+                white-space: nowrap;
+                font-size: 11px;
+            }
+            .floor-plan-container {
+                max-height: min(42vh, 320px);
+                padding: 8px;
+                margin: 10px 0;
+            }
+            .floor-plan-svg { min-width: 780px; }
             .zoom-controls {
-                left: 10px;
-                top: 76px;
+                left: 8px;
+                top: 8px;
+                gap: 4px;
+            }
+            .zoom-btn {
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+                font-size: 15px;
+            }
+            .zoom-btn.reset {
+                font-size: 10px;
             }
         }
     </style>
@@ -621,12 +696,6 @@
 
     {% set active_page = 'map' %}
     {% include '_navbar.html' %}
-
-    <div class="zoom-controls map-only-view">
-        <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
-        <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
-        <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
-    </div>
 
     <div class="container">
         <div class="map-container">
@@ -682,6 +751,11 @@
             </div>
 
             <div class="floor-plan-container">
+                <div class="zoom-controls map-only-view">
+                    <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
+                    <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
+                    <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
+                </div>
                 <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
                     <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="0"/>
                     <defs>
@@ -953,7 +1027,7 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=13"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=7"></script>

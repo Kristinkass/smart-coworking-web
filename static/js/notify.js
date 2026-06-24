@@ -66,6 +66,30 @@
                 opacity: 0.65;
             }
             .cw-toast-close:hover { opacity: 1; }
+            @media (max-width: 768px) {
+                #cw-toast-container {
+                    top: 64px;
+                    right: 8px;
+                    gap: 5px;
+                    max-width: 220px;
+                    width: calc(100% - 16px);
+                }
+                .cw-toast {
+                    gap: 6px;
+                    padding: 7px 8px;
+                    border-radius: 8px;
+                    border-left-width: 3px;
+                    font-size: 11px;
+                    line-height: 1.35;
+                    box-shadow: 0 4px 12px rgba(47, 52, 40, 0.12);
+                }
+                .cw-toast i {
+                    font-size: 13px;
+                }
+                .cw-toast-close {
+                    font-size: 14px;
+                }
+            }
             @keyframes cwToastIn {
                 from { transform: translateX(110%); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }

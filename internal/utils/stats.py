@@ -18,8 +18,8 @@ def compute_desk_seat_capacity():
 
 def compute_meeting_room_count():
     """Количество переговорных (каждая комната — 1, без суммирования вместимости)."""
-    count = 0
+    codes = set()
     for place in _active_places():
-        if place.kind == 'room' or place.is_meeting_room():
-            count += 1
-    return count
+        if place.kind in ('room', 'space') and place.is_meeting_room():
+            codes.add(place.code)
+    return len(codes)

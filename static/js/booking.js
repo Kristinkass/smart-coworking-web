@@ -274,12 +274,6 @@ function selectStartSlot(index) {
         const maxSlots = Math.floor((hours.close - startTotalMins) / SLOT_DURATION);
         if (maxSlots >= MIN_SLOTS) {
             selectedDurationSlots = maxSlots;
-            const closeH = Math.floor(hours.close / 60);
-            const closeM = hours.close % 60;
-            const closeTimeStr = String(closeH).padStart(2, '0') + ':' + String(closeM).padStart(2, '0');
-            if (typeof showAlert === 'function') {
-                showAlert(`Длительность скорректирована до времени закрытия (${closeTimeStr})`, 'warning');
-            }
         } else {
             if (typeof showAlert === 'function') {
                 showAlert('Недостаточно времени до закрытия. Выберите более раннее время.', 'error');
@@ -369,7 +363,8 @@ function updateEndTimeFromDuration() {
         const startH = parseInt(document.getElementById('start-hour')?.value || '0', 10);
         const startM = parseInt(document.getElementById('start-min')?.value || '0', 10);
         const startTotalMinutes = startH * 60 + startM;
-        const endTotalMinutes = startTotalMinutes + selectedDurationSlots * SLOT_DURATION;
+        const hours = typeof getCoworkingHours === 'function' ? getCoworkingHours() : { close: 22 * 60 };
+        const endTotalMinutes = Math.min(startTotalMinutes + selectedDurationSlots * SLOT_DURATION, hours.close);
         document.getElementById('end-hour').value = String(Math.floor(endTotalMinutes / 60)).padStart(2, '0');
         document.getElementById('end-min').value = String(endTotalMinutes % 60).padStart(2, '0');
         return;
