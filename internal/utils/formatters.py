@@ -260,7 +260,7 @@ def build_report_stats(bookings):
     """Сводная статистика для страницы отчётов (plain dict, ключи для Jinja через [])."""
     grouped = group_bookings_for_report(bookings)
     total_revenue = sum(
-        b.total_price for b in bookings if b.status in ('completed', 'active')
+        b.total_price for b in bookings if b.status == 'completed'
     )
     unique_users = len({b.user_id for b in bookings})
 
@@ -310,7 +310,7 @@ def build_report_stats(bookings):
                 'total_revenue': 0,
             }
         by_place_type[kind]['count'] += 1
-        if booking.status in ('completed', 'active'):
+        if booking.status == 'completed':
             by_place_type[kind]['total_revenue'] += booking.total_price
 
     for kind_data in by_place_type.values():
@@ -318,7 +318,7 @@ def build_report_stats(bookings):
 
     user_stats = {}
     for booking in bookings:
-        if booking.status not in ('completed', 'active'):
+        if booking.status != 'completed':
             continue
         user_id = booking.user_id
         if user_id not in user_stats:

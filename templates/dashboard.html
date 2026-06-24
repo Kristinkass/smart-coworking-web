@@ -485,6 +485,12 @@
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
         }
 
         .page-btn:hover {
@@ -959,7 +965,7 @@
                     </div>
                     <div class="stat-info">
                         <h3>{{ "%.2f"|format(total_spent) }} ₽</h3>
-                        <p>Общий расход</p>
+                        <p>Общий расход <span style="font-weight:400;color:var(--text-secondary);font-size:12px;">(завершённые)</span></p>
                     </div>
                 </div>
             </div>
@@ -1141,14 +1147,19 @@
                         </table>
                     </div>
 
-                    <!-- Пагинация показывается ТОЛЬКО если больше 10 бронирований (10 на странице) -->
-                    {% if history_bookings|length > 10 %}
+                    <!-- Пагинация по реальному числу записей -->
+                    {% if history_pages > 1 %}
                     <div class="pagination">
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn">2</button>
-                        <button class="page-btn">3</button>
-                        <span style="padding: 8px 15px; color: #6b7280;">...</span>
-                        <button class="page-btn">10</button>
+                        {% if history_page > 1 %}
+                        <a href="{{ url_for('dashboard', history_page=history_page - 1) }}#history" class="page-btn" title="Назад">‹</a>
+                        {% endif %}
+                        {% for p in range(1, history_pages + 1) %}
+                        <a href="{{ url_for('dashboard', history_page=p) }}#history"
+                           class="page-btn {% if p == history_page %}active{% endif %}">{{ p }}</a>
+                        {% endfor %}
+                        {% if history_page < history_pages %}
+                        <a href="{{ url_for('dashboard', history_page=history_page + 1) }}#history" class="page-btn" title="Вперёд">›</a>
+                        {% endif %}
                     </div>
                     {% endif %}
                     {% else %}
@@ -1975,6 +1986,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             initStars();
             if (typeof initPhoneMasks === 'function') initPhoneMasks();
+
+            if (location.hash === '#history' || new URLSearchParams(location.search).has('history_page')) {
+                switchTab('history', null);
+            }
 
             document.addEventListener('click', e => {
                 if (!e.target.closest('.extend-wrap')) closeExtendMenus();

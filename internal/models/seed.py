@@ -363,6 +363,35 @@ def update_booking_statuses():
     return 0
 
 
+def cleanup_suspicious_bookings(max_hourly_rate=2500, max_short_total=5000, max_short_hours=2):
+    """Удалить брони с нереалистичной почасовой стоимостью (артефакты демо-данных)."""
+    from sqlalchemy import inspect as sa_inspect
+    try:
+        if not sa_inspect(db.engine).has_table('bookings'):
+            return 0
+        deleted = 0
+        for booking in Booking.query.filter(Booking.tariff_type == 'hourly').all():
+            if not booking.total_price:
+                continue
+            hours = booking.duration_hours or 0
+            if hours <= 0:
+                hours = 1.0
+            hourly_rate = float(booking.total_price) / float(hours)
+            if hourly_rate > max_hourly_rate or (
+                booking.total_price >= max_short_total and hours <= max_short_hours
+            ):
+                db.session.delete(booking)
+                deleted += 1
+        if deleted:
+            db.session.commit()
+            print(f'[MIGRATE] Удалено подозрительных бронирований: {deleted}')
+        return deleted
+    except Exception as e:
+        db.session.rollback()
+        print(f'[MIGRATE] cleanup_suspicious_bookings: {e}')
+        return 0
+
+
 def run_migrations():
     """Простейшие миграции: добавление колонок и таблиц без Alembic."""
     from sqlalchemy import inspect, text
@@ -524,6 +553,11 @@ def run_migrations():
         _migrate_primary_key_names(inspector)
     except Exception as e:
         print(f"[MIGRATE] PK rename: {e}")
+
+    try:
+        cleanup_suspicious_bookings()
+    except Exception as e:
+        print(f"[MIGRATE] suspicious bookings: {e}")
 
 
 def _migrate_user_login_fields(inspector):

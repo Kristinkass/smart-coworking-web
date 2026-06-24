@@ -80,7 +80,9 @@ def register_pages_routes(app):
         for booking in active_bookings:
             booking.location_label = format_booking_location(booking.place)
 
-        # История бронирований (без фильтрации по статусу)
+        # История бронирований (завершённые и отменённые)
+        history_per_page = 10
+        history_page = request.args.get('history_page', 1, type=int) or 1
         history_query = models.Booking.query.filter(
             models.Booking.user_id == current_user.id,
             models.Booking.status.in_(['completed', 'cancelled'])
@@ -90,7 +92,19 @@ def register_pages_routes(app):
                 models.Booking.booking_date >= date_start,
                 models.Booking.booking_date <= date_end
             )
-        history_bookings = history_query.order_by(models.Booking.created_at.desc()).limit(20).all()
+        history_total = history_query.count()
+        history_pages = max(1, (history_total + history_per_page - 1) // history_per_page)
+        if history_page < 1:
+            history_page = 1
+        elif history_page > history_pages:
+            history_page = history_pages
+        history_bookings = (
+            history_query
+            .order_by(models.Booking.created_at.desc())
+            .offset((history_page - 1) * history_per_page)
+            .limit(history_per_page)
+            .all()
+        )
         for booking in history_bookings:
             booking.location_label = format_booking_location(booking.place)
 
@@ -100,17 +114,11 @@ def register_pages_routes(app):
         total_bookings_cancelled = models.Booking.query.filter_by(user_id=current_user.id, status='cancelled').count()
         total_bookings_active = models.Booking.query.filter_by(user_id=current_user.id, status='active').count()
 
-        # Общий доход (только завершенные бронирования, не отмененные)
-        spent_query = db.session.query(db.func.sum(models.Booking.total_price)).filter(
+        # Общий расход — только завершённые бронирования за всё время
+        total_spent = db.session.query(db.func.sum(models.Booking.total_price)).filter(
             models.Booking.user_id == current_user.id,
-            models.Booking.status == 'completed'
-        )
-        if date_start and date_end:
-            spent_query = spent_query.filter(
-                models.Booking.booking_date >= date_start,
-                models.Booking.booking_date <= date_end
-            )
-        total_spent = spent_query.scalar() or 0
+            models.Booking.status == 'completed',
+        ).scalar() or 0
 
         # Доход за сегодня (только завершенные бронирования сегодня, не отмененные)
         today_income = db.session.query(db.func.sum(models.Booking.total_price)).filter(
@@ -143,6 +151,9 @@ def register_pages_routes(app):
         return render_template('dashboard.html',
                                active_bookings=active_bookings,
                                history_bookings=history_bookings,
+                               history_page=history_page,
+                               history_pages=history_pages,
+                               history_total=history_total,
                                feedback_bookings=feedback_bookings,
                                total_bookings=total_bookings_all,
                                total_bookings_completed=total_bookings_completed,
