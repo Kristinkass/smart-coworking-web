@@ -1367,6 +1367,8 @@
                         .replace(/"/g, '&quot;');
                 }
 
+                const FEEDBACK_CAN_MARK_READ = {{ 'true' if current_user.role != 'client' else 'false' }};
+
                 function switchNotifySection(section, btn) {
                     document.querySelectorAll('.notify-section-btn').forEach(el => el.classList.remove('active'));
                     document.querySelectorAll('.notify-section-panel').forEach(el => el.classList.remove('active'));
@@ -1385,7 +1387,7 @@
                         card.classList.remove('open');
                     } else {
                         card.classList.add('open');
-                        if (card.classList.contains('unread')) {
+                        if (FEEDBACK_CAN_MARK_READ && card.classList.contains('unread')) {
                             const id = card.dataset.feedbackId;
                             if (id) markReadById(parseInt(id, 10));
                         }
@@ -1507,8 +1509,14 @@
                                 ? '<span class="feedback-read-status read"><i class="fas fa-check-double"></i> Прочитано</span>'
                                 : '<span class="feedback-read-status pending"><i class="fas fa-clock"></i> Не прочитано</span>')
                             : '';
+                        const newBadgeHtml = !n.is_read
+                            ? (showReadStatus
+                                ? '<span class="feedback-new-badge feedback-new-badge--waiting">Не прочитано</span>'
+                                : '<span class="feedback-new-badge">Новое</span>')
+                            : '';
                         return `
-                            <div class="feedback-card${unreadClass}" data-feedback-id="${n.id}">
+                            <div class="feedback-card${unreadClass}" data-feedback-id="${n.id}" data-unread="${!n.is_read}">
+                                ${newBadgeHtml}
                                 <div class="feedback-head-row">
                                     <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
                                         <div class="feedback-head-main">
@@ -1529,6 +1537,24 @@
                                 </div>
                             </div>`;
                     }).join('');
+                }
+
+                function updateFeedbackTabBadge(data) {
+                    const items = {% if current_user.role == 'client' %}data.sent_feedback || []{% else %}data.feedback || []{% endif %};
+                    const unread = items.filter(n => !n.is_read).length;
+                    const btn = document.querySelector('.notify-section-btn[data-notify-section="feedback"]');
+                    if (!btn) return;
+                    let badge = btn.querySelector('.notify-tab-badge');
+                    if (unread > 0) {
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'notify-tab-badge';
+                            btn.appendChild(badge);
+                        }
+                        badge.textContent = unread > 9 ? '9+' : String(unread);
+                    } else if (badge) {
+                        badge.remove();
+                    }
                 }
 
                 async function loadNotifications() {
@@ -1562,6 +1588,7 @@
                             false
                         );
                         {% endif %}
+                        updateFeedbackTabBadge(data);
                     } catch (e) {
                         console.error(e);
                     }

@@ -33,7 +33,7 @@
     <!-- Ключевые показатели -->
     <div class="stats-grid">
         <div class="stat-card highlight">
-            <div class="stat-icon green">
+            <div class="stat-icon blue">
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="stat-info">
@@ -146,8 +146,8 @@
             datasets: [{
                 label: 'Число посетителей',
                 data: {{ daily_data|tojson }},
-                borderColor: '#8fa67a',
-                backgroundColor: 'rgba(143, 166, 122, 0.15)',
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true,
                 tension: 0.4
             }]
@@ -194,7 +194,7 @@
             datasets: [{
                 label: 'Число посетителей',
                 data: {{ hourly_data|tojson }},
-                backgroundColor: 'rgba(143, 166, 122, 0.85)'
+                backgroundColor: 'rgba(245, 158, 11, 0.8)'
             }]
         },
         options: {
@@ -305,8 +305,8 @@
     }
 
     .stat-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .blue { background: #e8efe3; color: #5a7350; }
-    .green { background: #e8efe3; color: #5a7350; }
+    .blue { background: #dbeafe; color: #1d4ed8; }
+    .green { background: #d1fae5; color: #047857; }
     .orange { background: #fef3c7; color: #b45309; }
     .purple { background: #ede9fe; color: #6d28d9; }
     .progress-bar { display: flex; align-items: center; gap: 10px; }
@@ -314,7 +314,7 @@
     .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 15px; }
     .status-item { display: flex; align-items: center; gap: 10px; padding: 15px; border-radius: 8px; }
     .success { background: #d1fae5; }
-    .active { background: #e8efe3; }
+    .active { background: #dbeafe; }
     .cancelled { background: #fee2e2; }
     .status-dot { width: 12px; height: 12px; border-radius: 50%; }
     .success .status-dot { background: #4d8f5f; }
