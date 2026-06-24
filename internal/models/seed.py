@@ -459,6 +459,22 @@ def run_migrations():
                     ))
                     conn.commit()
 
+            for col_name, col_def in (
+                ('staff_reply', 'TEXT'),
+                ('replied_at', 'TIMESTAMP'),
+                ('replied_by_id', 'INTEGER REFERENCES users(id_user) ON DELETE SET NULL'),
+                ('is_archived', 'BOOLEAN DEFAULT FALSE'),
+                ('archived_at', 'TIMESTAMP'),
+            ):
+                if col_name not in notif_columns:
+                    print(f'[MIGRATE] Добавляем {col_name} в notifications...')
+                    with db.engine.connect() as conn:
+                        conn.execute(text(
+                            f'ALTER TABLE notifications ADD COLUMN {col_name} {col_def}'
+                        ))
+                        conn.commit()
+                    notif_columns.append(col_name)
+
         # 5b. subscription_id в bookings
         if inspector.has_table('bookings'):
             booking_columns = [c['name'] for c in inspector.get_columns('bookings')]

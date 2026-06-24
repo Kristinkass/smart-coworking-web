@@ -57,6 +57,7 @@
                 <tr>
                     <th>№</th>
                     <th>Телефон</th>
+                    <th>Почта</th>
                     <th>Имя</th>
                     <th>Врем. пароль</th>
                     <th>Роль</th>
@@ -70,6 +71,7 @@
                 <tr>
                     <td>{{ loop.index }}</td>
                     <td>{{ format_phone(user.phone) or '—' }}</td>
+                    <td>{{ user.email or '—' }}</td>
                     <td>{{ user.username }}</td>
                     <td>
                         {% if user.issued_temp_password %}

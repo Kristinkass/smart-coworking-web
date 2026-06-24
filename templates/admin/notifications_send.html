@@ -4,10 +4,10 @@
 {% include "admin/module_hub_styles.html" %}
 <div class="module-page">
   <div class="module-header">
-    {% include "admin/_nav_back.html" %}
+    <a href="{{ url_for('admin_dashboard') if current_user.is_admin() else url_for('booking_module_hub.hub') }}" class="module-back"><i class="fas fa-arrow-left"></i> Назад</a>
     <div>
-      <h1><i class="fas fa-bell"></i> Отправка уведомлений</h1>
-      <p>Менеджер и администратор могут отправлять сообщения клиентам. Обращения клиентов из личного кабинета также отображаются в истории ниже.</p>
+      <h1><i class="fas fa-bell"></i> Уведомления и обратная связь</h1>
+      <p>Рассылки клиентам, менеджерам и администраторам. Ответы на обращения и архив.</p>
     </div>
   </div>
 
@@ -35,6 +35,10 @@
           <label class="radio-item" onclick="selectAudience(this, 'managers')">
             <input type="radio" name="audience" value="managers">
             <span>Менеджерам</span>
+          </label>
+          <label class="radio-item" onclick="selectAudience(this, 'admins')">
+            <input type="radio" name="audience" value="admins">
+            <span>Администраторам</span>
           </label>
           <label class="radio-item" onclick="selectAudience(this, 'user')">
             <input type="radio" name="audience" value="user">
@@ -104,6 +108,8 @@
   </div>
 
   <script>
+    const IS_ADMIN = {{ 'true' if current_user.is_admin() else 'false' }};
+
     function escapeHtml(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -140,6 +146,48 @@
         loadHistory();
       } catch (e) {
         setResult('error', friendlyError(e, 'Не удалось удалить обращение'));
+      }
+    }
+
+    async function replyFeedbackHistory(id) {
+      const message = await showPrompt('Текст ответа клиенту:', {
+        title: 'Ответ на обращение',
+        placeholder: 'Напишите ответ...',
+        multiline: true,
+        confirmText: 'Отправить',
+      });
+      if (!message || message.trim().length < 3) return;
+      try {
+        const r = await fetch('/api/feedback/' + id + '/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: message.trim() }),
+        });
+        const d = await r.json();
+        if (!d.success) {
+          setResult('error', friendlyError(d.error, 'Не удалось отправить ответ'));
+          return;
+        }
+        setResult('success', d.message || 'Ответ отправлен клиенту');
+        loadHistory();
+      } catch (e) {
+        setResult('error', friendlyError(e, 'Не удалось отправить ответ'));
+      }
+    }
+
+    async function archiveFeedbackHistory(id) {
+      if (!(await showConfirm('Перенести обращение в архив как решённое?', { confirmText: 'В архив' }))) return;
+      try {
+        const r = await fetch('/api/feedback/' + id + '/archive', { method: 'POST' });
+        const d = await r.json();
+        if (!d.success) {
+          setResult('error', friendlyError(d.error, 'Не удалось архивировать'));
+          return;
+        }
+        setResult('success', d.message || 'Обращение в архиве');
+        loadHistory();
+      } catch (e) {
+        setResult('error', friendlyError(e, 'Не удалось архивировать'));
       }
     }
 
@@ -197,7 +245,15 @@
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Не удалось загрузить историю');
         const system = (d.history || []).filter(n => n.kind !== 'feedback');
-        const feedback = (d.history || []).filter(n => n.kind === 'feedback');
+        const feedback = (d.history || [])
+          .filter(n => n.kind === 'feedback')
+          .filter(n => IS_ADMIN || n.target_audience === 'managers')
+          .sort((a, b) => {
+            const archA = a.is_archived ? 1 : 0;
+            const archB = b.is_archived ? 1 : 0;
+            if (archA !== archB) return archA - archB;
+            return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+          });
         const audienceMap = { all: 'Все', clients: 'Клиенты', managers: 'Менеджеры', admins: 'Администраторы' };
         const renderSystemRow = n => `
           <tr>
@@ -224,20 +280,37 @@
               const clientArg = encodeURIComponent(clientLabel);
               const titleArg = encodeURIComponent('Ответ на обращение: ' + (n.title || ''));
               const placeArg = encodeURIComponent(placeCode);
+              const statusBadge = n.is_archived
+                ? '<span class="cell-sub" style="color:#5a7350;font-weight:600;"><i class="fas fa-archive"></i> В архиве</span>'
+                : (!n.is_read
+                  ? '<span class="cell-sub" style="color:#92400e;font-weight:600;"><i class="fas fa-circle"></i> Новое</span>'
+                  : '');
+              const replyBlock = n.staff_reply
+                ? `<div class="cell-sub" style="margin-top:8px;padding:8px;background:#f4f7f0;border-left:3px solid #8fa67a;"><strong>Ответ:</strong> ${escapeHtml(n.staff_reply)}</div>`
+                : '';
               return `
-              <tr>
+              <tr class="${n.is_archived ? 'row-archived' : ''}">
                 <td class="cell-date">${escapeHtml(n.created_at)}</td>
-                <td class="cell-title">${escapeHtml(n.title)}</td>
+                <td class="cell-title">${escapeHtml(n.title)} ${statusBadge}</td>
                 <td class="cell-text">
                   <div class="cell-muted">${escapeHtml(n.message)}</div>
+                  ${replyBlock}
                   ${n.booking ? `<div class="cell-sub">${path}${bookingDetails || escapeHtml(n.booking.label)}</div>` : ''}
                 </td>
                 <td>${escapeHtml(n.audience_label || audienceMap[n.target_audience] || n.target_audience)}</td>
                 <td>
                   <div class="cell-title">${escapeHtml(clientLabel)}</div>
                   <div class="feedback-actions">
+                    ${!n.is_archived ? `
+                    <button type="button" onclick="replyFeedbackHistory(${n.id})">
+                      <i class="fas fa-reply"></i> Ответить
+                    </button>
+                    <button type="button" onclick="archiveFeedbackHistory(${n.id})">
+                      <i class="fas fa-check"></i> В архив
+                    </button>
+                    ` : ''}
                     <button type="button" onclick="writeToClient(${n.sender_id || 'null'}, decodeURIComponent('${clientArg}'), decodeURIComponent('${titleArg}'))">
-                      <i class="fas fa-paper-plane"></i> Написать
+                      <i class="fas fa-paper-plane"></i> Уведомление
                     </button>
                     <button type="button" onclick="openProblemPlace(decodeURIComponent('${placeArg}'), ${loc.floor || 'null'})">
                       <i class="fas fa-map-marker-alt"></i> Место
@@ -245,7 +318,6 @@
                     <button type="button" onclick="openBookingContext(${n.booking_id || 'null'})">
                       <i class="fas fa-list-alt"></i> Бронь
                     </button>
-                    <button type="button" class="feedback-delete-btn" onclick="deleteFeedbackHistory(${n.id})"><i class="fas fa-trash"></i></button>
                   </div>
                 </td>
               </tr>`;

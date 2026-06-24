@@ -39,6 +39,11 @@ class Notification(db.Model):
     booking_id = db.Column(db.Integer, db.ForeignKey('bookings.id_booking', ondelete='SET NULL'), nullable=True)
     is_read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id_user', ondelete='SET NULL'), nullable=True)
+    staff_reply = db.Column(db.Text, nullable=True)
+    replied_at = db.Column(db.DateTime, nullable=True)
+    replied_by_id = db.Column(db.Integer, db.ForeignKey('users.id_user', ondelete='SET NULL'), nullable=True)
+    is_archived = db.Column(db.Boolean, default=False)
+    archived_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship(
@@ -50,6 +55,11 @@ class Notification(db.Model):
     sender = db.relationship(
         'User',
         foreign_keys='Notification.sender_id',
+        lazy='select',
+    )
+    replied_by = db.relationship(
+        'User',
+        foreign_keys='Notification.replied_by_id',
         lazy='select',
     )
     booking = db.relationship('Booking', foreign_keys=[booking_id], lazy='select')
@@ -159,6 +169,11 @@ class Notification(db.Model):
             data['recipient_label'] = (
                 'Менеджеру' if self.target_audience == 'managers' else 'Администратору'
             )
+            data['staff_reply'] = self.staff_reply
+            data['replied_at'] = format_local_datetime(self.replied_at) if self.replied_at else None
+            data['replier_name'] = self.replied_by.username if self.replied_by else None
+            data['is_archived'] = bool(self.is_archived)
+            data['archived_at'] = format_local_datetime(self.archived_at) if self.archived_at else None
         return data
 
     def _client_label(self):

@@ -1432,10 +1432,15 @@ body.nav-menu-open {
     margin-bottom: 12px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(47, 52, 40, 0.05);
+    position: relative;
 }
 
 .notify-card.unread {
-    border-color: var(--danger-color);
+    border-color: var(--border-color);
+}
+
+.notify-new-badge {
+    right: 44px;
 }
 
 .notify-head {
@@ -1470,9 +1475,7 @@ body.nav-menu-open {
 .notify-preview {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-style: italic;
 }
 
 .notify-meta {
@@ -1524,8 +1527,8 @@ body.nav-menu-open {
 }
 
 .feedback-read-status.pending {
-    background: #fef3c7;
-    color: #92400e;
+    background: #f3f4f6;
+    color: #4b5563;
 }
 
 .feedback-card {
@@ -1623,9 +1626,12 @@ body.nav-menu-open {
 .feedback-preview {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.feedback-card.open .feedback-preview {
+    display: none;
 }
 
 .feedback-meta {
@@ -1646,10 +1652,6 @@ body.nav-menu-open {
 .feedback-body {
     display: none;
     padding: 14px 18px 16px;
-}
-
-.feedback-card.open .feedback-preview {
-    display: none;
 }
 
 .feedback-card.open .feedback-body {
@@ -1717,6 +1719,55 @@ body.nav-menu-open {
     color: var(--text-primary);
     line-height: 1.5;
     white-space: pre-wrap;
+}
+
+.feedback-reply-block {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--primary-color);
+    background: #f4f7f0;
+}
+
+.feedback-reply-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-dark, #5a7350);
+    margin-bottom: 6px;
+}
+
+.feedback-reply-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.feedback-staff-actions {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.feedback-staff-actions .feedback-reply-input {
+    width: 100%;
+    margin: 8px 0 10px;
+    resize: vertical;
+    min-height: 72px;
+}
+
+.feedback-staff-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.feedback-card.archived {
+    background: #f8faf6;
+    opacity: 0.92;
+}
+
+.feedback-card.archived .feedback-title {
+    color: var(--text-secondary);
 }
 
 .subsection-title {

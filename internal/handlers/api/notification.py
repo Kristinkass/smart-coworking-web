@@ -23,6 +23,7 @@ def register_notification_routes(app):
 
         return (
             joinedload(models.Notification.sender),
+            joinedload(models.Notification.replied_by),
             joinedload(models.Notification.booking)
             .joinedload(Booking.place)
             .joinedload(Place.location)
@@ -65,13 +66,30 @@ def register_notification_routes(app):
             if notification.sender_id != current_user.id:
                 return False, 'Недостаточно прав'
             return True, None
+        return False, 'Обращения сотрудники архивируют, а не удаляют'
+
+    def _can_manage_feedback(notification):
+        if not notification.is_feedback():
+            return False, 'Не обращение клиента'
         if current_user.is_admin():
+            if notification.target_audience != 'admins':
+                return False, 'Обращение адресовано не администраторам'
             return True, None
         if current_user.role == 'manager':
             if notification.target_audience != 'managers':
                 return False, 'Обращение адресовано не менеджерам'
             return True, None
         return False, 'Недостаточно прав'
+
+    def _feedback_sort():
+        return (
+            models.Notification.is_archived.asc(),
+            models.Notification.created_at.desc(),
+        )
+
+    def _serialize_feedback_list(query):
+        rows = query.order_by(*_feedback_sort()).limit(50).all()
+        return [n.to_dict() for n in rows]
 
     def _client_feedback_query():
         """Обращения клиентов (sender – client, получатель – staff)."""
@@ -125,22 +143,25 @@ def register_notification_routes(app):
                 ).filter(
                     models.Notification.sender_id == current_user.id,
                     models.Notification.target_audience.in_(['managers', 'admins']),
-                ).order_by(models.Notification.created_at.desc()).limit(20).all()
-                sent_feedback = [n.to_dict() for n in sent]
+                )
+                sent_feedback = _serialize_feedback_list(sent)
             elif current_user.role == 'manager':
                 incoming = _client_feedback_query().options(
                     *_feedback_query_options()
                 ).filter(
                     models.Notification.target_audience == 'managers',
-                ).order_by(models.Notification.created_at.desc()).limit(50).all()
-                feedback = [n.to_dict() for n in incoming]
+                )
+                feedback = _serialize_feedback_list(incoming)
             else:
                 incoming = _client_feedback_query().options(
                     *_feedback_query_options()
                 ).filter(
                     models.Notification.target_audience == 'admins',
-                ).order_by(models.Notification.created_at.desc()).limit(50).all()
-                feedback = [n.to_dict() for n in incoming]
+                )
+                feedback = _serialize_feedback_list(incoming)
+
+            def _count_unread_feedback(items):
+                return sum(1 for n in items if not n.get('is_read') and not n.get('is_archived'))
 
             return jsonify({
                 'system': system,
@@ -148,6 +169,9 @@ def register_notification_routes(app):
                 'sent_feedback': sent_feedback,
                 'notifications': payload,
                 'unread_count': sum(1 for n in payload if not n['is_read']),
+                'feedback_unread_count': _count_unread_feedback(
+                    sent_feedback if current_user.role == 'client' else feedback
+                ),
             })
         except Exception as e:
             return jsonify({'error': user_error_message(e)}), 500
@@ -179,6 +203,70 @@ def register_notification_routes(app):
             db.session.delete(notification)
             db.session.commit()
             return jsonify({'success': True, 'message': 'Обращение удалено'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+    @app.route('/api/feedback/<int:notification_id>/reply', methods=['POST'])
+    @login_required
+    def reply_to_feedback(notification_id):
+        """Ответ сотрудника на обращение клиента."""
+        try:
+            notification = Notification.query.get_or_404(notification_id)
+            ok, err = _can_manage_feedback(notification)
+            if not ok:
+                return jsonify({'success': False, 'error': err}), 403
+
+            data = request.json or {}
+            reply_text = (data.get('message') or '').strip()
+            if len(reply_text) < 3:
+                return jsonify({
+                    'success': False,
+                    'error': 'Напишите ответ не короче 3 символов',
+                }), 400
+
+            notification.staff_reply = reply_text
+            notification.replied_at = datetime.utcnow()
+            notification.replied_by_id = current_user.id
+            notification.is_read = True
+
+            client_notification = models.Notification(
+                title=f'Ответ на обращение: {notification.title}',
+                message=reply_text,
+                target_audience='all',
+                user_id=notification.sender_id,
+                sender_id=current_user.id,
+            )
+            db.session.add(client_notification)
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Ответ отправлен клиенту',
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+    @app.route('/api/feedback/<int:notification_id>/archive', methods=['POST'])
+    @login_required
+    def archive_feedback(notification_id):
+        """Архивировать обращение (решено) — остаётся в истории внизу списка."""
+        try:
+            notification = Notification.query.get_or_404(notification_id)
+            ok, err = _can_manage_feedback(notification)
+            if not ok:
+                return jsonify({'success': False, 'error': err}), 403
+
+            notification.is_archived = True
+            notification.archived_at = datetime.utcnow()
+            notification.is_read = True
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Обращение перенесено в архив',
+            })
         except Exception as e:
             db.session.rollback()
             return jsonify({'success': False, 'error': user_error_message(e)}), 500

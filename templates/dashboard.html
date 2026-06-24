@@ -291,6 +291,13 @@
             align-items: center;
             gap: 10px;
             transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-btn .notify-tab-badge {
+            position: static;
+            margin-left: 2px;
+            flex-shrink: 0;
         }
 
         .tab-btn:hover {
@@ -979,7 +986,7 @@
                     <button class="tab-btn" onclick="switchTab('abonement', event)">
                         <i class="fas fa-ticket-alt"></i> Абонемент
                     </button>
-                    <button class="tab-btn" onclick="switchTab('notifications', event)">
+                    <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications', event)">
                         <i class="fas fa-bell"></i> Уведомления
                     </button>
                     <button class="tab-btn" onclick="switchTab('settings', event)">
@@ -1272,8 +1279,9 @@
                 </div>
 
                 <div id="tab-notifications" class="tab-content">
-                    <h2><i class="fas fa-bell"></i> Уведомления и обратная связь</h2>
+                    <h2><i class="fas fa-bell"></i> {% if current_user.role == 'client' %}Уведомления и обратная связь{% else %}Уведомления{% endif %}</h2>
 
+                    {% if current_user.role == 'client' %}
                     <div class="notify-section-tabs">
                         <button type="button" class="notify-section-btn active" data-notify-section="system" onclick="switchNotifySection('system', this)">
                             <i class="fas fa-bell"></i> Системные уведомления
@@ -1282,6 +1290,7 @@
                             <i class="fas fa-comment-dots"></i> Обратная связь
                         </button>
                     </div>
+                    {% endif %}
 
                     <div id="notify-section-system" class="notify-section-panel active">
                         <div id="notifications-system-container">
@@ -1342,14 +1351,6 @@
                         </div>
                         <h3 class="subsection-title">Мои отправленные обращения</h3>
                         <div id="notifications-sent-feedback-container">
-                            <div class="empty-state">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <h3>Загрузка...</h3>
-                            </div>
-                        </div>
-                        {% else %}
-                        <h3 class="subsection-title">Входящие обращения клиентов</h3>
-                        <div id="notifications-feedback-container">
                             <div class="empty-state">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <h3>Загрузка...</h3>
@@ -1426,28 +1427,21 @@
                     }
                     container.innerHTML = items.map(n => {
                         const unreadClass = !n.is_read ? ' unread' : '';
-                        const isLong = (n.message || '').length > 100 || (n.message || '').includes('\n');
-                        if (!isLong) {
-                            return `
-                            <div class="notify-card notify-card-flat${unreadClass}" data-notify-id="${n.id}" data-unread="${!n.is_read}">
-                                <div class="notify-head-static">
-                                    <div class="notify-title">
-                                        <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}
-                                    </div>
-                                    <div class="notify-text">${escapeHtml(n.message)}</div>
-                                    <div class="notify-meta">${escapeHtml(n.created_at)}</div>
-                                </div>
-                            </div>`;
-                        }
-                        const preview = escapeHtml(n.message.length > 120 ? n.message.slice(0, 120) + '…' : n.message);
+                        const newBadgeHtml = !n.is_read
+                            ? '<span class="feedback-new-badge notify-new-badge">Новое</span>'
+                            : '';
+                        const previewText = n.is_read
+                            ? 'Нажмите, чтобы открыть'
+                            : 'Нажмите, чтобы прочитать';
                         return `
                             <div class="notify-card${unreadClass}" data-notify-id="${n.id}" data-unread="${!n.is_read}">
+                                ${newBadgeHtml}
                                 <button type="button" class="notify-head" onclick="toggleSystemNotification(this)">
                                     <div class="notify-head-main">
                                         <div class="notify-title">
                                             <i class="fas fa-bell" style="color:var(--primary-color);margin-right:6px;"></i>${escapeHtml(n.title)}
                                         </div>
-                                        <div class="notify-preview">${preview}</div>
+                                        <div class="notify-preview">${previewText}</div>
                                         <div class="notify-meta">${escapeHtml(n.created_at)}</div>
                                     </div>
                                     <i class="fas fa-chevron-down notify-chevron"></i>
@@ -1489,6 +1483,34 @@
                     return `<div class="feedback-booking"><strong>Привязка:</strong>${path}${details}</div>`;
                 }
 
+                function renderStaffReplyBlock(n) {
+                    if (!n.staff_reply) return '';
+                    const who = escapeHtml(n.replier_name || 'сотрудника');
+                    const when = n.replied_at ? ` · ${escapeHtml(n.replied_at)}` : '';
+                    return `
+                        <div class="feedback-reply-block">
+                            <div class="feedback-reply-label"><i class="fas fa-reply"></i> Ответ (${who}${when})</div>
+                            <div class="feedback-reply-text">${escapeHtml(n.staff_reply)}</div>
+                        </div>`;
+                }
+
+                function renderStaffActions(n) {
+                    if (!FEEDBACK_CAN_MARK_READ || n.is_archived) return '';
+                    return `
+                        <div class="feedback-staff-actions">
+                            <label class="feedback-reply-label">Ответ клиенту</label>
+                            <textarea class="form-control feedback-reply-input" id="feedback-reply-${n.id}" rows="3" placeholder="Напишите ответ клиенту..."></textarea>
+                            <div class="feedback-staff-btns">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="replyToFeedback(${n.id})">
+                                    <i class="fas fa-paper-plane"></i> Отправить ответ
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="archiveFeedback(${n.id})">
+                                    <i class="fas fa-check"></i> Решено · в архив
+                                </button>
+                            </div>
+                        </div>`;
+                }
+
                 function renderFeedbackNotifications(items, container, emptyText, showReadStatus) {
                     if (!items.length) {
                         container.innerHTML = `
@@ -1499,61 +1521,112 @@
                         return;
                     }
                     container.innerHTML = items.map(n => {
-                        const unreadClass = !n.is_read ? ' unread' : '';
+                        const isUnread = !n.is_read && !n.is_archived;
+                        const unreadClass = isUnread ? ' unread' : '';
+                        const archivedClass = n.is_archived ? ' archived' : '';
                         const bookingBlock = formatFeedbackBookingBlock(n.booking);
                         const metaParts = [escapeHtml(n.created_at)];
                         if (n.sender_name) metaParts.unshift(escapeHtml(n.sender_name));
+                        if (n.sender_phone) metaParts.unshift(escapeHtml(n.sender_phone));
                         if (n.recipient_label) metaParts.push(escapeHtml(n.recipient_label));
-                        const readStatusHtml = showReadStatus
-                            ? (n.is_read
-                                ? '<span class="feedback-read-status read"><i class="fas fa-check-double"></i> Прочитано</span>'
-                                : '<span class="feedback-read-status pending"><i class="fas fa-clock"></i> Не прочитано</span>')
+                        if (n.is_archived && n.archived_at) metaParts.push('В архиве с ' + escapeHtml(n.archived_at));
+
+                        let readStatusHtml = '';
+                        if (showReadStatus) {
+                            if (n.is_archived) {
+                                readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-archive"></i> Решено</span>';
+                            } else if (n.staff_reply) {
+                                readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-reply"></i> Получен ответ</span>';
+                            } else {
+                                readStatusHtml = '<span class="feedback-read-status pending"><i class="fas fa-hourglass-half"></i> Ожидаем ответ</span>';
+                            }
+                        } else if (n.is_archived) {
+                            readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-archive"></i> В архиве</span>';
+                        }
+
+                        let newBadgeHtml = '';
+                        if (!showReadStatus && isUnread) {
+                            newBadgeHtml = '<span class="feedback-new-badge">Новое</span>';
+                        }
+
+                        const previewText = showReadStatus
+                            ? (n.is_archived ? 'Архивное обращение' : (n.staff_reply ? 'Есть ответ сотрудника' : 'Ожидаем ответ'))
+                            : (isUnread ? 'Нажмите, чтобы прочитать сообщение' : (n.is_archived ? 'Архивное обращение' : 'Нажмите, чтобы открыть'));
+
+                        const deleteBtnHtml = showReadStatus
+                            ? `<button type="button" class="feedback-delete-btn" title="Удалить из истории"
+                                    onclick="deleteFeedback(${n.id}, event)">
+                                <i class="fas fa-trash"></i>
+                               </button>`
                             : '';
-                        const newBadgeHtml = !n.is_read
-                            ? (showReadStatus
-                                ? '<span class="feedback-new-badge feedback-new-badge--waiting">Не прочитано</span>'
-                                : '<span class="feedback-new-badge">Новое</span>')
-                            : '';
+
                         return `
-                            <div class="feedback-card${unreadClass}" data-feedback-id="${n.id}" data-unread="${!n.is_read}">
+                            <div class="feedback-card${unreadClass}${archivedClass}" data-feedback-id="${n.id}" data-unread="${isUnread}">
                                 ${newBadgeHtml}
                                 <div class="feedback-head-row">
                                     <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
                                         <div class="feedback-head-main">
                                             <div class="feedback-title">${escapeHtml(n.title)}</div>
+                                            <div class="feedback-preview">${previewText}</div>
                                             <span class="feedback-meta">${metaParts.join(' · ')}</span>
                                         </div>
                                         <i class="fas fa-chevron-down feedback-chevron"></i>
                                     </button>
                                     ${readStatusHtml ? `<div class="feedback-status-wrap">${readStatusHtml}</div>` : ''}
-                                    <button type="button" class="feedback-delete-btn" title="Удалить из истории"
-                                            onclick="deleteFeedback(${n.id}, event)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    ${deleteBtnHtml}
                                 </div>
                                 <div class="feedback-body">
                                     <div class="feedback-text">${escapeHtml(n.message)}</div>
                                     ${bookingBlock || '<div class="feedback-booking-empty">Без привязки к бронированию</div>'}
+                                    ${renderStaffReplyBlock(n)}
+                                    ${renderStaffActions(n)}
                                 </div>
                             </div>`;
                     }).join('');
                 }
 
-                function updateFeedbackTabBadge(data) {
-                    const items = {% if current_user.role == 'client' %}data.sent_feedback || []{% else %}data.feedback || []{% endif %};
-                    const unread = items.filter(n => !n.is_read).length;
-                    const btn = document.querySelector('.notify-section-btn[data-notify-section="feedback"]');
-                    if (!btn) return;
-                    let badge = btn.querySelector('.notify-tab-badge');
-                    if (unread > 0) {
+                function setUnreadBadge(el, count) {
+                    if (!el) return;
+                    let badge = el.querySelector('.notify-tab-badge');
+                    if (count > 0) {
                         if (!badge) {
                             badge = document.createElement('span');
                             badge.className = 'notify-tab-badge';
-                            btn.appendChild(badge);
+                            el.appendChild(badge);
                         }
-                        badge.textContent = unread > 9 ? '9+' : String(unread);
+                        badge.textContent = count > 9 ? '9+' : String(count);
                     } else if (badge) {
                         badge.remove();
+                    }
+                }
+
+                function updateNotificationsBadges(data) {
+                    const systemUnread = (data.system || []).filter(n => !n.is_read).length;
+                    const feedbackItems = {% if current_user.role == 'client' %}data.sent_feedback || []{% else %}[]{% endif %};
+                    const feedbackUnread = typeof data.feedback_unread_count === 'number'
+                        ? data.feedback_unread_count
+                        : feedbackItems.filter(n => !n.is_read && !n.is_archived).length;
+                    const totalUnread = systemUnread + feedbackUnread;
+
+                    setUnreadBadge(
+                        document.querySelector('.tab-btn[data-tab="notifications"]'),
+                        totalUnread
+                    );
+                    setUnreadBadge(
+                        document.querySelector('.notify-section-btn[data-notify-section="system"]'),
+                        systemUnread
+                    );
+                    setUnreadBadge(
+                        document.querySelector('.notify-section-btn[data-notify-section="feedback"]'),
+                        feedbackUnread
+                    );
+
+                    const mobileSelect = document.getElementById('tab-mobile-select');
+                    const mobileOpt = mobileSelect?.querySelector('option[value="notifications"]');
+                    if (mobileOpt) {
+                        mobileOpt.textContent = totalUnread > 0
+                            ? `Уведомления (${totalUnread > 9 ? '9+' : totalUnread})`
+                            : 'Уведомления';
                     }
                 }
 
@@ -1567,8 +1640,6 @@
                             document.getElementById('notifications-system-container').innerHTML = errHtml;
                             {% if current_user.role == 'client' %}
                             document.getElementById('notifications-sent-feedback-container').innerHTML = errHtml;
-                            {% else %}
-                            document.getElementById('notifications-feedback-container').innerHTML = errHtml;
                             {% endif %}
                             return;
                         }
@@ -1580,15 +1651,8 @@
                             'Вы ещё не отправляли обращений',
                             true
                         );
-                        {% else %}
-                        renderFeedbackNotifications(
-                            data.feedback || [],
-                            document.getElementById('notifications-feedback-container'),
-                            'Нет входящих обращений',
-                            false
-                        );
                         {% endif %}
-                        updateFeedbackTabBadge(data);
+                        updateNotificationsBadges(data);
                     } catch (e) {
                         console.error(e);
                     }
@@ -1608,6 +1672,49 @@
                     } catch (e) {
                         console.error(e);
                         showToast('Ошибка при удалении обращения', 'error');
+                    }
+                }
+
+                async function replyToFeedback(id) {
+                    const textarea = document.getElementById('feedback-reply-' + id);
+                    const message = (textarea?.value || '').trim();
+                    if (message.length < 3) {
+                        showToast('Напишите ответ не короче 3 символов', 'error');
+                        return;
+                    }
+                    try {
+                        const res = await fetch('/api/feedback/' + id + '/reply', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message }),
+                        });
+                        const data = await res.json();
+                        if (!data.success) {
+                            showToast(data.error || 'Не удалось отправить ответ', 'error');
+                            return;
+                        }
+                        showToast(data.message || 'Ответ отправлен', 'success');
+                        await loadNotifications();
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Ошибка при отправке ответа', 'error');
+                    }
+                }
+
+                async function archiveFeedback(id) {
+                    if (!(await showConfirm('Перенести обращение в архив как решённое?', { confirmText: 'В архив' }))) return;
+                    try {
+                        const res = await fetch('/api/feedback/' + id + '/archive', { method: 'POST' });
+                        const data = await res.json();
+                        if (!data.success) {
+                            showToast(data.error || 'Не удалось архивировать', 'error');
+                            return;
+                        }
+                        showToast(data.message || 'Обращение в архиве', 'success');
+                        await loadNotifications();
+                    } catch (e) {
+                        console.error(e);
+                        showToast('Ошибка при архивации', 'error');
                     }
                 }
                 async function markRead(id, btn) {
@@ -1642,7 +1749,12 @@
                         showToast('Ошибка при отправке обращения', 'error');
                     }
                 }
-                document.addEventListener('DOMContentLoaded', loadNotifications);
+                document.addEventListener('DOMContentLoaded', () => {
+                    loadNotifications();
+                    setInterval(() => {
+                        if (!document.hidden) loadNotifications();
+                    }, 45000);
+                });
                 </script>
 
                 <!-- Вкладка: Настройки -->
@@ -1665,14 +1777,14 @@
                                         <input type="tel" id="phone" name="phone" class="form-control phone-mask"
                                                value="{{ format_phone(current_user.phone) }}"
                                                placeholder="+7 999 123 45 67" readonly disabled>
-                                        <small style="color: #6b7280;">Телефон нельзя изменить — он используется для входа</small>
+                                        <small style="color: #6b7280;">Телефон нельзя изменить</small>
                                     </div>
 
                                     <div class="form-group full-width">
                                         <label for="email">Почта</label>
                                         <input type="email" id="email" name="email"
-                                               value="{{ current_user.email }}" class="form-control" readonly disabled>
-                                        <small style="color: #6b7280;">Почта не может быть изменена (используется для входа)</small>
+                                               value="{{ current_user.email or '' }}" class="form-control"
+                                               placeholder="example@mail.com">
                                     </div>
                                 </div>
 
@@ -1818,7 +1930,8 @@
             event.preventDefault();
 
             const formData = {
-                username: document.getElementById('username').value
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
             };
 
             try {

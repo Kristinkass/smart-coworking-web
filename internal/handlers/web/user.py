@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import func
 
 from internal.handlers.deps import Booking, Place, User, db, models, BookingRepository
+from internal.repositories.user_repository import UserRepository
 from internal.utils.phone import normalize_phone, digits_only
 from internal.utils.errors import user_error_message
 
@@ -79,22 +80,30 @@ def register_user_routes(app):
     @app.route('/api/update_profile', methods=['POST'])
     @login_required
     def update_profile():
-        """Обновить профиль (имя; email и телефон неизменяемы)"""
+        """Обновить профиль (имя и почта; телефон неизменяем)."""
         try:
             data = request.json
-            username = data.get('username')
+            username = (data.get('username') or '').strip()
 
             if not username:
                 return jsonify({'success': False, 'error': 'Имя пользователя обязательно'}), 400
-
-            if data.get('email') and data.get('email') != current_user.email:
-                return jsonify({'success': False, 'error': 'Изменить email нельзя'}), 400
 
             if data.get('phone') is not None:
                 incoming = normalize_phone(data.get('phone') or '') or (data.get('phone') or '').strip()
                 current = normalize_phone(current_user.phone or '') or (current_user.phone or '').strip()
                 if incoming and current and incoming != current:
-                    return jsonify({'success': False, 'error': 'Изменить телефон нельзя'}), 400
+                    return jsonify({'success': False, 'error': 'Телефон нельзя изменить'}), 400
+
+            email_raw = data.get('email')
+            if email_raw is not None:
+                email = (email_raw or '').strip().lower() or None
+                if email:
+                    if '@' not in email or '.' not in email.split('@')[-1]:
+                        return jsonify({'success': False, 'error': 'Укажите корректную почту'}), 400
+                    existing = UserRepository.get_by_email(email)
+                    if existing and existing.id != current_user.id:
+                        return jsonify({'success': False, 'error': 'Эта почта уже используется'}), 400
+                current_user.email = email
 
             current_user.username = username
 
