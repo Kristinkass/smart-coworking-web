@@ -44,6 +44,7 @@ class Notification(db.Model):
     replied_by_id = db.Column(db.Integer, db.ForeignKey('users.id_user', ondelete='SET NULL'), nullable=True)
     is_archived = db.Column(db.Boolean, default=False)
     archived_at = db.Column(db.DateTime, nullable=True)
+    reply_read_by_client = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship(
@@ -168,6 +169,10 @@ class Notification(db.Model):
             data['replier_name'] = self.replied_by.username if self.replied_by else None
             data['is_archived'] = bool(self.is_archived)
             data['archived_at'] = format_local_datetime(self.archived_at) if self.archived_at else None
+            data['reply_read_by_client'] = bool(self.reply_read_by_client)
+            data['has_unread_reply'] = bool(
+                self.staff_reply and not self.reply_read_by_client
+            )
         return data
 
     def _client_label(self):

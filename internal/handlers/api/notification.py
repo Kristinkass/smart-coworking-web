@@ -65,6 +65,8 @@ def register_notification_routes(app):
         if current_user.role == 'client':
             if notification.sender_id != current_user.id:
                 return False, 'Недостаточно прав'
+            if notification.staff_reply and notification.staff_reply.strip():
+                return False, 'Нельзя удалить обращение после ответа сотрудника'
             return True, None
         return False, 'Обращения сотрудники архивируют, а не удаляют'
 
@@ -134,6 +136,11 @@ def register_notification_routes(app):
             notifications = query.order_by(models.Notification.created_at.desc()).limit(50).all()
             payload = [n.to_dict() for n in notifications]
             system = [n for n in payload if n['kind'] == 'system']
+            if current_user.role == 'client':
+                system = [
+                    n for n in system
+                    if not (n.get('title') or '').startswith('Ответ на обращение:')
+                ]
 
             sent_feedback = []
             feedback = []
@@ -161,6 +168,11 @@ def register_notification_routes(app):
                 feedback = _serialize_feedback_list(incoming)
 
             def _count_unread_feedback(items):
+                if current_user.role == 'client':
+                    return sum(
+                        1 for n in items
+                        if n.get('staff_reply') and not n.get('reply_read_by_client')
+                    )
                 return sum(1 for n in items if not n.get('is_read') and not n.get('is_archived'))
 
             return jsonify({
@@ -229,15 +241,9 @@ def register_notification_routes(app):
             notification.replied_at = datetime.utcnow()
             notification.replied_by_id = current_user.id
             notification.is_read = True
-
-            client_notification = models.Notification(
-                title=f'Ответ на обращение: {notification.title}',
-                message=reply_text,
-                target_audience='all',
-                user_id=notification.sender_id,
-                sender_id=current_user.id,
-            )
-            db.session.add(client_notification)
+            notification.reply_read_by_client = False
+            notification.is_archived = True
+            notification.archived_at = datetime.utcnow()
             db.session.commit()
 
             return jsonify({
@@ -247,6 +253,25 @@ def register_notification_routes(app):
         except Exception as e:
             db.session.rollback()
             return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+    @app.route('/api/feedback/<int:notification_id>/read-reply', methods=['POST'])
+    @login_required
+    def mark_feedback_reply_read(notification_id):
+        """Клиент отметил ответ сотрудника на своё обращение как прочитанный."""
+        try:
+            notification = Notification.query.get_or_404(notification_id)
+            if current_user.role != 'client':
+                return jsonify({'success': False, 'error': 'Недостаточно прав'}), 403
+            if notification.sender_id != current_user.id:
+                return jsonify({'success': False, 'error': 'Недостаточно прав'}), 403
+            if not notification.staff_reply:
+                return jsonify({'success': True})
+            notification.reply_read_by_client = True
+            db.session.commit()
+            return jsonify({'success': True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/feedback/<int:notification_id>/archive', methods=['POST'])
     @login_required

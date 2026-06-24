@@ -58,8 +58,16 @@
           {% endfor %}
         </select>
       </div>
+      <div class="form-group" id="feedback-reply-hint" style="display:none;">
+        <p class="notify-hint" style="margin:0;padding:10px 12px;background:#f4f7f0;border-left:3px solid #8fa67a;border-radius:6px;">
+          <i class="fas fa-reply"></i> Ответ на обращение клиента. Текст ниже увидит клиент в разделе «Обратная связь».
+        </p>
+      </div>
       <button type="button" class="send-btn" onclick="sendNotification()" id="notify-btn">
         <i class="fas fa-paper-plane"></i> Отправить уведомление
+      </button>
+      <button type="button" class="send-btn" onclick="cancelFeedbackReply()" id="notify-cancel-reply-btn" style="display:none;margin-top:8px;background:#94a3b8;">
+        <i class="fas fa-times"></i> Отменить ответ
       </button>
       <div class="notify-result" id="notify-result"></div>
     </div>
@@ -110,6 +118,9 @@
 
   <script>
     const IS_ADMIN = {{ 'true' if current_user.is_admin() else 'false' }};
+    let pendingFeedbackReplyId = null;
+    const NOTIFY_BTN_DEFAULT = '<i class="fas fa-paper-plane"></i> Отправить уведомление';
+    const NOTIFY_BTN_REPLY = '<i class="fas fa-reply"></i> Отправить ответ на обращение';
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -150,32 +161,6 @@
       }
     }
 
-    async function replyFeedbackHistory(id) {
-      const message = await showPrompt('Текст ответа клиенту:', {
-        title: 'Ответ на обращение',
-        placeholder: 'Напишите ответ...',
-        multiline: true,
-        confirmText: 'Отправить',
-      });
-      if (!message || message.trim().length < 3) return;
-      try {
-        const r = await fetch('/api/feedback/' + id + '/reply', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: message.trim() }),
-        });
-        const d = await r.json();
-        if (!d.success) {
-          setResult('error', friendlyError(d.error, 'Не удалось отправить ответ'));
-          return;
-        }
-        setResult('success', d.message || 'Ответ отправлен клиенту');
-        loadHistory();
-      } catch (e) {
-        setResult('error', friendlyError(e, 'Не удалось отправить ответ'));
-      }
-    }
-
     async function archiveFeedbackHistory(id) {
       if (!(await showConfirm('Перенести обращение в архив как решённое?', { confirmText: 'В архив' }))) return;
       try {
@@ -205,7 +190,42 @@
       if (label) selectAudience(label, value);
     }
 
+    function clearFeedbackReplyMode() {
+      pendingFeedbackReplyId = null;
+      document.getElementById('notify-title').readOnly = false;
+      document.getElementById('feedback-reply-hint').style.display = 'none';
+      document.getElementById('notify-cancel-reply-btn').style.display = 'none';
+      document.getElementById('notify-btn').innerHTML = NOTIFY_BTN_DEFAULT;
+    }
+
+    function cancelFeedbackReply() {
+      clearFeedbackReplyMode();
+      document.getElementById('notify-title').value = '';
+      document.getElementById('notify-message').value = '';
+      setResult('success', 'Режим ответа на обращение отменён');
+    }
+
+    function prepareFeedbackReply(id, userId, clientName, feedbackTitle) {
+      pendingFeedbackReplyId = id;
+      setAudience('user');
+      document.getElementById('notify-user').value = String(userId || '');
+      document.getElementById('notify-title').value = `Ответ: ${feedbackTitle || 'обращение'}`;
+      document.getElementById('notify-title').readOnly = true;
+      const name = (clientName || '').trim();
+      document.getElementById('notify-message').value = name ? `${name}, здравствуйте!\n\n` : '';
+      document.getElementById('feedback-reply-hint').style.display = 'block';
+      document.getElementById('notify-cancel-reply-btn').style.display = 'inline-flex';
+      document.getElementById('notify-btn').innerHTML = NOTIFY_BTN_REPLY;
+      document.getElementById('notify-message').focus();
+      document.querySelector('.notify-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function replyFeedbackHistory(id, userId, clientName, feedbackTitle) {
+      prepareFeedbackReply(id, userId, clientName, feedbackTitle);
+    }
+
     function writeToClient(userId, clientName, title) {
+      clearFeedbackReplyMode();
       setAudience('user');
       const select = document.getElementById('notify-user');
       select.value = String(userId || '');
@@ -281,7 +301,7 @@
                 <td>
                   <div class="feedback-actions">
                     ${!n.is_archived ? `
-                    <button type="button" onclick="replyFeedbackHistory(${n.id})">
+                    <button type="button" onclick="replyFeedbackHistory(${n.id}, ${n.sender_id || 0}, '${escapeHtml(clientName).replace(/'/g, "\\'")}', '${escapeHtml(n.title).replace(/'/g, "\\'")}')">
                       <i class="fas fa-reply"></i> Ответить
                     </button>
                     <button type="button" onclick="archiveFeedbackHistory(${n.id})">
@@ -309,6 +329,39 @@
       const userId = document.getElementById('notify-user').value;
       const result = document.getElementById('notify-result');
       const btn = document.getElementById('notify-btn');
+
+      if (pendingFeedbackReplyId) {
+        if (message.length < 3) {
+          setResult('error', 'Напишите ответ не короче 3 символов');
+          return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+        try {
+          const response = await fetch('/api/feedback/' + pendingFeedbackReplyId + '/reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            setResult('success', data.message || 'Ответ отправлен клиенту');
+            document.getElementById('notify-title').value = '';
+            document.getElementById('notify-message').value = '';
+            clearFeedbackReplyMode();
+            loadHistory();
+          } else {
+            setResult('error', friendlyError(data.error, 'Не удалось отправить ответ'));
+          }
+        } catch (e) {
+          setResult('error', friendlyError(e, 'Не удалось отправить ответ'));
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = pendingFeedbackReplyId ? NOTIFY_BTN_REPLY : NOTIFY_BTN_DEFAULT;
+        }
+        return;
+      }
+
       if (!title || !message) {
         setResult('error', 'Заполните заголовок и текст уведомления');
         return;
@@ -338,6 +391,7 @@
             : 'Уведомление успешно отправлено!');
           document.getElementById('notify-title').value = '';
           document.getElementById('notify-message').value = '';
+          clearFeedbackReplyMode();
         } else {
           setResult('error', friendlyError(data.error, 'Не удалось отправить уведомление'));
         }
@@ -345,8 +399,8 @@
         setResult('error', friendlyError(e, 'Не удалось отправить уведомление'));
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить уведомление';
-        if (document.getElementById('notify-result').classList.contains('success')) loadHistory();
+        btn.innerHTML = pendingFeedbackReplyId ? NOTIFY_BTN_REPLY : NOTIFY_BTN_DEFAULT;
+        if (document.getElementById('notify-result').classList.contains('success') && !pendingFeedbackReplyId) loadHistory();
       }
     }
   </script>

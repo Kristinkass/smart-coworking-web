@@ -1401,7 +1401,20 @@
                         if (FEEDBACK_CAN_MARK_READ && card.classList.contains('unread')) {
                             const id = card.dataset.feedbackId;
                             if (id) markReadById(parseInt(id, 10));
+                        } else if (!FEEDBACK_CAN_MARK_READ && card.dataset.hasUnreadReply === 'true') {
+                            const id = card.dataset.feedbackId;
+                            if (id) markFeedbackReplyRead(parseInt(id, 10));
                         }
+                    }
+                }
+
+                async function markFeedbackReplyRead(id) {
+                    try {
+                        const res = await fetch('/api/feedback/' + id + '/read-reply', { method: 'POST' });
+                        if (!res.ok) return;
+                        await loadNotifications();
+                    } catch (e) {
+                        console.error(e);
                     }
                 }
 
@@ -1483,24 +1496,7 @@
                         </div>`;
                 }
 
-                function renderStaffActions(n) {
-                    if (!FEEDBACK_CAN_MARK_READ || n.is_archived) return '';
-                    return `
-                        <div class="feedback-staff-actions">
-                            <label class="feedback-reply-label">Ответ клиенту</label>
-                            <textarea class="form-control feedback-reply-input" id="feedback-reply-${n.id}" rows="3" placeholder="Напишите ответ клиенту..."></textarea>
-                            <div class="feedback-staff-btns">
-                                <button type="button" class="btn btn-primary btn-sm" onclick="replyToFeedback(${n.id})">
-                                    <i class="fas fa-paper-plane"></i> Отправить ответ
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="archiveFeedback(${n.id})">
-                                    <i class="fas fa-check"></i> Решено · в архив
-                                </button>
-                            </div>
-                        </div>`;
-                }
-
-                function renderFeedbackNotifications(items, container, emptyText, showReadStatus) {
+                function renderFeedbackNotifications(items, container, emptyText, isClientView) {
                     if (!items.length) {
                         container.innerHTML = `
                             <div class="empty-state">
@@ -1510,7 +1506,10 @@
                         return;
                     }
                     container.innerHTML = items.map(n => {
-                        const isUnread = !n.is_read && !n.is_archived;
+                        const hasUnreadReply = isClientView && n.staff_reply && !n.reply_read_by_client;
+                        const isUnread = isClientView
+                            ? hasUnreadReply
+                            : (!n.is_read && !n.is_archived);
                         const unreadClass = isUnread ? ' unread' : '';
                         const archivedClass = n.is_archived ? ' archived' : '';
                         const bookingBlock = formatFeedbackBookingBlock(n.booking);
@@ -1520,20 +1519,23 @@
                         if (n.recipient_label) metaParts.push(escapeHtml(n.recipient_label));
 
                         let readStatusHtml = '';
-                        if (!showReadStatus && n.is_archived) {
+                        if (n.is_archived) {
                             readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-archive"></i> В архиве</span>';
                         }
 
                         let newBadgeHtml = '';
-                        if (!showReadStatus && isUnread) {
+                        if (hasUnreadReply) {
+                            newBadgeHtml = '<span class="feedback-new-badge">Новый ответ</span>';
+                        } else if (!isClientView && isUnread) {
                             newBadgeHtml = '<span class="feedback-new-badge">Новое</span>';
                         }
 
-                        const previewText = showReadStatus
-                            ? 'Нажмите, чтобы открыть'
+                        const previewText = isClientView
+                            ? (hasUnreadReply ? 'Есть ответ сотрудника' : (n.is_archived ? 'В архиве' : 'Нажмите, чтобы открыть'))
                             : (isUnread ? 'Нажмите, чтобы прочитать' : 'Нажмите, чтобы открыть');
 
-                        const deleteBtnHtml = showReadStatus
+                        const canDelete = isClientView && !n.staff_reply;
+                        const deleteBtnHtml = canDelete
                             ? `<button type="button" class="feedback-delete-btn" title="Удалить из истории"
                                     onclick="deleteFeedback(${n.id}, event)">
                                 <i class="fas fa-trash"></i>
@@ -1541,7 +1543,7 @@
                             : '';
 
                         return `
-                            <div class="feedback-card${unreadClass}${archivedClass}" data-feedback-id="${n.id}" data-unread="${isUnread}">
+                            <div class="feedback-card${unreadClass}${archivedClass}" data-feedback-id="${n.id}" data-unread="${isUnread}" data-has-unread-reply="${hasUnreadReply}">
                                 ${newBadgeHtml}
                                 <div class="feedback-head-row">
                                     <button type="button" class="feedback-head" onclick="toggleFeedbackCard(this)">
@@ -1559,7 +1561,6 @@
                                     <div class="feedback-text">${escapeHtml(n.message)}</div>
                                     ${bookingBlock}
                                     ${renderStaffReplyBlock(n)}
-                                    ${renderStaffActions(n)}
                                 </div>
                             </div>`;
                     }).join('');
@@ -1585,7 +1586,7 @@
                     const feedbackItems = {% if current_user.role == 'client' %}data.sent_feedback || []{% else %}[]{% endif %};
                     const feedbackUnread = typeof data.feedback_unread_count === 'number'
                         ? data.feedback_unread_count
-                        : feedbackItems.filter(n => !n.is_read && !n.is_archived).length;
+                        : feedbackItems.filter(n => n.staff_reply && !n.reply_read_by_client).length;
                     const totalUnread = systemUnread + feedbackUnread;
 
                     setUnreadBadge(
@@ -1655,48 +1656,6 @@
                     }
                 }
 
-                async function replyToFeedback(id) {
-                    const textarea = document.getElementById('feedback-reply-' + id);
-                    const message = (textarea?.value || '').trim();
-                    if (message.length < 3) {
-                        showToast('Напишите ответ не короче 3 символов', 'error');
-                        return;
-                    }
-                    try {
-                        const res = await fetch('/api/feedback/' + id + '/reply', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ message }),
-                        });
-                        const data = await res.json();
-                        if (!data.success) {
-                            showToast(data.error || 'Не удалось отправить ответ', 'error');
-                            return;
-                        }
-                        showToast(data.message || 'Ответ отправлен', 'success');
-                        await loadNotifications();
-                    } catch (e) {
-                        console.error(e);
-                        showToast('Ошибка при отправке ответа', 'error');
-                    }
-                }
-
-                async function archiveFeedback(id) {
-                    if (!(await showConfirm('Перенести обращение в архив как решённое?', { confirmText: 'В архив' }))) return;
-                    try {
-                        const res = await fetch('/api/feedback/' + id + '/archive', { method: 'POST' });
-                        const data = await res.json();
-                        if (!data.success) {
-                            showToast(data.error || 'Не удалось архивировать', 'error');
-                            return;
-                        }
-                        showToast(data.message || 'Обращение в архиве', 'success');
-                        await loadNotifications();
-                    } catch (e) {
-                        console.error(e);
-                        showToast('Ошибка при архивации', 'error');
-                    }
-                }
                 async function markRead(id, btn) {
                     await markReadById(id);
                 }

@@ -494,6 +494,7 @@ def run_migrations():
                 ('replied_by_id', 'INTEGER REFERENCES users(id_user) ON DELETE SET NULL'),
                 ('is_archived', 'BOOLEAN DEFAULT FALSE'),
                 ('archived_at', 'TIMESTAMP'),
+                ('reply_read_by_client', 'BOOLEAN DEFAULT TRUE'),
             ):
                 if col_name not in notif_columns:
                     print(f'[MIGRATE] Добавляем {col_name} в notifications...')
@@ -503,6 +504,21 @@ def run_migrations():
                         ))
                         conn.commit()
                     notif_columns.append(col_name)
+
+            if 'reply_read_by_client' in notif_columns:
+                with db.engine.connect() as conn:
+                    conn.execute(text(
+                        "UPDATE notifications SET reply_read_by_client = FALSE "
+                        "WHERE staff_reply IS NOT NULL AND TRIM(staff_reply) != '' "
+                        "AND reply_read_by_client IS TRUE"
+                    ))
+                    conn.execute(text(
+                        "UPDATE notifications SET is_archived = TRUE, "
+                        "archived_at = COALESCE(archived_at, replied_at, CURRENT_TIMESTAMP) "
+                        "WHERE staff_reply IS NOT NULL AND TRIM(staff_reply) != '' "
+                        "AND (is_archived IS FALSE OR is_archived IS NULL)"
+                    ))
+                    conn.commit()
 
         # 5b. subscription_id в bookings
         if inspector.has_table('bookings'):
