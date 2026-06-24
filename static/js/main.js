@@ -152,15 +152,3 @@ function formatPrice(price) {
         minimumFractionDigits: 0
     }).format(price);
 }
-
-// Проверка авторизации
-function checkAuth() {
-    const authRequiredPaths = ['/map', '/dashboard', '/admin'];
-    const currentPath = window.location.pathname;
-
-    if (authRequiredPaths.some(path => currentPath.startsWith(path))) {
-        // Проверяем наличие токена или сессии
-        // В реальном приложении здесь была бы проверка JWT
-        console.log('Auth check for:', currentPath);
-    }
-}

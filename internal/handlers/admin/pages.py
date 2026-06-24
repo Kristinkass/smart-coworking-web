@@ -47,11 +47,11 @@ def register_admin_pages_routes(app):
             total_meeting_rooms = compute_meeting_room_count()
             active_bookings = models.Booking.query.filter_by(status='active').count()
 
-            # Доход за сегодня (ИСПРАВЛЕНО)
+            # Доход за сегодня: только завершённые бронирования за сегодняшний день.
             today = datetime.now().date()
             today_revenue_result = db.session.query(db.func.sum(models.Booking.total_price)).filter(
                 models.Booking.booking_date == today,
-                models.Booking.status == 'active'
+                models.Booking.status == 'completed'
             ).first()
             today_revenue = today_revenue_result[0] if today_revenue_result[0] else 0.0
 
