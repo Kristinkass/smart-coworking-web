@@ -59,6 +59,26 @@ def _category_duplicate(kind, name, capacity, width_m, height_m, exclude_id=None
     return None
 
 
+def _category_identity(cat):
+    return (
+        (cat.kind or '').strip(),
+        (cat.name or '').strip().lower(),
+        int(cat.capacity or 0),
+        round(float(cat.width_m or 0), 2),
+        round(float(cat.height_m or 0), 2),
+    )
+
+
+def _category_identity_from_values(kind, name, capacity, width_m, height_m):
+    return (
+        (kind or '').strip(),
+        (name or '').strip().lower(),
+        int(capacity or 0),
+        round(float(width_m or 0), 2),
+        round(float(height_m or 0), 2),
+    )
+
+
 def _place_category_payload(place):
     cat = place.category
     return {
@@ -265,15 +285,19 @@ def api_update_category(category_id):
             if kind_err:
                 return jsonify({'success': False, 'error': kind_err}), 400
 
-        duplicate = _category_duplicate(
+        identity_changed = _category_identity(category) != _category_identity_from_values(
             new_kind, new_name, new_capacity, new_width_m, new_height_m,
-            exclude_id=category.id,
         )
-        if duplicate:
-            return jsonify({
-                'success': False,
-                'error': f'Такая категория уже есть: «{duplicate.name}»',
-            }), 400
+        if identity_changed:
+            duplicate = _category_duplicate(
+                new_kind, new_name, new_capacity, new_width_m, new_height_m,
+                exclude_id=category.id,
+            )
+            if duplicate:
+                return jsonify({
+                    'success': False,
+                    'error': f'Такая категория уже есть: «{duplicate.name}»',
+                }), 400
 
         if 'name' in data:
             category.name = new_name

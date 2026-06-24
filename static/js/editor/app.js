@@ -15,6 +15,7 @@
   let wallMode = false, doorMode = false, wallMoveMode = false, wallStart = null;
   let selection = null; // { type: 'location'|'desk', room, place, draft }
   let variants = [], variantMode = 'desks';
+  let variantsRequestSeq = 0;
   let _createBusy = false, _tplBound = false;
 
   const $ = id => document.getElementById(id);
@@ -882,6 +883,14 @@
     }
     helper.style.display = 'block';
     $('layout-helper-title').textContent = 'Варианты размещения';
+    const requestId = ++variantsRequestSeq;
+    const selectionKey = [
+      selection.room?.room_key || '',
+      selection.place?.code || '',
+      $('prop-location-zone')?.value || '',
+    ].join('|');
+    metrics.innerHTML = 'Загрузка вариантов...';
+    options.innerHTML = '';
 
     try {
       const room = selection.room;
@@ -889,6 +898,14 @@
       const data = selection.draft || !selection.place
         ? await fetchRoomVariants(room, null)
         : await fetchRoomVariants(room, selection.place.code);
+      const currentKey = [
+        selection?.room?.room_key || '',
+        selection?.place?.code || '',
+        $('prop-location-zone')?.value || '',
+      ].join('|');
+      if (requestId !== variantsRequestSeq || currentKey !== selectionKey) {
+        return;
+      }
       variants = data.variants || [];
       variantMode = data.mode || 'desks';
       const roomW = room?.width ?? selection.place?.width ?? 0;
@@ -926,6 +943,7 @@
           : `${label} · ${rw}×${rh} м – подберите тип столов и сетку`;
       renderVariantCards(options);
     } catch (e) {
+      if (requestId !== variantsRequestSeq) return;
       metrics.innerHTML = 'Ошибка загрузки вариантов';
       options.innerHTML = `<div class="metric">${escapeHtml(friendlyError(e, 'Не удалось загрузить варианты'))}</div>`;
       toast(e.message || 'Не удалось загрузить варианты', 'error');
@@ -2005,7 +2023,18 @@
     updateZoneFields();
     loadVariantsForSelection();
   });
-  $('prop-category')?.addEventListener('change', loadVariantsForSelection);
+  $('prop-category')?.addEventListener('change', () => {
+    const z = selectedZone();
+    if (!isRoomZone(z)) {
+      loadVariantsForSelection();
+      return;
+    }
+    const nameInput = $('prop-name');
+    const selectedName = $('prop-category')?.selectedOptions?.[0]?.textContent
+      ?.replace(/\s+—\s+не помещается$/, '')
+      ?.trim();
+    if (nameInput && selectedName) nameInput.value = selectedName;
+  });
   $('door-width-edit')?.addEventListener('change', async () => {
     if (!selection || selection.type !== 'door') return;
     const d = selection.door;
