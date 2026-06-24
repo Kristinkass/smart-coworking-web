@@ -183,6 +183,7 @@ def api_editor_map():
     formatted = [
         _format_editor_place(p, db_map.get(p.get('code')), floor)
         for p in floor_places
+        if not db_map.get(p.get('code')) or db_map[p.get('code')].active
     ]
     containers = [f for f in formatted if f.get('kind') in ('space', 'room')]
     from internal.layout.geometry import repair_wall_gaps

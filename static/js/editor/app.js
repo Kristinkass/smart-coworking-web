@@ -589,6 +589,7 @@
       }
     } catch (e) {
       toast(e.message || 'Не удалось загрузить этаж', 'error');
+      throw e;
     }
   }
 
@@ -2073,9 +2074,13 @@
   });
 
   document.addEventListener('DOMContentLoaded', async () => {
-    await loadLocationZones();
-    await loadCategories();
-    await loadFloors();
-    await loadAll();
+    try {
+      await loadLocationZones();
+      await loadCategories();
+      await loadFloors();
+      await loadAll();
+    } catch (e) {
+      toast(e.message || 'Не удалось открыть редактор', 'error');
+    }
   });
 })();
