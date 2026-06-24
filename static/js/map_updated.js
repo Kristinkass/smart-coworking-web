@@ -316,6 +316,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setupEventListeners();
     setupMapEventDelegation();
     loadUserSubscriptions();
+    if (IS_STAFF && typeof loadClientUsers === 'function') {
+        loadClientUsers();
+    }
     const initialParams = new URLSearchParams(window.location.search);
     const initialFloor = parseInt(initialParams.get('floor') || '', 10);
     if (initialFloor) currentFloor = initialFloor;
@@ -1931,9 +1934,11 @@ function cancelBookingForm() {
 
 async function loadPlaces() {
     try {
-        await loadFloors();
-        const r = await fetch('/api/places');
-        const data = await r.json();
+        const [, placesResponse] = await Promise.all([
+            loadFloors(),
+            fetch('/api/places'),
+        ]);
+        const data = await placesResponse.json();
         places = data.places || [];
         categoryTariffs = data.category_tariffs || {};
         window.allPlaces = places;
