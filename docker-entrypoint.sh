@@ -40,4 +40,6 @@ if [ -n "$LAYOUT_PATH" ] && [ ! -f "$LAYOUT_PATH" ]; then
     cp /app/static/layout.json "$LAYOUT_PATH"
 fi
 
+python /app/scripts/ensure_pdf_fonts.py 2>/dev/null || true
+
 exec "$@"

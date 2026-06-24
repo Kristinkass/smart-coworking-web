@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -7,12 +7,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev gcc fonts-dejavu-core \
-    && rm -rf /var/lib/apt/lists/*
-
+# Без apt-get: на части VPS deb.debian.org недоступен.
+# psycopg2-binary — готовые wheels; шрифты PDF — scripts/ensure_pdf_fonts.py
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY scripts/ensure_pdf_fonts.py scripts/ensure_pdf_fonts.py
+RUN python scripts/ensure_pdf_fonts.py || echo "PDF fonts: skip (Helvetica fallback)"
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh

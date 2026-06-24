@@ -1,10 +1,18 @@
 """Регистрация шрифтов с поддержкой кириллицы для ReportLab PDF."""
 import os
 
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+_BUNDLED_FONTS = os.path.join(_PROJECT_ROOT, 'assets', 'fonts')
+
 
 def register_pdf_fonts(pdfmetrics, TTFont):
     """Зарегистрировать TTF-шрифт. Возвращает (regular_name, bold_name)."""
     candidates = [
+        (
+            'ReportFont',
+            os.path.join(_BUNDLED_FONTS, 'DejaVuSans.ttf'),
+            os.path.join(_BUNDLED_FONTS, 'DejaVuSans-Bold.ttf'),
+        ),
         (
             'ReportFont',
             r'C:\Windows\Fonts\arial.ttf',
@@ -14,11 +22,6 @@ def register_pdf_fonts(pdfmetrics, TTFont):
             'ReportFont',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-        ),
-        (
-            'ReportFont',
-            '/usr/share/fonts/TTF/DejaVuSans.ttf',
-            '/usr/share/fonts/TTF/DejaVuSans-Bold.ttf',
         ),
         (
             'ReportFont',
