@@ -11,21 +11,12 @@ function isMobileViewport() {
 }
 
 function applyMobileLayout() {
+    document.body.classList.remove('mobile-no-map');
     const mapToggle = document.querySelector('.view-mode-switch');
-    if (isMobileViewport()) {
-        document.body.classList.add('mobile-no-map');
-        if (mapToggle) mapToggle.style.display = 'none';
-        setUserView('list');
-    } else {
-        document.body.classList.remove('mobile-no-map');
-        if (mapToggle) mapToggle.style.display = '';
-    }
+    if (mapToggle) mapToggle.style.display = '';
 }
 
 function setUserView(view) {
-    if (isMobileViewport()) {
-        view = 'list';
-    }
     currentUserView = view;
     const isMap = view === 'map';
     const mapPanel = document.getElementById('map-view-panel');

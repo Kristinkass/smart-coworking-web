@@ -120,6 +120,11 @@ def init_default_data():
         print(f"[OK] Категории мест: {PlaceCategory.query.count()}")
         print(f"[OK] Тарифы: {CategoryTariff.query.count()}")
 
+        from internal.utils.category_dedup import merge_duplicate_categories
+        dedupe_result = merge_duplicate_categories(db.session)
+        if dedupe_result['merged_groups']:
+            print(f"[OK] Дубли категорий объединены: {dedupe_result['merged_groups']} групп")
+
         # 4. Рабочие места из layout.json (только desk и room — не кухня/отдых/санузел)
         categories_cache = {cat.capacity: cat for cat in PlaceCategory.query.filter_by(kind='desk').all()}
         room_category    = PlaceCategory.query.filter_by(kind='room', capacity=10).first()

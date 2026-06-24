@@ -7,6 +7,12 @@ from internal.models import CategoryTariff, PlaceCategory, db
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
 from internal.utils.errors import user_error_message
+from internal.utils.category_dedup import (
+    category_priority_score,
+    dedupe_category_orm_list,
+    find_duplicate_groups,
+    merge_duplicate_categories,
+)
 
 VALID_CATEGORY_KINDS = frozenset({'desk', 'room'})
 
@@ -161,17 +167,59 @@ def _is_auto_zone_category(cat) -> bool:
 
 @category_bp.route('/api/admin/categories', methods=['GET'])
 def api_get_categories():
-    """Список категорий (все, включая неактивные – для админки)."""
+    """Список категорий. view=canonical — без дублей (для редактора), view=all — полный список."""
     try:
+        view = (request.args.get('view') or 'canonical').strip().lower()
         categories = PlaceCategory.query.order_by(
             PlaceCategory.kind, PlaceCategory.capacity
         ).all()
         visible = [cat for cat in categories if not _is_auto_zone_category(cat)]
+
+        duplicate_map = {}
+        for key, group in find_duplicate_groups(visible).items():
+            group.sort(key=category_priority_score, reverse=True)
+            keeper = group[0]
+            for cat in group[1:]:
+                duplicate_map[cat.id_category] = keeper.id_category
+
+        if view == 'canonical':
+            visible = dedupe_category_orm_list(visible)
+
+        payload = []
+        for cat in visible:
+            data = _enrich_category(cat)
+            dup_of = duplicate_map.get(cat.id_category)
+            if dup_of:
+                data['is_duplicate'] = True
+                data['duplicate_of'] = dup_of
+            payload.append(data)
+
         return jsonify({
             'success': True,
-            'categories': [_enrich_category(cat) for cat in visible],
+            'categories': payload,
+            'duplicate_groups': len(find_duplicate_groups(
+                [c for c in categories if not _is_auto_zone_category(c)]
+            )),
         })
     except Exception as e:
+        return jsonify({'success': False, 'error': user_error_message(e)}), 500
+
+
+@category_bp.route('/api/admin/categories/dedupe', methods=['POST'])
+def api_dedupe_categories():
+    """Объединить дублирующиеся категории (перенос мест на одну запись)."""
+    try:
+        result = merge_duplicate_categories(db.session)
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Объединено групп дублей: {result["merged_groups"]}'
+                if result['merged_groups'] else 'Дубликатов не найдено'
+            ),
+            **result,
+        })
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
@@ -186,6 +234,19 @@ def api_create_category():
         kind_err = _validate_category_kind(data['kind'])
         if kind_err:
             return jsonify({'success': False, 'error': kind_err}), 400
+
+        kind = data['kind']
+        capacity = int(data['capacity'])
+        if kind == 'room':
+            existing = PlaceCategory.query.filter_by(kind='room', capacity=capacity, active=True).first()
+            if existing:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        f'Переговорная на {capacity} мест уже есть '
+                        f'({existing.name}). Используйте существующую категорию.'
+                    ),
+                }), 409
 
         category = PlaceCategory(
             name=data['name'],

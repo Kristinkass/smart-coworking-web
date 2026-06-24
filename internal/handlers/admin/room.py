@@ -73,8 +73,11 @@ def _resolve_zone_kind(place, zone_type_id=None):
 
 def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name=None):
     from internal.models.location_zone import is_amenity_zone_kind, ROOM_ZONE_KIND
+    from internal.utils.category_dedup import dedupe_category_dicts
 
-    cats = [c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()]
+    cats = dedupe_category_dicts([
+        c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()
+    ])
     if zone_kind and is_amenity_zone_kind(zone_kind):
         return 'amenity', [{
             'variant_type': 'amenity',

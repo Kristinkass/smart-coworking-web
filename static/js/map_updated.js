@@ -1448,11 +1448,10 @@ function onTariffChange() {
     const timePickerRow = document.getElementById('time-picker-row');
     const fixedHint = document.getElementById('fixed-tariff-hint');
     const hourlyHint = document.getElementById('hourly-hint');
-    const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
     const isHourly = tariffType === 'hourly';
 
-    if (timeSection) timeSection.style.display = (isHourly && !hideTimeline) ? 'block' : 'none';
-    if (durationBtns) durationBtns.style.display = (isHourly && !hideTimeline) ? 'flex' : 'none';
+    if (timeSection) timeSection.style.display = isHourly ? 'block' : 'none';
+    if (durationBtns) durationBtns.style.display = isHourly ? 'flex' : 'none';
     if (durationRow) durationRow.style.display = isHourly ? 'flex' : 'none';
     if (timePickerRow) timePickerRow.style.display = isHourly ? '' : 'none';
     if (fixedHint) fixedHint.style.display = isHourly ? 'none' : 'block';

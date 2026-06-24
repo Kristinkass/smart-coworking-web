@@ -17,8 +17,8 @@
     </a>
     {% if current_user.is_manager() %}
     <a href="{{ url_for('admin_subscriptions') }}" class="module-card">
-      <i class="fas fa-gift"></i><span>Выдача абonementов</span>
-      <small>Оформление абonementа клиенту по шаблону</small>
+      <i class="fas fa-gift"></i><span>Абонементы клиентов</span>
+      <small>Просмотр сроков и выдача по шаблону</small>
     </a>
     {% endif %}
     {% if current_user.is_admin() %}

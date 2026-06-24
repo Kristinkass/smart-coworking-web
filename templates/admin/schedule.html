@@ -5,7 +5,9 @@
 {% block content %}
 <div class="admin-container">
     <div class="admin-header">
-        {% include "admin/_nav_back.html" %}
+        <a href="{{ url_for('space_module.hub') }}" class="btn-back" title="Назад">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
         <h1><i class="fas fa-clock"></i> Управление расписанием</h1>
         <p class="text-muted">Настройка режима работы коворкинга по дням недели. Время закрытия <strong>00:00</strong> означает <strong>24:00</strong> (конец рабочего дня). Полный выходной – снимите «Рабочий день» и «Доступно для бронирования».</p>
     </div>

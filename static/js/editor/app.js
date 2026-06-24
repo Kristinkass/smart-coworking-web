@@ -600,6 +600,28 @@
       .join(' · ');
   }
 
+  function dedupeRoomCategories(cats) {
+    const byKey = new Map();
+    for (const c of cats) {
+      const key = c.kind === 'room' ? `room:${c.capacity}` : `desk:${c.capacity}:${c.width_m}:${c.height_m}:${(c.name || '').toLowerCase()}`;
+      const prev = byKey.get(key);
+      if (!prev || (c.places_count || 0) > (prev.places_count || 0) || (c.active && !prev.active)) {
+        byKey.set(key, c);
+      }
+    }
+    return [...byKey.values()].sort((a, b) => (a.capacity || 0) - (b.capacity || 0));
+  }
+
+  function dedupeVariantsByCategory(variants) {
+    const seen = new Map();
+    for (const v of variants) {
+      const id = v.category_id;
+      if (!id || seen.has(id)) continue;
+      seen.set(id, v);
+    }
+    return [...seen.values()];
+  }
+
   function populateCategorySelect() {
     const sel = $('prop-category');
     if (!sel) return;
@@ -825,7 +847,7 @@
     const sel = $('prop-category');
     if (!sel || !categories.length) return;
     if (!isRoomZone(z)) return;
-    const roomCats = categories.filter(c => c.kind === 'room');
+    const roomCats = dedupeRoomCategories(categories.filter(c => c.kind === 'room' && c.active !== false));
     const cur = sel.value;
     sel.innerHTML = roomCats.length
       ? roomCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
@@ -882,7 +904,7 @@
       const { z, amenity, meeting, label } = zoneKindFlags();
 
       if (meeting && variants.length) {
-        const fitting = variants.filter(v => v.fits && v.category_id);
+        const fitting = dedupeVariantsByCategory(variants.filter(v => v.fits && v.category_id));
         const sel = $('prop-category');
         if (sel && fitting.length) {
           const cur = sel.value;

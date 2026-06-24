@@ -141,27 +141,44 @@
         .duration-display { font-size: 16px; font-weight: 700; color: #1e293b; min-width: 140px; text-align: center; }
         .duration-hint { font-size: 11px; color: #64748b; text-align: center; margin-top: 4px; }
 
-        /* Timeline - одна длинная полоса с 15-минутными слотами */
+        /* Timeline - горизонтальная полоса с прокруткой на узких экранах */
         .timeline-container { position: relative; margin: 20px 0; }
+        .timeline-scroll-hint {
+            display: none;
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .timeline-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: #f3f4f6;
+        }
         .booking-timeline {
             display: flex;
+            width: max-content;
+            min-width: 100%;
             height: 50px;
             background: #f3f4f6;
-            border-radius: 8px;
-            overflow: hidden;
-            margin: 15px 0;
+            border-radius: 8px 8px 0 0;
+            margin: 0;
             position: relative;
-            border: 1px solid #d1d5db;
+            border: none;
         }
 
         /* 15-минутные слоты */
         .timeline-slot {
-            flex: 1;
+            flex: 0 0 var(--timeline-slot-width, 36px);
+            width: var(--timeline-slot-width, 36px);
             height: 100%;
             border-right: 1px solid #d1d5db;
             position: relative;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
         .timeline-slot:last-child { border-right: none; }
         .timeline-slot:hover { transform: scaleY(1.1); z-index: 10; }
@@ -173,17 +190,24 @@
         /* Метки времени под timeline */
         .timeline-labels {
             display: flex;
-            margin-top: 8px;
+            width: max-content;
+            min-width: 100%;
+            margin-top: 0;
+            padding: 4px 0 8px;
             font-size: 11px;
             color: #6b7280;
+            background: #fff;
+            border-radius: 0 0 8px 8px;
         }
         .timeline-label {
-            flex: 1;
+            flex: 0 0 var(--timeline-slot-width, 36px);
+            width: var(--timeline-slot-width, 36px);
             text-align: left;
             padding-left: 2px;
             font-size: 10px;
             color: #6b7280;
             overflow: hidden;
+            white-space: nowrap;
         }
 
         /* Выделенный диапазон */
@@ -541,12 +565,21 @@
         }
 
         @media (max-width: 768px) {
+            :root { --timeline-slot-width: 40px; }
             .map-container { padding: 12px 0; }
             .map-container h1 { font-size: 1.2rem; margin-bottom: 12px; }
             .view-toggle button { flex: 1; min-width: 0; padding: 10px 8px; font-size: 13px; }
             .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
             .form-row-2 { grid-template-columns: 1fr; }
+            .floor-plan-container {
+                max-height: 52vh;
+                margin: 12px 0;
+                padding: 10px;
+            }
+            .floor-plan-svg { min-width: 900px; }
+            .zoom-controls { right: 10px; bottom: 80px; z-index: 2500; }
+            .timeline-scroll-hint { display: block; }
             .time-picker-box {
                 display: flex;
                 flex-wrap: nowrap;
@@ -581,22 +614,6 @@
             .clock-time-box {
                 display: none;
             }
-            #timegrid-container,
-            #hourly-hint,
-            .zoom-controls { display: none !important; }
-        }
-
-        body.mobile-no-map .map-view-panel,
-        body.mobile-no-map .zoom-controls {
-            display: none !important;
-        }
-
-        body.mobile-no-map #places-list-view {
-            display: block !important;
-        }
-
-        body.mobile-no-map .view-mode-switch {
-            display: none !important;
         }
     </style>
 </head>
@@ -866,8 +883,12 @@
                     </div>
 
                     <div class="timeline-container">
-                        <div class="booking-timeline" id="booking-timeline">
-                            <!-- Слоты генерируются JS -->
+                        <div class="timeline-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Листайте шкалу времени влево-вправо</div>
+                        <div class="timeline-scroll" id="timeline-scroll">
+                            <div class="booking-timeline" id="booking-timeline">
+                                <!-- Слоты генерируются JS -->
+                            </div>
+                            <div class="timeline-labels" id="timeline-labels"></div>
                         </div>
                     </div>
                     <div class="timeline-legend">
@@ -941,11 +962,11 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=11"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=12"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
-    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=6"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=29"></script>
+    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=7"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=30"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

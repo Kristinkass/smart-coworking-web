@@ -20,10 +20,9 @@ function setBookingTimeControlsEnabled(enabled) {
         const timegrid = document.getElementById('timegrid-container');
         const durationBtns = document.getElementById('duration-buttons-row');
         const durationRow = document.getElementById('duration-row');
-        const hideTimeline = typeof isMobileViewport === 'function' && isMobileViewport();
         if (timePicker) timePicker.style.display = enabled ? '' : 'none';
-        if (timegrid) timegrid.style.display = (enabled && !hideTimeline) ? 'block' : 'none';
-        if (durationBtns) durationBtns.style.display = (enabled && !hideTimeline) ? 'flex' : 'none';
+        if (timegrid) timegrid.style.display = enabled ? 'block' : 'none';
+        if (durationBtns) durationBtns.style.display = enabled ? 'flex' : 'none';
         if (durationRow) durationRow.style.display = enabled ? 'flex' : 'none';
     }
 
@@ -69,10 +68,9 @@ async function loadTimegrid(placeId, date) {
     const timeline = document.getElementById('booking-timeline');
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     if (tariffType !== 'hourly') return;
-    const isMobile = typeof isMobileViewport === 'function' && isMobileViewport();
 
     hideScheduleStatus();
-    if (timeline && !isMobile) {
+    if (timeline) {
         timeline.innerHTML = '<div class="timeline-loading">Загрузка расписания…</div>';
     }
 
@@ -85,7 +83,7 @@ async function loadTimegrid(placeId, date) {
             currentTimegrid = null;
             window.currentBookingTimegrid = null;
             selectedStartIndex = null;
-            if (timeline && !isMobile) {
+            if (timeline) {
                 timeline.innerHTML = '';
             }
             showScheduleHoursInfo(null, null);
@@ -106,7 +104,7 @@ async function loadTimegrid(placeId, date) {
             currentTimegrid = null;
             window.currentBookingTimegrid = null;
             selectedStartIndex = null;
-            if (timeline && !isMobile) timeline.innerHTML = '';
+            if (timeline) timeline.innerHTML = '';
             showScheduleStatus(
                 data.schedule_message || 'Бронирование недоступно в этот день',
                 'error',
@@ -123,21 +121,16 @@ async function loadTimegrid(placeId, date) {
         if (typeof rebuildTimeSelects === 'function') {
             rebuildTimeSelects(data.open_time, data.close_time);
         }
-        if (!isMobile) {
-            if (typeof updateTimegridCapacity === 'function') {
-                updateTimegridCapacity(data);
-            }
-            renderTimegrid(data);
-        } else {
-            selectedStartIndex = null;
-            if (typeof updateDurationDisplay === 'function') updateDurationDisplay();
+        if (typeof updateTimegridCapacity === 'function') {
+            updateTimegridCapacity(data);
         }
+        renderTimegrid(data);
     } catch (err) {
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;
         window.currentBookingTimegrid = null;
-        if (timeline && !isMobile) timeline.innerHTML = '';
+        if (timeline) timeline.innerHTML = '';
         showScheduleStatus('Не удалось загрузить расписание', 'error');
         setBookingTimeControlsEnabled(false);
     }
@@ -210,13 +203,10 @@ function renderTimegrid(data) {
 }
 
 function addTimelineLabels(slots) {
-    const container = document.querySelector('.timeline-container');
-    const oldLabels = container?.querySelector('.timeline-labels');
-    if (oldLabels) oldLabels.remove();
+    const labelsDiv = document.getElementById('timeline-labels');
+    if (!labelsDiv) return;
+    labelsDiv.innerHTML = '';
     if (!slots || slots.length === 0) return;
-
-    const labelsDiv = document.createElement('div');
-    labelsDiv.className = 'timeline-labels';
 
     slots.forEach((slot) => {
         const [, minute] = slot.time.split(':').map(Number);
@@ -225,8 +215,6 @@ function addTimelineLabels(slots) {
         label.textContent = minute === 0 ? slot.time : '';
         labelsDiv.appendChild(label);
     });
-
-    container?.appendChild(labelsDiv);
 }
 
 function selectStartSlot(index) {
