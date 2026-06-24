@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FONT_DIR = ROOT / 'assets' / 'fonts'
 FILES = ('DejaVuSans.ttf', 'DejaVuSans-Bold.ttf')
-BASE_URL = 'https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/version_2_37/ttf/'
+BASE_URL = 'https://github.com/dejavu-fonts/dejavu-fonts/raw/version_2_37/ttf/'
 
 
 def ensure_pdf_fonts() -> bool:
@@ -18,7 +18,12 @@ def ensure_pdf_fonts() -> bool:
         if dest.is_file() and dest.stat().st_size > 1000:
             continue
         try:
-            urllib.request.urlretrieve(BASE_URL + name, dest)
+            req = urllib.request.Request(
+                BASE_URL + name,
+                headers={'User-Agent': 'smart-coworking/1.0'},
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp, open(dest, 'wb') as out:
+                out.write(resp.read())
             print(f'[fonts] {name}')
         except OSError as exc:
             print(f'[fonts] warning: {name}: {exc}')

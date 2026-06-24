@@ -40,18 +40,16 @@ if [ -n "$LAYOUT_PATH" ] && [ ! -f "$LAYOUT_PATH" ]; then
     cp /app/static/layout.json "$LAYOUT_PATH"
 fi
 
-python /app/scripts/ensure_pdf_fonts.py 2>/dev/null || true
-
 echo "Инициализация БД..."
-python <<'PY' || exit 1
+python -u <<'PY' || exit 1
 import sys
 try:
     from wsgi import app
     from internal.models import init_db
     init_db(app)
-    print("Инициализация БД завершена")
+    print("Инициализация БД завершена", flush=True)
 except Exception as exc:
-    print(f"Ошибка инициализации БД: {exc}", file=sys.stderr)
+    print(f"Ошибка инициализации БД: {exc}", file=sys.stderr, flush=True)
     import traceback
     traceback.print_exc()
     sys.exit(1)

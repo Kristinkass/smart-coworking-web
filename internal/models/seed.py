@@ -707,13 +707,30 @@ def _migrate_primary_key_names(inspector):
 
 
 def init_db(app):
+    import os
     from internal.config import ensure_database
+    from internal.models.place import Place
 
     ensure_database()
     with app.app_context():
-        # run_migrations() уже вызван в create_app()
-        print("Создание/проверка таблиц базы данных...")
+        print('Создание/проверка таблиц базы данных...', flush=True)
         db.create_all()
+
+        lightweight = os.environ.get('INIT_DB_LIGHTWEIGHT', '').lower() in ('1', 'true', 'yes')
+        has_places = db.session.query(Place.id).limit(1).first() is not None
+
+        if lightweight and has_places:
+            print('Быстрый старт: пропуск полной синхронизации layout', flush=True)
+            Coworking.ensure_singleton()
+            first_coworking = Coworking.query.first()
+            if first_coworking:
+                CoworkingSchedule.init_default_schedule(first_coworking.id)
+            completed = update_booking_statuses()
+            if completed > 0:
+                print(f'Автоматически завершено {completed} бронирований', flush=True)
+            print('Таблицы базы данных готовы', flush=True)
+            return
+
         init_default_data()
         sync_place_parents_from_layout()
         sync_location_floors_from_layout()

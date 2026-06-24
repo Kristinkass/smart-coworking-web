@@ -40,6 +40,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       ADMIN_NAME: ${ADMIN_NAME:-Администратор}
       LAYOUT_PATH: /app/data/layout.json
+      INIT_DB_LIGHTWEIGHT: "1"
     depends_on:
       db:
         condition: service_healthy
