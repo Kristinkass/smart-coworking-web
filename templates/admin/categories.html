@@ -152,10 +152,8 @@
 .badge-zone { background: #e0f2fe; color: #0369a1; }
 .badge-inactive { background: #f1f5f9; color: #94a3b8; }
 
-.admin-table { width: 100%; border-collapse: collapse; }
-.admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-.admin-table th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 13px; }
-.admin-table td { font-size: 14px; }
+.admin-table { width: 100%; border-collapse: collapse; border-radius: 0; box-shadow: none; }
+.admin-table thead { background: transparent; color: inherit; }
 .select-category { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
 
 .loading { text-align: center; padding: 40px; color: #64748b; }
@@ -310,6 +308,9 @@ function renderPlacesTable() {
             </tr>
         `;
     }).join('');
+    if (typeof enhanceDataTables === 'function') {
+        enhanceDataTables(tbody.closest('table'));
+    }
 }
 
 // Создание/обновление категории

@@ -256,6 +256,7 @@
         systemBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
         feedbackBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
       }
+      if (typeof enhanceDataTables === 'function') enhanceDataTables();
     }
     document.addEventListener('DOMContentLoaded', loadHistory);
 

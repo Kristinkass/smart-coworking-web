@@ -642,25 +642,25 @@ body.nav-menu-open {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    box-shadow: var(--box-shadow);
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: none;
 }
 
 .admin-table thead {
-    background: var(--primary-color);
-    color: white;
+    background: transparent;
+    color: inherit;
 }
 
 .admin-table th,
 .admin-table td {
     padding: 1rem;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: none;
 }
 
 .admin-table tbody tr:hover {
-    background: rgba(67, 97, 238, 0.05);
+    background: transparent;
 }
 
 .status-badge {
@@ -1891,19 +1891,14 @@ body.nav-menu-open {
     }
 
     .admin-table {
-        width: max-content;
-        min-width: 100%;
+        width: 100%;
+        min-width: 0;
         table-layout: auto;
-        font-size: 0.85rem;
+        font-size: inherit;
     }
 
-    .admin-table th,
-    .admin-table td {
-        padding: 0.65rem 0.5rem;
-        white-space: nowrap;
-    }
-
-    .admin-table td:first-child {
+    .admin-table.cw-data-table th,
+    .admin-table.cw-data-table td {
         white-space: normal;
     }
 

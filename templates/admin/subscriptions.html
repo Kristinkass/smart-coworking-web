@@ -127,40 +127,7 @@
     overflow-x: auto;
 }
 
-.subscriptions-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.subscriptions-table th {
-    background: var(--primary-color);
-    color: white;
-    padding: 16px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.subscriptions-table th:first-child {
-    border-radius: 10px 0 0 0;
-}
-
-.subscriptions-table th:last-child {
-    border-radius: 0 10px 0 0;
-}
-
-.subscriptions-table td {
-    padding: 16px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
-    font-size: 14px;
-}
-
-.subscriptions-table tbody tr:hover {
-    background: #f1f5f9;
-}
+/* subscriptions-table — общие стили в admin-tables.css */
 
 .badge {
     padding: 6px 12px;
@@ -747,6 +714,9 @@ function renderTemplates(templates) {
                 <td>${adminActions}</td>
             </tr>`;
     });
+    if (typeof enhanceDataTables === 'function') {
+        enhanceDataTables(tbody.closest('table'));
+    }
 }
 
 function stepTemplatePrice(inputId, delta) {
@@ -963,6 +933,9 @@ function renderSubscriptions(subscriptions) {
             </tr>
         `;
     });
+    if (typeof enhanceDataTables === 'function') {
+        enhanceDataTables(tbody.closest('table'));
+    }
 }
 
 // Фильтрация

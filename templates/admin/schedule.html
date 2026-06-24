@@ -295,6 +295,9 @@ function renderSchedule() {
         `;
         tbody.appendChild(tr);
     });
+    if (typeof enhanceDataTables === 'function') {
+        enhanceDataTables(document.getElementById('schedule-table'));
+    }
 }
 
 // Редактирование расписания

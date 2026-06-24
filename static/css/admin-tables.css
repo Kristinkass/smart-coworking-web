@@ -1,0 +1,378 @@
+/**
+ * Единый стиль таблиц админки: сетка на десктопе, карточки с боковой полосой на мобиле.
+ */
+:root {
+    --cw-table-green: #8fa67a;
+    --cw-table-green-dark: #6f855c;
+    --cw-table-green-soft: #eef2e8;
+    --cw-table-border: #dde3d4;
+    --cw-table-border-strong: #c5cdb8;
+    --cw-table-bg: #fff;
+    --cw-table-soft: #f6f7f2;
+    --cw-table-text: #2f3428;
+    --cw-table-muted: #5c6554;
+}
+
+/* Обёртка таблицы */
+.table-scroll,
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--cw-table-border);
+    border-top: 3px solid var(--cw-table-green);
+    background: var(--cw-table-bg);
+}
+
+/* ===== Десктоп: аккуратная сетка ===== */
+.cw-data-table,
+.table-responsive .admin-table,
+.table-scroll .admin-table,
+.table-scroll .reports-table,
+.table-responsive .subscriptions-table,
+.subscriptions-table,
+.module-data-table,
+.notify-history-table,
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    font-size: 13px;
+    background: var(--cw-table-bg);
+}
+
+.cw-data-table th,
+.cw-data-table td,
+.table-responsive .admin-table th,
+.table-responsive .admin-table td,
+.table-scroll .admin-table th,
+.table-scroll .admin-table td,
+.table-scroll .reports-table th,
+.table-scroll .reports-table td,
+.table-responsive .subscriptions-table th,
+.table-responsive .subscriptions-table td,
+.subscriptions-table th,
+.subscriptions-table td,
+.module-data-table th,
+.module-data-table td,
+.notify-history-table th,
+.notify-history-table td,
+.stats-table th,
+.stats-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--cw-table-border);
+    color: var(--cw-table-text);
+    vertical-align: top;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.cw-data-table th,
+.table-responsive .admin-table th,
+.table-scroll .admin-table th,
+.table-scroll .reports-table th,
+.table-responsive .subscriptions-table th,
+.subscriptions-table th,
+.module-data-table th,
+.notify-history-table th,
+.stats-table th {
+    background: var(--cw-table-green-soft);
+    color: var(--cw-table-text);
+    font-weight: 700;
+    font-size: 12px;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+.cw-data-table td,
+.table-responsive .admin-table td,
+.table-scroll .admin-table td,
+.table-scroll .reports-table td,
+.subscriptions-table td,
+.module-data-table td,
+.notify-history-table td,
+.stats-table td {
+    font-size: 13px;
+    background: #fff;
+}
+
+.cw-data-table tbody tr:nth-child(even) td,
+.table-responsive .admin-table tbody tr:nth-child(even) td,
+.table-scroll .admin-table tbody tr:nth-child(even) td,
+.table-scroll .reports-table tbody tr:nth-child(even) td,
+.table-responsive .subscriptions-table tbody tr:nth-child(even) td,
+.subscriptions-table tbody tr:nth-child(even) td,
+.module-data-table tbody tr:nth-child(even) td,
+.notify-history-table tbody tr:nth-child(even) td,
+.stats-table tbody tr:nth-child(even) td {
+    background: var(--cw-table-soft);
+}
+
+.cw-data-table tbody tr:hover td,
+.table-responsive .admin-table tbody tr:hover td,
+.table-scroll .admin-table tbody tr:hover td,
+.table-scroll .reports-table tbody tr:hover td,
+.table-responsive .subscriptions-table tbody tr:hover td,
+.subscriptions-table tbody tr:hover td,
+.module-data-table tbody tr:hover td,
+.notify-history-table tbody tr:hover td,
+.stats-table tbody tr:hover td {
+    background: #f0f4ea;
+}
+
+.cw-data-table tbody tr.active-row td,
+.table-responsive .admin-table tbody tr.active-row td,
+.table-scroll .admin-table tbody tr.active-row td {
+    background: #eef6ff !important;
+}
+
+.cw-data-table tbody tr.cancelled-row td,
+.table-responsive .admin-table tbody tr.cancelled-row td,
+.table-scroll .admin-table tbody tr.cancelled-row td {
+    background: #fef8f8 !important;
+    opacity: 0.92;
+}
+
+.cw-data-table tbody tr.selected-booking-row td,
+.cw-data-table tr.selected-booking-row td,
+.table-responsive .admin-table tbody tr.selected-booking-row td,
+.table-scroll .admin-table tbody tr.selected-booking-row td {
+    background: #fff7ed !important;
+    box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+.cw-data-table td small,
+.cw-data-table td .text-muted {
+    color: var(--cw-table-muted);
+    font-size: 11px;
+}
+
+.cw-data-table code {
+    font-size: 12px;
+}
+
+/* Списочные строки (как «Тарифы» в отчётах) */
+.cw-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--cw-table-border);
+    background: #fff;
+}
+
+.cw-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--cw-table-border);
+    border-left: 4px solid var(--cw-table-green);
+    background: #fff;
+    font-size: 13px;
+}
+
+.cw-summary-row:last-child {
+    border-bottom: none;
+}
+
+.cw-summary-row:nth-child(even) {
+    background: var(--cw-table-soft);
+}
+
+.cw-summary-row .label {
+    color: var(--cw-table-text);
+    flex: 1 1 55%;
+}
+
+.cw-summary-row .value {
+    font-weight: 600;
+    color: var(--cw-table-text);
+    text-align: right;
+    flex: 1 1 45%;
+}
+
+/* Совместимость: старые классы отчётов */
+.tariff-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--cw-table-border);
+    background: #fff;
+}
+
+.tariff-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--cw-table-border);
+    border-left: 4px solid var(--cw-table-green);
+    background: #fff;
+    font-size: 13px;
+}
+
+.tariff-summary-row:last-child {
+    border-bottom: none;
+}
+
+.tariff-summary-row:nth-child(even) {
+    background: var(--cw-table-soft);
+}
+
+.tariff-summary-row .label {
+    color: var(--cw-table-text);
+    flex: 1 1 55%;
+}
+
+.tariff-summary-row .value {
+    font-weight: 600;
+    text-align: right;
+    flex: 1 1 45%;
+}
+
+/* ===== Мобила: карточки с боковой полосой ===== */
+@media (max-width: 768px) {
+    .table-scroll:has(.cw-data-table),
+    .table-responsive:has(.cw-data-table) {
+        overflow: visible;
+        border: none;
+        border-top: none;
+        background: transparent;
+        padding: 0;
+    }
+
+    .cw-data-table {
+        display: block;
+        width: 100%;
+        min-width: 0 !important;
+        font-size: 12px;
+        border: none;
+    }
+
+    .cw-data-table thead {
+        display: none;
+    }
+
+    .cw-data-table tbody {
+        display: block;
+    }
+
+    .cw-data-table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        background: #fff;
+        border: 1px solid var(--cw-table-border);
+        border-left: 4px solid var(--cw-table-green);
+        border-radius: 0;
+        box-shadow: 0 2px 10px rgba(47, 52, 40, 0.06);
+        overflow: hidden;
+    }
+
+    .cw-data-table tbody tr:hover td {
+        background: transparent;
+    }
+
+    .cw-data-table tbody tr.active-row {
+        border-left-color: #3b82f6;
+    }
+
+    .cw-data-table tbody tr.cancelled-row {
+        border-left-color: #c75050;
+        opacity: 1;
+    }
+
+    .cw-data-table tbody tr.selected-booking-row {
+        border-left-color: #f59e0b;
+        box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+    }
+
+    .cw-data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 12px;
+        border: none;
+        border-bottom: 1px solid var(--cw-table-border);
+        background: transparent !important;
+        text-align: right;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    .cw-data-table td:last-child {
+        border-bottom: none;
+    }
+
+    .cw-data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--cw-table-muted);
+        text-align: left;
+        flex: 0 0 42%;
+        font-size: 11px;
+        line-height: 1.35;
+        padding-right: 4px;
+    }
+
+    .cw-data-table td[data-label=""]::before,
+    .cw-data-table td:not([data-label])::before {
+        display: none;
+    }
+
+    .cw-data-table td[colspan] {
+        display: block;
+        text-align: center;
+        padding: 16px 12px;
+    }
+
+    .cw-data-table td[colspan]::before {
+        display: none;
+    }
+
+    .cw-data-table td.td-actions,
+    .cw-data-table td.cw-td-actions {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: left;
+    }
+
+    .cw-data-table td.td-actions::before,
+    .cw-data-table td.cw-td-actions::before {
+        margin-bottom: 4px;
+    }
+
+    .cw-data-table .action-buttons {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .cw-data-table .user-info {
+        min-width: 0;
+        flex-direction: row;
+        text-align: left;
+    }
+
+    .cw-summary-row,
+    .tariff-summary-row {
+        font-size: 12px;
+        padding: 9px 10px;
+        border-left-width: 4px;
+    }
+}
+
+@media (min-width: 769px) {
+    .table-scroll .cw-data-table,
+    .table-scroll .admin-table,
+    .table-scroll .reports-table,
+    .table-responsive .admin-table {
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .table-responsive .subscriptions-table {
+        width: max-content;
+        min-width: 100%;
+    }
+}

@@ -391,34 +391,37 @@
 .admin-table {
     width: 100%;
     border-collapse: collapse;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.admin-table thead {
+    background: transparent;
+    color: inherit;
 }
 
 .admin-table th,
 .admin-table td {
-    padding: 14px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
+    padding: inherit;
+    border-bottom: none;
 }
 
 .admin-table th {
-    background: var(--primary-color);
-    color: white;
-    font-weight: 600;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    background: transparent;
+    color: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    text-transform: none;
+    letter-spacing: normal;
 }
 
-.admin-table th:first-child {
-    border-radius: 10px 0 0 0;
-}
-
+.admin-table th:first-child,
 .admin-table th:last-child {
-    border-radius: 0 10px 0 0;
+    border-radius: 0;
 }
 
 .admin-table tbody tr:hover {
-    background: #f1f5f9;
+    background: transparent;
 }
 
 .status-badge {

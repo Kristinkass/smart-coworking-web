@@ -456,51 +456,16 @@
     opacity: 0.9;
 }
 
-/* Таблица */
+/* Таблица — стили ячеек в admin-tables.css; здесь только контент */
 .admin-table {
-    width: 100%;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    border: 1px solid #e5e7eb;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
 }
 
 .admin-table thead {
-    background: #8fa67a;
-}
-
-.admin-table th {
-    padding: 18px 15px;
-    text-align: left;
-    font-weight: 600;
-    color: white;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.admin-table td {
-    padding: 16px 15px;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: top;
-}
-
-.admin-table tbody tr {
-    transition: all 0.2s;
-}
-
-.admin-table tbody tr:hover {
-    background: #f8fafc;
-}
-
-.admin-table tbody tr.active-row {
-    background: #f0f9ff;
-}
-
-.admin-table tbody tr.cancelled-row {
-    opacity: 0.8;
-    background: #fef2f2;
+    background: transparent;
+    color: inherit;
 }
 
 /* Стили для ячеек */
@@ -846,11 +811,6 @@
 }
 
 @media (max-width: 992px) {
-    .admin-table {
-        display: block;
-        overflow-x: auto;
-    }
-
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
