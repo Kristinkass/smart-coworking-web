@@ -197,8 +197,8 @@
                         </td>
                         <td>
                             {% if booking.status == 'active' %}
-                            <form action="{{ url_for('admin_cancel_booking', booking_id=booking.id) }}" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Отменить бронирование?')">
+                            <form action="{{ url_for('admin_cancel_booking', booking_id=booking.id) }}" method="POST" style="display: inline;" class="admin-cancel-form">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return cancelAdminBooking(event)">
                                     Отменить
                                 </button>
                             </form>
@@ -508,4 +508,13 @@
     }
 }
 </style>
+
+<script>
+async function cancelAdminBooking(event) {
+    event.preventDefault();
+    if (!(await showConfirm('Отменить бронирование?', { danger: true }))) return false;
+    event.target.closest('form').submit();
+    return false;
+}
+</script>
 {% endblock %}

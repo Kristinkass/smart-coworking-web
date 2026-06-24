@@ -298,7 +298,7 @@ def register_admin_pages_routes(app):
         try:
             from flask_login import current_user
             users = models.User.query.filter_by(role='client', active=True).order_by(
-                models.User.email,
+                models.User.phone,
             ).all()
             return render_template(
                 'admin/subscriptions.html',
@@ -470,7 +470,7 @@ def register_admin_pages_routes(app):
     @staff_required
     def admin_notifications_page():
         """Страница отправки уведомлений"""
-        clients = User.query.filter_by(role='client', active=True).order_by(User.email).all()
+        clients = User.query.filter_by(role='client', active=True).order_by(User.phone).all()
         return render_template(
             'admin/notifications_send.html',
             clients=clients,

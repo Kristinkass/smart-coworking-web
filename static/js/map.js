@@ -20,7 +20,7 @@ places.forEach(place => {
     el.innerText = place.name;
 
     el.onclick = () => {
-        alert(`Место: ${place.name}\nЦена: ${place.price_per_hour}`);
+        if (typeof showToast === 'function') showToast(`Место: ${place.name}\nЦена: ${place.price_per_hour}`, 'info');
     };
 
     map.appendChild(el);
@@ -99,7 +99,7 @@ class MapManager {
 
     selectPlace(place) {
         if (place.status === 'occupied' && !this.isPlaceBookedByUser(place.id)) {
-            alert('Это место уже занято');
+            if (typeof showToast === 'function') showToast('Это место уже занято', 'warning');
             return;
         }
 
@@ -237,7 +237,7 @@ class MapManager {
         const endTime = document.getElementById('end-time').value;
 
         if (!startTime || !endTime) {
-            alert('Пожалуйста, выберите время начала и окончания');
+            if (typeof showToast === 'function') showToast('Пожалуйста, выберите время начала и окончания', 'warning');
             return;
         }
 
@@ -259,17 +259,17 @@ class MapManager {
             const data = await response.json();
 
             if (response.ok) {
-                alert(`Бронирование успешно создано! Стоимость: ${data.total_price} ₽`);
+                if (typeof showToast === 'function') showToast(`Бронирование успешно создано! Стоимость: ${data.total_price} ₽`, 'success');
                 this.refreshMap();
                 this.selectedPlace = null;
                 document.getElementById('booking-form').style.display = 'none';
                 document.getElementById('selected-place-name').textContent = 'Выберите место на карте';
             } else {
-                alert('Ошибка: ' + data.error);
+                if (typeof showToast === 'function') showToast('Ошибка: ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Произошла ошибка при создании бронирования');
+            if (typeof showToast === 'function') showToast('Произошла ошибка при создании бронирования', 'error');
         }
     }
 

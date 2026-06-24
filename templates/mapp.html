@@ -834,7 +834,7 @@
                 <h3><i class="fas fa-calendar-plus"></i> <span id="selected-place-name"></span></h3>
                 <p id="selected-place-meta" style="font-size:13px;color:#64748b;margin:0 0 12px;"></p>
 
-                {% if is_manager %}
+                {% if is_manager or is_admin %}
                 <div class="form-row-2" id="manager-user-select-row" style="margin-bottom:12px;">
                     <div>
                         <label class="form-label"><i class="fas fa-user"></i> Клиент</label>
@@ -1012,26 +1012,14 @@
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения -->
-    <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-icon" id="modal-icon"><i class="fas fa-question-circle"></i></div>
-            <h3 id="modal-title">Подтверждение</h3>
-            <p id="modal-message">Вы уверены?</p>
-            <div class="actions">
-                <button class="btn-cancel" onclick="closeModal()">Отмена</button>
-                <button class="btn-confirm" id="modal-confirm-btn" onclick="confirmModal()">Подтвердить</button>
-            </div>
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notify.js') }}?v=3"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=14"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=15"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
     <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=30"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=32"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

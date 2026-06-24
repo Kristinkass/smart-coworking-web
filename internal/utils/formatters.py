@@ -324,7 +324,7 @@ def build_report_stats(bookings):
         if user_id not in user_stats:
             user_stats[user_id] = {
                 'username': booking.user.username,
-                'email': booking.user.email,
+                'phone': booking.user.phone,
                 'booking_count': 0,
                 'total_spent': 0,
             }

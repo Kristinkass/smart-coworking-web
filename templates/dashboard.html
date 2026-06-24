@@ -6,7 +6,7 @@
     <title>Личный кабинет - Умный Коворкинг</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <script src="{{ url_for('static', filename='js/notify.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/notify.js') }}?v=3"></script>
     <script src="{{ url_for('static', filename='js/phone-mask.js') }}"></script>
     <style>
         :root {
@@ -1569,18 +1569,18 @@
                 async function deleteFeedback(id, event) {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (!confirm('Удалить это обращение из истории?')) return;
+                    if (!(await showConfirm('Удалить это обращение из истории?', { danger: true }))) return;
                     try {
                         const res = await fetch('/api/notifications/' + id, { method: 'DELETE' });
                         const data = await res.json();
                         if (!data.success) {
-                            alert(data.error || 'Не удалось удалить обращение');
+                            showToast(data.error || 'Не удалось удалить обращение', 'error');
                             return;
                         }
                         await loadNotifications();
                     } catch (e) {
                         console.error(e);
-                        alert('Ошибка при удалении обращения');
+                        showToast('Ошибка при удалении обращения', 'error');
                     }
                 }
                 async function markRead(id, btn) {
@@ -1603,16 +1603,16 @@
                         });
                         const data = await res.json();
                         if (!data.success) {
-                            alert(data.error || 'Не удалось отправить обращение');
+                            showToast(data.error || 'Не удалось отправить обращение', 'error');
                             return;
                         }
                         document.getElementById('feedback-form').reset();
                         await loadNotifications();
                         switchNotifySection('feedback', document.querySelector('[data-notify-section="feedback"]'));
-                        alert(data.message || 'Обращение отправлено');
+                        showToast(data.message || 'Обращение отправлено', 'success');
                     } catch (e) {
                         console.error(e);
-                        alert('Ошибка при отправке обращения');
+                        showToast('Ошибка при отправке обращения', 'error');
                     }
                 }
                 document.addEventListener('DOMContentLoaded', loadNotifications);

@@ -127,24 +127,20 @@
       result.textContent = text;
     }
 
-    let notifyConfirmEl = null;
-    function askNotifyConfirm(message, onYes) {
-      if (notifyConfirmEl) notifyConfirmEl.remove();
-      notifyConfirmEl = document.createElement('div');
-      notifyConfirmEl.className = 'notify-confirm';
-      notifyConfirmEl.innerHTML = `
-        <strong>Подтвердите действие</strong>
-        <span>${escapeHtml(message)}</span>
-        <div>
-          <button type="button" class="btn-cancel">Отмена</button>
-          <button type="button" class="btn-danger">Удалить</button>
-        </div>`;
-      notifyConfirmEl.querySelector('.btn-cancel').onclick = () => notifyConfirmEl.remove();
-      notifyConfirmEl.querySelector('.btn-danger').onclick = () => {
-        notifyConfirmEl.remove();
-        onYes();
-      };
-      document.body.appendChild(notifyConfirmEl);
+    async function deleteFeedbackHistory(id) {
+      if (!(await showConfirm('Удалить обращение из истории?', { danger: true, confirmText: 'Удалить' }))) return;
+      try {
+        const r = await fetch('/api/notifications/' + id, { method: 'DELETE' });
+        const d = await r.json();
+        if (!d.success) {
+          setResult('error', friendlyError(d.error, 'Не удалось удалить обращение'));
+          return;
+        }
+        setResult('success', 'Обращение удалено');
+        loadHistory();
+      } catch (e) {
+        setResult('error', friendlyError(e, 'Не удалось удалить обращение'));
+      }
     }
 
     function selectAudience(el, value) {
@@ -262,23 +258,6 @@
       }
     }
     document.addEventListener('DOMContentLoaded', loadHistory);
-
-    async function deleteFeedbackHistory(id) {
-      askNotifyConfirm('Удалить обращение из истории?', async () => {
-        try {
-          const r = await fetch('/api/notifications/' + id, { method: 'DELETE' });
-          const d = await r.json();
-          if (!d.success) {
-            setResult('error', friendlyError(d.error, 'Не удалось удалить обращение'));
-            return;
-          }
-          setResult('success', 'Обращение удалено');
-          loadHistory();
-        } catch (e) {
-          setResult('error', friendlyError(e, 'Не удалось удалить обращение'));
-        }
-      });
-    }
 
     async function sendNotification() {
       const title = document.getElementById('notify-title').value.trim();

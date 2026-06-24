@@ -454,7 +454,7 @@
                 <select id="filterUser" class="form-select">
                     <option value="">Все пользователи</option>
                     {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.email }} - {{ user.username }}</option>
+                    <option value="{{ user.id }}">{{ format_phone(user.phone) or '—' }} – {{ user.username }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -514,7 +514,7 @@
                 <label class="form-label">Пользователь</label>
                 <select name="user_id" class="form-select" required>
                     {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.email }} - {{ user.username }}</option>
+                    <option value="{{ user.id }}">{{ format_phone(user.phone) or '—' }} – {{ user.username }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -784,23 +784,23 @@ async function createTemplate() {
     if (r.ok) {
         closeCreateTemplateModal();
         loadTemplates();
-        alert('Шаблон создан');
+        showToast('Шаблон создан', 'success');
     } else {
         const err = await r.json();
-        alert(err.error || 'Ошибка');
+        showToast(err.error || 'Ошибка', 'error');
     }
 }
 
 async function archiveTemplate(id, archive) {
     const msg = archive ? 'Архивировать шаблон? Клиенты больше не смогут его оформить.' : 'Восстановить шаблон?';
-    if (!confirm(msg)) return;
+    if (!(await showConfirm(msg))) return;
     const r = await fetch('/api/admin/subscription-templates/' + id, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ active: !archive }),
     });
     if (r.ok) loadTemplates();
-    else alert('Ошибка');
+    else showToast('Ошибка', 'error');
 }
 
 function openIssueTemplateModal(templateId) {
@@ -821,7 +821,7 @@ async function issueTemplateToUser() {
     const userId = formData.get('user_id');
     const templateId = formData.get('template_id');
     if (!userId || !templateId) {
-        alert('Выберите пользователя и шаблон');
+        showToast('Выберите пользователя и шаблон', 'warning');
         return;
     }
     const r = await fetch('/api/admin/subscriptions/issue-template', {
@@ -832,10 +832,10 @@ async function issueTemplateToUser() {
     if (r.ok) {
         closeIssueTemplateModal();
         loadSubscriptions();
-        alert('Абонемент выдан');
+        showToast('Абонемент выдан', 'success');
     } else {
         const err = await r.json();
-        alert(err.error || 'Ошибка');
+        showToast(err.error || 'Ошибка', 'error');
     }
 }
 
@@ -879,10 +879,10 @@ async function updateTemplate() {
     if (r.ok) {
         closeEditTemplateModal();
         loadTemplates();
-        alert('Шаблон обновлён');
+        showToast('Шаблон обновлён', 'success');
     } else {
         const err = await r.json();
-        alert(err.error || 'Ошибка');
+        showToast(err.error || 'Ошибка', 'error');
     }
 }
 
@@ -900,7 +900,7 @@ async function loadSubscriptions() {
         renderSubscriptions(allSubscriptions);
     } catch (error) {
         console.error('Ошибка загрузки абонементов:', error);
-        alert('Ошибка загрузки абонементов');
+        showToast('Ошибка загрузки абонементов', 'error');
     }
 }
 
@@ -1047,14 +1047,14 @@ async function updateSubscription() {
         if (response.ok) {
             closeEditModal();
             loadSubscriptions();
-            alert('Абонемент обновлен');
+            showToast('Абонемент обновлен', 'success');
         } else {
             const error = await response.json();
-            alert('Ошибка: ' + error.error);
+            showToast('Ошибка: ' + error.error, 'error');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка обновления абонемента');
+        showToast('Ошибка обновления абонемента', 'error');
     }
 }
 

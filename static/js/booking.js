@@ -38,6 +38,95 @@ function applyTimelineScrollLayout(slotCount) {
 let currentTimegrid = null;
 let selectedStartIndex = null;
 let selectedDurationSlots = 4;
+let timegridPollTimer = null;
+let timegridPollPlaceId = null;
+const TIMEGRID_POLL_MS = 15000;
+
+function stopTimegridPolling() {
+    if (timegridPollTimer) {
+        clearInterval(timegridPollTimer);
+        timegridPollTimer = null;
+    }
+    timegridPollPlaceId = null;
+}
+
+function startTimegridPolling(placeId) {
+    stopTimegridPolling();
+    if (!placeId) return;
+    timegridPollPlaceId = placeId;
+    timegridPollTimer = setInterval(() => {
+        const form = document.getElementById('booking-form');
+        if (!form || form.style.display === 'none') return;
+        const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
+        if (tariffType !== 'hourly') return;
+        const date = document.getElementById('booking-date')?.value;
+        if (!date || !timegridPollPlaceId) return;
+        refreshTimegridQuiet(timegridPollPlaceId, date);
+    }, TIMEGRID_POLL_MS);
+}
+
+function slotsOccupancyChanged(oldSlots, newSlots) {
+    if (!oldSlots || !newSlots || oldSlots.length !== newSlots.length) return true;
+    return newSlots.some((s, i) => s.status !== oldSlots[i].status);
+}
+
+async function refreshTimegridQuiet(placeId, date) {
+    try {
+        const r = await fetch(`/api/booking/timegrid/${placeId}?date=${date}`);
+        const d = await r.json();
+        if (!d.success || !d.data?.slots?.length) return;
+        const prev = currentTimegrid;
+        applyTimegridSlotStatuses(d.data);
+        if (typeof loadPlaces === 'function' && slotsOccupancyChanged(prev, d.data.slots)) {
+            loadPlaces();
+        }
+        if (typeof updateTimegridCapacity === 'function') {
+            updateTimegridCapacity(d.data);
+        }
+    } catch (_) { /* тихое обновление */ }
+}
+
+function applyTimegridSlotStatuses(data) {
+    const slots = data.slots;
+    if (!slots?.length) return;
+
+    const prevStart = selectedStartIndex;
+    const prevDur = selectedDurationSlots;
+    currentTimegrid = slots;
+    window.currentBookingTimegrid = slots;
+
+    const now = new Date();
+    const today = bookingLocalDateStr(now);
+    const selectedDate = document.getElementById('booking-date')?.value || today;
+    const isToday = selectedDate === today;
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const timeline = document.getElementById('booking-timeline');
+    if (!timeline) return;
+    const slotEls = timeline.querySelectorAll('.timeline-slot');
+
+    slots.forEach((slotData, slotIndex) => {
+        const slot = slotEls[slotIndex];
+        if (!slot) return;
+        const [hour, minute] = slotData.time.split(':').map(Number);
+        const totalMinutes = hour * 60 + minute;
+
+        slot.classList.remove('past', 'occupied', 'partial', 'available');
+        if (isToday && totalMinutes < currentTotalMinutes) {
+            slot.classList.add('past');
+        } else if (slotData.status === 'full') {
+            slot.classList.add('occupied');
+        } else if (slotData.status === 'partial') {
+            slot.classList.add('partial');
+        } else {
+            slot.classList.add('available');
+        }
+    });
+
+    selectedStartIndex = prevStart;
+    selectedDurationSlots = prevDur;
+    highlightRange();
+}
 
 function roundToSlotMinutes(totalMinutes) {
     return Math.ceil(totalMinutes / SLOT_DURATION) * SLOT_DURATION;
@@ -121,7 +210,10 @@ function showScheduleHoursInfo(openTime, closeTime) {
 async function loadTimegrid(placeId, date) {
     const timeline = document.getElementById('booking-timeline');
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
-    if (tariffType !== 'hourly') return;
+    if (tariffType !== 'hourly') {
+        stopTimegridPolling();
+        return;
+    }
 
     hideScheduleStatus();
     if (timeline) {
@@ -133,6 +225,7 @@ async function loadTimegrid(placeId, date) {
         const d = await r.json();
 
         if (!d.success) {
+            stopTimegridPolling();
             window.currentSchedule = null;
             currentTimegrid = null;
             window.currentBookingTimegrid = null;
@@ -193,7 +286,9 @@ async function loadTimegrid(placeId, date) {
             updateTimegridCapacity(data);
         }
         renderTimegrid(data);
+        startTimegridPolling(placeId);
     } catch (err) {
+        stopTimegridPolling();
         console.error(err);
         window.currentSchedule = null;
         currentTimegrid = null;
@@ -556,6 +651,9 @@ async function bookWithSubscription(subscriptionId, placeId, date, start, end, u
     });
     return await r.json();
 }
+
+window.stopTimegridPolling = stopTimegridPolling;
+window.startTimegridPolling = startTimegridPolling;
 
 window.addEventListener('resize', () => {
     if (currentTimegrid?.length) {

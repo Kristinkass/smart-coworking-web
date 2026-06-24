@@ -73,7 +73,7 @@ function updateStars() {
 
 function submitRating() {
     if (!selectedRating) {
-        alert("Выберите оценку");
+        showToast("Выберите оценку", 'warning');
         return;
     }
 
@@ -88,11 +88,11 @@ function submitRating() {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert("Спасибо за оценку!");
+            showToast("Спасибо за оценку!", 'success');
             closeRating();
             location.reload();
         } else {
-            alert(data.error);
+            showToast(data.error, 'error');
         }
     });
 }

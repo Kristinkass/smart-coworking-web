@@ -174,7 +174,7 @@ async function loadCategories() {
         const r = await fetch('/api/admin/categories');
         const d = await r.json();
         if (!r.ok || !d.success) {
-            showAlert(d.error || 'Ошибка загрузки категорий', 'error');
+            showToast(d.error || 'Ошибка загрузки категорий', 'error');
             return;
         }
         categories = d.categories || [];
@@ -338,14 +338,14 @@ document.getElementById('category-form').addEventListener('submit', async (e) =>
         
         const d = await r.json();
         if (d.success) {
-            showAlert(d.message, 'success');
+            showToast(d.message, 'success');
             resetForm();
             loadCategories();
         } else {
-            showAlert(d.error || 'Ошибка', 'error');
+            showToast(d.error || 'Ошибка', 'error');
         }
     } catch (e) {
-        showAlert('Ошибка сохранения', 'error');
+        showToast('Ошибка сохранения', 'error');
     }
 });
 
@@ -372,20 +372,23 @@ async function deleteCategory(id) {
     const cat = categories.find(c => c.id === id);
     const name = cat ? `"${cat.name}"` : 'эту категорию';
 
-    showConfirm(`Удалить ${name}? Места и зоны останутся на карте, категория будет снята.`, async () => {
-        try {
-            const r = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
-            const d = await r.json();
-            if (d.success) {
-                showAlert(d.message, 'success');
-                loadCategories();
-            } else {
-                showAlert(d.error || 'Ошибка', 'error');
-            }
-        } catch (e) {
-            showAlert('Ошибка удаления', 'error');
+    if (!(await showConfirm(
+        `Удалить ${name}? Места и зоны останутся на карте, категория будет снята.`,
+        { title: 'Удаление категории', danger: true },
+    ))) return;
+
+    try {
+        const r = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (d.success) {
+            showToast(d.message, 'success');
+            loadCategories();
+        } else {
+            showToast(d.error || 'Ошибка', 'error');
         }
-    }, 'Удаление категории');
+    } catch (e) {
+        showToast('Ошибка удаления', 'error');
+    }
 }
 
 // Обновление категории места
@@ -406,7 +409,7 @@ async function updatePlaceCategory(selectEl) {
         });
         const d = await r.json();
         if (!r.ok || !d.success) {
-            showAlert(d.error || `Ошибка ${r.status}`, 'error');
+            showToast(d.error || `Ошибка ${r.status}`, 'error');
             await loadPlaces();
             return;
         }
@@ -416,9 +419,9 @@ async function updatePlaceCategory(selectEl) {
             if (d.place.id) places[idx].id = d.place.id;
         }
         renderPlacesTable();
-        showAlert('Категория места обновлена', 'success');
+        showToast('Категория места обновлена', 'success');
     } catch (e) {
-        showAlert('Ошибка обновления', 'error');
+        showToast('Ошибка обновления', 'error');
         await loadPlaces();
     }
 }
@@ -434,105 +437,6 @@ function resetForm() {
 
 // Отмена редактирования
 document.getElementById('btn-cancel').addEventListener('click', resetForm);
-
-// Уведомления
-function showAlert(message, type) {
-    // Используем существующую функцию из base.html или создаем свою
-    const container = document.getElementById('flashes-container') || document.body;
-    const el = document.createElement('div');
-    el.className = `alert alert-${type}`;
-    el.style.cssText = 'position:fixed;top:20px;right:20px;padding:16px 20px;border-radius:8px;z-index:9999;max-width:400px;';
-    el.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
-    el.style.color = type === 'success' ? '#16a34a' : '#dc2626';
-    el.textContent = message;
-    container.appendChild(el);
-    setTimeout(() => el.remove(), 4000);
-}
-
-// ================== МОДАЛЬНЫЕ ОКНА ==================
-let modalCallback = null;
-
-function showModal(title, message, type = 'info', callback = null) {
-    // Создаем модальное окно если его нет
-    let modal = document.getElementById('confirm-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'confirm-modal';
-        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);';
-        modal.innerHTML = `
-            <div style="background:white; border-radius:16px; width:90%; max-width:400px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3); animation:modalIn 0.3s ease;">
-                <div id="modal-icon" style="width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px; background:#fef3c7; color:#f59e0b;"><i class="fas fa-question-circle"></i></div>
-                <h3 id="modal-title" style="margin:0 0 12px; font-size:18px; color:#1e293b;">Подтверждение</h3>
-                <p id="modal-message" style="margin:0 0 20px; color:#64748b; font-size:14px; line-height:1.5;">Вы уверены?</p>
-                <div style="display:flex; gap:12px;">
-                    <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; background:#f1f5f9; color:#64748b;">Отмена</button>
-                    <button onclick="confirmModalAction()" id="modal-confirm-btn" style="flex:1; padding:12px; border:none; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; background:#8fa67a; color:white;">Подтвердить</button>
-                </div>
-            </div>
-            <style>@keyframes modalIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }</style>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    const icons = {
-        info: '<i class="fas fa-info-circle"></i>',
-        warning: '<i class="fas fa-exclamation-triangle"></i>',
-        error: '<i class="fas fa-times-circle"></i>',
-        success: '<i class="fas fa-check-circle"></i>',
-        question: '<i class="fas fa-question-circle"></i>'
-    };
-    const colors = {
-        info: {bg:'#eef2e8', color:'#8fa67a'},
-        warning: {bg:'#fef3c7', color:'#f59e0b'},
-        error: {bg:'#f8e8e8', color:'#c75050'},
-        success: {bg:'#e3efe6', color:'#4d8f5f'},
-        question: {bg:'#fef3c7', color:'#f59e0b'}
-    };
-
-    const style = colors[type] || colors.question;
-    document.getElementById('modal-icon').innerHTML = icons[type] || icons.question;
-    document.getElementById('modal-icon').style.background = style.bg;
-    document.getElementById('modal-icon').style.color = style.color;
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-message').textContent = message;
-
-    modalCallback = callback;
-    const confirmBtn = document.getElementById('modal-confirm-btn');
-
-    if (callback) {
-        confirmBtn.style.display = 'block';
-        confirmBtn.textContent = 'Подтвердить';
-        confirmBtn.style.background = type === 'error' ? '#c75050' : (type === 'success' ? '#4d8f5f' : '#8fa67a');
-    } else {
-        confirmBtn.style.display = 'none';
-    }
-
-    modal.style.display = 'flex';
-}
-
-function showConfirm(message, callback, title = 'Подтверждение') {
-    showModal(title, message, 'question', callback);
-}
-
-function closeModal() {
-    const modal = document.getElementById('confirm-modal');
-    if (modal) modal.style.display = 'none';
-    modalCallback = null;
-}
-
-function confirmModalAction() {
-    if (modalCallback) {
-        modalCallback();
-        modalCallback = null;
-    }
-    closeModal();
-}
-
-// Закрытие по клику вне окна
-document.addEventListener('click', (e) => {
-    const modal = document.getElementById('confirm-modal');
-    if (e.target === modal) closeModal();
-});
 
 // Инициализация (сначала категории, затем места)
 (async function initCategoriesPage() {

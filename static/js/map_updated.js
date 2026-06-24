@@ -250,65 +250,26 @@ function getCoworkingHours() {
     return { open: 8 * 60, close: 22 * 60 };
 }
 
-// ================== МОДАЛЬНЫЕ ОКНА ==================
-let modalCallback = null;
-
-function showModal(title, message, type = 'info', callback = null) {
-    const modal = document.getElementById('confirm-modal');
-    const icon = document.getElementById('modal-icon');
-    const titleEl = document.getElementById('modal-title');
-    const messageEl = document.getElementById('modal-message');
-    const confirmBtn = document.getElementById('modal-confirm-btn');
-
-    const icons = {
-        info: '<i class="fas fa-info-circle"></i>',
-        warning: '<i class="fas fa-exclamation-triangle"></i>',
-        error: '<i class="fas fa-times-circle"></i>',
-        success: '<i class="fas fa-check-circle"></i>',
-        question: '<i class="fas fa-question-circle"></i>'
-    };
-
-    icon.innerHTML = icons[type] || icons.question;
-    icon.className = 'modal-icon ' + (type === 'question' ? 'warning' : type);
-    titleEl.textContent = title;
-    messageEl.textContent = message;
-
-    modalCallback = callback;
-
-    if (callback) {
-        confirmBtn.style.display = 'block';
-        confirmBtn.textContent = 'Подтвердить';
-        confirmBtn.className = type === 'error' ? 'btn-danger' : (type === 'success' ? 'btn-success' : 'btn-confirm');
-    } else {
-        confirmBtn.style.display = 'none';
+// ================== УВЕДОМЛЕНИЯ ==================
+function showAlert(message, type = 'info') {
+    const duration = type === 'success' ? 8000 : 4500;
+    if (typeof showToast === 'function') {
+        showToast(message, type, duration);
+        return;
     }
-
-    modal.classList.add('active');
+    const container = document.getElementById('flashes-container');
+    if (!container) return;
+    const id = 'alert-' + Date.now();
+    const el = document.createElement('div');
+    el.className = 'alert alert-' + type;
+    el.id = id;
+    el.innerHTML =
+        '<div class="alert-content">' + message + '</div>' +
+        '<button class="alert-close" onclick="closeAlert(\'' + id + '\')">&times;</button>' +
+        '<div class="alert-progress"></div>';
+    container.appendChild(el);
+    setTimeout(() => closeAlert(id), duration);
 }
-
-function showConfirm(message, callback, title = 'Подтверждение') {
-    showModal(title, message, 'question', callback);
-}
-
-function closeModal() {
-    document.getElementById('confirm-modal').classList.remove('active');
-    modalCallback = null;
-}
-
-function confirmModal() {
-    if (modalCallback) {
-        modalCallback();
-        modalCallback = null;
-    }
-    closeModal();
-}
-
-// Закрытие по клику вне окна
-document.addEventListener('click', (e) => {
-    const modal = document.getElementById('confirm-modal');
-    if (e.target === modal) closeModal();
-});
-
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', function () {
     initBookingDate();
@@ -728,21 +689,6 @@ function getEndTime() {
 
 function getBookingDate() {
     return document.getElementById('booking-date')?.value || '';
-}
-
-// ================== УВЕДОМЛЕНИЯ ==================
-function showAlert(message, type = 'info') {
-    const container = document.getElementById('flashes-container');
-    const id = 'alert-' + Date.now();
-    const el = document.createElement('div');
-    el.className = 'alert alert-' + type;
-    el.id = id;
-    el.innerHTML =
-        '<div class="alert-content">' + message + '</div>' +
-        '<button class="alert-close" onclick="closeAlert(\'' + id + '\')">&times;</button>' +
-        '<div class="alert-progress"></div>';
-    container.appendChild(el);
-    setTimeout(() => closeAlert(id), 6000);
 }
 
 function showBookingSuccess(placeName, date, startTime, endTime, price, tariffType) {
@@ -1475,6 +1421,8 @@ function onTariffChange() {
         if (date && typeof loadTimegrid === 'function') {
             loadTimegrid(selectedPlace.id, date);
         }
+    } else if (typeof stopTimegridPolling === 'function') {
+        stopTimegridPolling();
     }
 
     updateBookingPeriodDisplay();
@@ -1513,7 +1461,7 @@ function initTariffsForPlace(place) {
 // ================== БРОНИРОВАНИЕ ==================
 let clientsCache = null;
 async function loadClientUsers() {
-    if (typeof IS_MANAGER === 'undefined' || !IS_MANAGER) return;
+    if (typeof IS_STAFF === 'undefined' || !IS_STAFF) return;
     if (clientsCache) return;
     try {
         const r = await fetch('/api/users?role=client');
@@ -1526,7 +1474,8 @@ async function loadClientUsers() {
                 d.users.forEach(u => {
                     const opt = document.createElement('option');
                     opt.value = u.id;
-                    opt.textContent = `${u.username} (${u.phone || u.email})`;
+                    const phone = u.phone || '—';
+                    opt.textContent = `${phone} – ${u.username}`;
                     select.appendChild(opt);
                 });
             }
@@ -1915,6 +1864,7 @@ function cancelBookingForm() {
     selectedPlace = null;
     currentPlaceTariffs = [];
     window.currentSchedule = null;
+    if (typeof stopTimegridPolling === 'function') stopTimegridPolling();
     if (typeof resetBookingSelection === 'function') resetBookingSelection();
     if (typeof hideScheduleStatus === 'function') hideScheduleStatus();
     const payCb = document.getElementById('pay-without-subscription');

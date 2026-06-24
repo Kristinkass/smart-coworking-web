@@ -62,11 +62,16 @@
   }
 
   function toast(msg, type) {
+    const text = friendlyError(msg, 'Готово');
+    if (typeof showToast === 'function') {
+      showToast(text, type || 'info');
+      return;
+    }
     const t = document.createElement('div');
     const kind = type || 'info';
     const icons = { success: 'check-circle', error: 'exclamation-triangle', warning: 'exclamation-circle', info: 'info-circle' };
     t.className = 'toast ' + kind;
-    t.innerHTML = `<i class="fas fa-${icons[kind] || icons.info}"></i><span>${escapeHtml(friendlyError(msg, 'Готово'))}</span>`;
+    t.innerHTML = `<i class="fas fa-${icons[kind] || icons.info}"></i><span>${escapeHtml(text)}</span>`;
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s, transform .3s'; t.style.transform = 'translateY(-6px)'; }, 3200);
     setTimeout(() => t.remove(), 3600);
@@ -80,30 +85,17 @@
     toast(msg, type);
   }
 
-  let confirmToastEl = null;
-  function hideConfirmToast() {
-    if (confirmToastEl) {
-      confirmToastEl.remove();
-      confirmToastEl = null;
+  async function askConfirm(message, onYes, yesLabel, opts = {}) {
+    if (typeof showConfirm !== 'function') {
+      if (window.confirm(message) && onYes) await onYes();
+      return;
     }
-  }
-
-  function askConfirm(message, onYes, yesLabel, opts = {}) {
-    hideConfirmToast();
-    const el = document.createElement('div');
-    el.className = 'confirm-toast';
-    el.innerHTML = `<div class="confirm-title"><i class="fas fa-${opts.icon || 'question-circle'}"></i>${escapeHtml(opts.title || 'Подтвердите действие')}</div>
-    <span>${escapeHtml(message)}</span><div class="confirm-actions">
-      <button type="button" class="confirm-no">Отмена</button>
-      <button type="button" class="confirm-yes">${escapeHtml(yesLabel || 'Удалить')}</button>
-    </div>`;
-    el.querySelector('.confirm-yes').addEventListener('click', () => {
-      hideConfirmToast();
-      onYes();
+    const ok = await showConfirm(message, {
+      title: opts.title || 'Подтвердите действие',
+      confirmText: yesLabel || 'Удалить',
+      danger: opts.danger !== false,
     });
-    el.querySelector('.confirm-no').addEventListener('click', hideConfirmToast);
-    document.body.appendChild(el);
-    confirmToastEl = el;
+    if (ok && onYes) await onYes();
   }
 
   function selectedZone() {

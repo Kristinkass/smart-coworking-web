@@ -117,10 +117,7 @@
                                 </div>
                                 <div class="user-details">
                                     <strong class="user-name">{{ booking.user.username }}</strong>
-                                    <div class="user-email">{{ booking.user.email }}</div>
-                                    {% if booking.user.phone %}
-                                    <small class="user-phone">{{ booking.user.phone }}</small>
-                                    {% endif %}
+                                    <div class="user-phone">{{ format_phone(booking.user.phone) or '—' }}</div>
                                 </div>
                             </div>
                         </td>
@@ -229,10 +226,10 @@
                                     <i class="fas fa-plus"></i>
                                 </button>
                                 <form action="{{ url_for('admin_cancel_booking', booking_id=booking.id) }}"
-                                    method="POST" class="d-inline">
+                                    method="POST" class="d-inline admin-cancel-form">
                                     <button type="submit"
                                             class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Отменить бронирование?')"
+                                            onclick="return cancelAdminBooking(event)"
                                             title="Отменить бронирование">
                                         <i class="fas fa-ban"></i>
                                     </button>
@@ -910,9 +907,16 @@ function refreshPage() {
     window.location.reload();
 }
 
-function extendBooking(bookingId, hours) {
+async function cancelAdminBooking(event) {
+    event.preventDefault();
+    if (!(await showConfirm('Отменить бронирование?', { danger: true }))) return false;
+    event.target.closest('form').submit();
+    return false;
+}
+
+async function extendBooking(bookingId, hours) {
     const label = hours === 1 ? '1 час' : hours + ' ч';
-    if (!confirm('Продлить бронирование на ' + label + '?')) return;
+    if (!(await showConfirm('Продлить бронирование на ' + label + '?'))) return;
     fetch(`/admin/booking/${bookingId}/extend`, {
         method: 'POST',
         headers: {
@@ -923,15 +927,15 @@ function extendBooking(bookingId, hours) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message || 'Бронирование успешно продлено');
-            refreshPage();
+            showToast(data.message || 'Бронирование успешно продлено', 'success');
+            setTimeout(refreshPage, 800);
         } else {
-            alert('Ошибка: ' + data.error);
+            showToast(data.error || 'Ошибка продления', 'error');
         }
     })
     .catch(error => {
         console.error('Ошибка:', error);
-        alert('Произошла ошибка при продлении бронирования');
+        showToast('Произошла ошибка при продлении бронирования', 'error');
     });
 }
 
@@ -955,61 +959,63 @@ function showAdminExtendMenu(btn, bookingId) {
     wrap.appendChild(menu);
 }
 
-function restoreBooking(bookingId) {
-    if (confirm('Восстановить отмененное бронирование?')) {
-        fetch(`/admin/booking/${bookingId}/restore`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Бронирование восстановлено');
-                refreshPage();
-            } else {
-                alert('Ошибка: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при восстановлении бронирования');
-        });
-    }
+async function restoreBooking(bookingId) {
+    if (!(await showConfirm('Восстановить отмененное бронирование?'))) return;
+    fetch(`/admin/booking/${bookingId}/restore`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Бронирование восстановлено', 'success');
+            setTimeout(refreshPage, 800);
+        } else {
+            showToast(data.error || 'Ошибка восстановления', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showToast('Произошла ошибка при восстановлении бронирования', 'error');
+    });
 }
 
 function showDetails(bookingId) {
-    alert('Детали бронирования #' + bookingId + '\nФункция детального просмотра будет реализована в следующем обновлении.');
+    showToast('Детали бронирования #' + bookingId + ' — в следующем обновлении', 'info');
 }
 
 function viewRating(bookingId) {
-    alert('Просмотр оценки для бронирования #' + bookingId);
+    showToast('Просмотр оценки для бронирования #' + bookingId, 'info');
 }
 
-function notifyUser(userId) {
-    const message = prompt('Введите сообщение для пользователя:');
-    if (message) {
-        fetch(`/admin/user/${userId}/notify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: message })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Уведомление отправлено');
-            } else {
-                alert('Ошибка: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при отправке уведомления');
-        });
-    }
+async function notifyUser(userId) {
+    const message = await showPrompt('Введите сообщение для пользователя:', {
+        title: 'Уведомление пользователю',
+        multiline: true,
+        confirmText: 'Отправить',
+    });
+    if (!message) return;
+    fetch(`/admin/user/${userId}/notify`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Уведомление отправлено', 'success');
+        } else {
+            showToast(data.error || 'Ошибка отправки', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showToast('Произошла ошибка при отправке уведомления', 'error');
+    });
 }
 
 // Автоматическое обновление прогресса времени каждую минуту

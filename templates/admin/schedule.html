@@ -262,7 +262,7 @@ async function loadSchedule() {
         }
     } catch (error) {
         console.error('Ошибка загрузки расписания:', error);
-        alert('Не удалось загрузить расписание');
+        showToast('Не удалось загрузить расписание', 'error');
     }
 }
 
@@ -335,11 +335,11 @@ async function saveSchedule() {
             closeModal();
             loadSchedule();
         } else {
-            alert('Ошибка: ' + result.error);
+            showToast('Ошибка: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('Ошибка сохранения:', error);
-        alert('Не удалось сохранить изменения');
+        showToast('Не удалось сохранить изменения', 'error');
     }
 }
 
@@ -365,7 +365,7 @@ async function confirmApplyToAll() {
         .map(cb => parseInt(cb.value));
     
     if (targetDays.length === 0) {
-        alert('Выберите хотя бы один день');
+        showToast('Выберите хотя бы один день', 'warning');
         return;
     }
     
@@ -381,17 +381,17 @@ async function confirmApplyToAll() {
             closeApplyModal();
             loadSchedule();
         } else {
-            alert('Ошибка: ' + result.error);
+            showToast('Ошибка: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('Ошибка применения:', error);
-        alert('Не удалось применить расписание');
+        showToast('Не удалось применить расписание', 'error');
     }
 }
 
 // Сброс расписания
 async function resetSchedule() {
-    if (!confirm('Сбросить расписание к значениям по умолчанию?')) return;
+    if (!(await showConfirm('Сбросить расписание к значениям по умолчанию?', { danger: true }))) return;
     
     try {
         const response = await fetch('/api/admin/schedule/reset', {
@@ -403,11 +403,11 @@ async function resetSchedule() {
         if (result.success) {
             loadSchedule();
         } else {
-            alert('Ошибка: ' + result.error);
+            showToast('Ошибка: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('Ошибка сброса:', error);
-        alert('Не удалось сбросить расписание');
+        showToast('Не удалось сбросить расписание', 'error');
     }
 }
 

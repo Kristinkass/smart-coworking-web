@@ -136,15 +136,15 @@ document.getElementById('zone-form').onsubmit = async (e) => {
 };
 
 async function archiveZone(id) {
-  if (!confirm('Архивировать зону? У существующих мест она сохранится, но для новых будет недоступна.')) return;
+  if (!(await showConfirm('Архивировать зону? У существующих мест она сохранится, но для новых будет недоступна.'))) return;
   const res = await api('/api/admin/location-zones/' + id + '/archive', {method: 'POST'});
-  if (res.message) alert(res.message);
+  if (res.message) showToast(res.message, res.success === false ? 'error' : 'success');
   if (res.success !== false) loadZones();
 }
 
 async function unarchiveZone(id) {
   const res = await api('/api/admin/location-zones/' + id + '/unarchive', {method: 'POST'});
-  if (res.message) alert(res.message);
+  if (res.message) showToast(res.message, res.success === false ? 'error' : 'success');
   if (res.success !== false) loadZones();
 }
 

@@ -98,11 +98,11 @@ async function renameFloor(id, name) {
 }
 
 async function deleteFloor(id, number) {
-    if (!confirm('Удалить этаж ' + number + '?')) return;
+    if (!(await showConfirm('Удалить этаж ' + number + '?', { danger: true }))) return;
     const r = await fetch('/api/admin/floors/' + id, { method: 'DELETE' });
     const d = await r.json();
     if (!d.success) {
-        alert(d.error || 'Не удалось удалить');
+        showToast(d.error || 'Не удалось удалить', 'error');
         return;
     }
     loadFloorsAdmin();

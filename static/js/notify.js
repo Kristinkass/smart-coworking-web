@@ -154,6 +154,23 @@
             .cw-btn-confirm:hover { background: #6f855c; }
             .cw-btn-danger { background: #c75050; }
             .cw-btn-danger:hover { background: #a84040; }
+            .cw-prompt-box .cw-prompt-input {
+                width: 100%;
+                box-sizing: border-box;
+                margin: 0 0 16px;
+                padding: 10px 12px;
+                border: 1px solid #dde3d4;
+                border-radius: 8px;
+                font-size: 14px;
+                font-family: inherit;
+                color: #2f3428;
+                resize: vertical;
+            }
+            .cw-prompt-box .cw-prompt-input:focus {
+                outline: none;
+                border-color: #8fa67a;
+                box-shadow: 0 0 0 3px rgba(143, 166, 122, 0.2);
+            }
             @keyframes cwFadeIn {
                 from { opacity: 0; }
                 to { opacity: 1; }
@@ -173,6 +190,14 @@
             document.body.appendChild(el);
         }
         return el;
+    }
+
+    function escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     function showToast(message, type = 'info', duration = 4500) {
@@ -209,11 +234,11 @@
             overlay.className = 'cw-confirm-overlay';
             overlay.innerHTML = `
                 <div class="cw-confirm-box" role="dialog" aria-modal="true">
-                    <h4>${title}</h4>
-                    <p>${message}</p>
+                    <h4>${escapeHtml(title)}</h4>
+                    <p>${escapeHtml(message)}</p>
                     <div class="cw-confirm-actions">
-                        <button type="button" class="cw-btn-cancel">${cancelText}</button>
-                        <button type="button" class="cw-btn-confirm ${danger ? 'cw-btn-danger' : ''}">${confirmText}</button>
+                        <button type="button" class="cw-btn-cancel">${escapeHtml(cancelText)}</button>
+                        <button type="button" class="cw-btn-confirm ${danger ? 'cw-btn-danger' : ''}">${escapeHtml(confirmText)}</button>
                     </div>
                 </div>
             `;
@@ -233,8 +258,63 @@
         });
     }
 
+    function showPrompt(message, options = {}) {
+        ensureStyles();
+        const {
+            title = 'Введите значение',
+            confirmText = 'OK',
+            cancelText = 'Отмена',
+            placeholder = '',
+            defaultValue = '',
+            multiline = false,
+        } = options;
+
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.className = 'cw-confirm-overlay';
+            const inputHtml = multiline
+                ? `<textarea class="cw-prompt-input" rows="4" placeholder="${escapeHtml(placeholder)}">${escapeHtml(defaultValue)}</textarea>`
+                : `<input type="text" class="cw-prompt-input" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(defaultValue)}">`;
+            overlay.innerHTML = `
+                <div class="cw-confirm-box cw-prompt-box" role="dialog" aria-modal="true">
+                    <h4>${escapeHtml(title)}</h4>
+                    <p>${escapeHtml(message)}</p>
+                    ${inputHtml}
+                    <div class="cw-confirm-actions">
+                        <button type="button" class="cw-btn-cancel">${escapeHtml(cancelText)}</button>
+                        <button type="button" class="cw-btn-confirm">${escapeHtml(confirmText)}</button>
+                    </div>
+                </div>
+            `;
+
+            const input = overlay.querySelector('.cw-prompt-input');
+            const finish = (value) => {
+                overlay.remove();
+                resolve(value);
+            };
+
+            overlay.querySelector('.cw-btn-cancel').addEventListener('click', () => finish(null));
+            overlay.querySelector('.cw-btn-confirm').addEventListener('click', () => {
+                finish(input.value.trim() || null);
+            });
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) finish(null);
+            });
+            input.addEventListener('keydown', (e) => {
+                if (!multiline && e.key === 'Enter') {
+                    e.preventDefault();
+                    finish(input.value.trim() || null);
+                }
+            });
+
+            document.body.appendChild(overlay);
+            input.focus();
+        });
+    }
+
     global.showToast = showToast;
     global.showConfirm = showConfirm;
+    global.showPrompt = showPrompt;
     global.showAlert = showToast;
     global.showBookingToast = showToast;
 })(window);

@@ -516,7 +516,7 @@
                 <thead>
                     <tr>
                         <th>Пользователь</th>
-                        <th>Почта</th>
+                        <th>Телефон</th>
                         <th>Количество бронирований</th>
                         <th>Общая сумма</th>
                     </tr>
@@ -525,7 +525,7 @@
                     {% for user in stats.top_users %}
                     <tr>
                         <td>{{ user.username }}</td>
-                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone or '—' }}</td>
                         <td>{{ user.booking_count }}</td>
                         <td>{{ format_money(user.total_spent) }}</td>
                     </tr>
@@ -639,11 +639,11 @@ async function downloadPDF() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } else {
-            alert('Ошибка при генерации PDF');
+            showToast('Ошибка при генерации PDF', 'error');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка при генерации PDF');
+        showToast('Ошибка при генерации PDF', 'error');
     }
 }
 </script>

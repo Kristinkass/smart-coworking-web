@@ -74,7 +74,7 @@ def register_admin_booking_routes(app):
             db.session.commit()
 
             status = "активирован" if user.active else "деактивирован"
-            flash(f'Пользователь {user.email} {status}', 'success')
+            flash(f'Пользователь {user.login_label} {status}', 'success')
 
         except Exception as e:
             db.session.rollback()
@@ -95,7 +95,7 @@ def register_admin_booking_routes(app):
             db.session.commit()
 
             role = "администратором" if user.role == 'admin' else "пользователем"
-            flash(f'Пользователь {user.email} теперь {role}', 'success')
+            flash(f'Пользователь {user.login_label} теперь {role}', 'success')
 
         except Exception as e:
             db.session.rollback()
@@ -122,7 +122,7 @@ def register_admin_booking_routes(app):
                 'manager': 'менеджером',
                 'client': 'клиентом',
             }
-            flash(f'Пользователь {user.email} теперь {role_names[role]}', 'success')
+            flash(f'Пользователь {user.login_label} теперь {role_names[role]}', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при изменении роли: {user_error_message(e)}', 'error')

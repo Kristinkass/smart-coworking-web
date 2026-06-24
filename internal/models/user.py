@@ -48,12 +48,12 @@ class User(UserMixin, db.Model):
 
     @property
     def login_label(self):
-        """Отображаемый идентификатор: почта или телефон."""
+        """Отображаемый идентификатор: телефон, иначе почта или имя."""
         from internal.utils.phone import format_phone_display
-        if self.email:
-            return self.email
         if self.phone:
             return format_phone_display(self.phone)
+        if self.email:
+            return self.email
         return self.username
 
     def to_dict(self):
