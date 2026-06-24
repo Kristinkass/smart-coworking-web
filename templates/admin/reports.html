@@ -104,6 +104,14 @@
     font-weight: 600;
     font-size: 12px;
     cursor: pointer;
+    white-space: nowrap;
+}
+
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
 }
 
 .btn-generate:hover,
@@ -123,6 +131,13 @@
     border: 1px solid var(--report-border);
     border-top: 3px solid var(--report-green);
     padding: 10px 12px;
+    box-shadow: none;
+    transform: none;
+}
+
+.stat-card:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(47, 52, 40, 0.08);
 }
 
 .stat-card.bookings,
@@ -433,8 +448,11 @@
                     <option value="cancelled" {% if report_type == 'cancelled' %}selected{% endif %}>Отмененные</option>
                 </select>
             </div>
-            <div>
-                <button class="btn-generate" onclick="generateReport()">Сформировать отчет</button>
+            <div class="filter-actions">
+                <button type="button" class="btn-generate" onclick="generateReport()">Сформировать отчет</button>
+                <button type="button" class="btn-download" onclick="downloadPDF()">
+                    <i class="fas fa-file-pdf"></i> Скачать PDF
+                </button>
             </div>
         </div>
     </div>
@@ -539,9 +557,6 @@
     <div class="reports-card">
         <div class="card-header">
             <h3 class="card-title">Детальный список бронирований</h3>
-            <button class="btn-download" onclick="downloadPDF()">
-                <i class="fas fa-file-pdf"></i> Скачать PDF
-            </button>
         </div>
 
         {% for section in report_sections %}

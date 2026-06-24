@@ -32,6 +32,9 @@ def register_admin_pages_routes(app):
     @admin_required
     def admin_editor():
         """Отдельная страница-редактор планировки этажа."""
+        ua = (request.headers.get('User-Agent') or '').lower()
+        if any(token in ua for token in ('iphone', 'ipod', 'android', 'mobile')):
+            return redirect(url_for('admin_dashboard'))
         return render_template('editor.html')
 
 

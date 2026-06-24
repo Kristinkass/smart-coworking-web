@@ -15,7 +15,7 @@
   </h2>
   <div class="module-grid">
     {% if current_user.is_admin() %}
-    <a href="{{ url_for('admin_editor') }}" class="module-card">
+    <a href="{{ url_for('admin_editor') }}" class="module-card cw-desktop-only">
       <i class="fas fa-pencil-ruler"></i><span>Планировка</span>
       <small>1) Создайте помещение → 2) Добавьте столы внутрь</small>
     </a>

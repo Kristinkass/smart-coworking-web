@@ -463,7 +463,7 @@ body.nav-menu-open {
 .form-control:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    box-shadow: 0 0 0 3px rgba(143, 166, 122, 0.2);
 }
 
 .form-text {
@@ -562,34 +562,40 @@ body.nav-menu-open {
 }
 
 .stat-card {
-    background: var(--primary-color);
-    color: white;
+    background: #fff;
+    color: var(--text-primary, #2f3428);
     padding: 1.5rem;
     border-radius: var(--border-radius);
+    border: 1px solid var(--border-color, #dde3d4);
+    border-top: 3px solid var(--primary-color);
     display: flex;
     align-items: center;
     gap: 1rem;
     transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(47, 52, 40, 0.06);
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(47, 52, 40, 0.12);
 }
 
 .stat-icon {
     font-size: 2.5rem;
     opacity: 0.9;
+    color: var(--primary-color);
 }
 
 .stat-info h3 {
     font-size: 2rem;
     margin-bottom: 0.25rem;
+    color: var(--text-primary, #2f3428);
 }
 
 .stat-info p {
     opacity: 0.9;
     font-size: 0.9rem;
+    color: var(--text-secondary, #6b7280);
 }
 
 .admin-actions {
@@ -1851,6 +1857,10 @@ body.nav-menu-open {
 }
 
 @media (max-width: 768px) {
+    .cw-desktop-only {
+        display: none !important;
+    }
+
     .logo {
         font-size: 1.1rem;
     }
