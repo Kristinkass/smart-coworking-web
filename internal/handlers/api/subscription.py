@@ -5,7 +5,9 @@ from datetime import date, datetime, timedelta
 from flask import jsonify, request
 from flask_login import current_user, login_required
 
-from internal.handlers.deps import Subscription, User, admin_required, db, models, staff_required
+from internal.handlers.deps import (
+    Subscription, User, admin_required, db, manager_required, models, staff_required,
+)
 from internal.repositories.user_repository import UserRepository
 from internal.utils.errors import user_error_message
 
@@ -81,9 +83,9 @@ def register_subscription_routes(app):
             return jsonify({'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions/issue-template', methods=['POST'])
-    @staff_required
+    @manager_required
     def issue_subscription_from_template():
-        """Выдать клиенту абонемент по шаблону (менеджер или администратор)."""
+        """Выдать клиенту абонемент по шаблону (только менеджер)."""
         try:
             data = request.json or {}
             user_id = data.get('user_id')

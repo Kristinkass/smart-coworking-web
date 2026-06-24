@@ -43,6 +43,28 @@ function roundToSlotMinutes(totalMinutes) {
     return Math.ceil(totalMinutes / SLOT_DURATION) * SLOT_DURATION;
 }
 
+function bookingLocalDateStr(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseTimeToMinutes(value) {
+    if (!value) return null;
+    const raw = String(value).trim();
+    const [h, m] = raw.split(':').map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+    if (raw === '24:00') return 24 * 60;
+    return h * 60 + m;
+}
+
+function noBookingTimeLeftToday(selectedDate, closeTime) {
+    if (selectedDate !== bookingLocalDateStr()) return false;
+    const closeMinutes = parseTimeToMinutes(closeTime);
+    if (closeMinutes == null) return false;
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return closeMinutes - nowMinutes < MIN_SLOTS * SLOT_DURATION;
+}
+
 function setBookingTimeControlsEnabled(enabled) {
     const tariffType = document.getElementById('tariff-type')?.value || 'hourly';
     const isHourly = tariffType === 'hourly';
@@ -131,6 +153,20 @@ async function loadTimegrid(placeId, date) {
             isBookable: data.is_bookable,
         };
         showScheduleHoursInfo(data.open_time, data.close_time);
+
+        const selectedDate = document.getElementById('booking-date')?.value || date;
+        if (noBookingTimeLeftToday(selectedDate, data.close_time)) {
+            currentTimegrid = null;
+            window.currentBookingTimegrid = null;
+            selectedStartIndex = null;
+            if (timeline) timeline.innerHTML = '';
+            showScheduleStatus(
+                'Сегодня уже нельзя забронировать: до закрытия осталось меньше 30 минут. Выберите другую дату.',
+                'error',
+            );
+            setBookingTimeControlsEnabled(false);
+            return;
+        }
 
         if (!data.is_bookable || !data.slots || data.slots.length === 0) {
             currentTimegrid = null;

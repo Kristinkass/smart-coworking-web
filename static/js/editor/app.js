@@ -258,6 +258,19 @@
     return place.name || place.category?.name || place.code || 'Без названия';
   }
 
+  function removePlaceLocally(code) {
+    if (!code) return;
+    places = places.filter(p => p.code !== code && p.container_code !== code);
+    wallRooms = wallRooms.filter(r => !(r.place && r.place.code === code));
+    render();
+  }
+
+  function removeDraftRoomLocally(room) {
+    if (!room) return;
+    wallRooms = wallRooms.filter(r => r.room_key !== room.room_key);
+    render();
+  }
+
   function deskOverlapsOthers(desk, x, y, w, h, rotation = 0) {
     return floorPlaces().some(p => {
       if (p.kind !== 'desk' || p.code === desk.code) return false;
@@ -1215,6 +1228,7 @@
         async () => {
           try {
             const data = await dismissWallRoom(room);
+            removeDraftRoomLocally(room);
             clearSelection();
             await loadAll(true);
             toast(data.message || 'Зона убрана', 'success');
@@ -1244,6 +1258,7 @@
         if (wallRoom) {
           await dismissWallRoom(wallRoom, place.code);
         }
+        removePlaceLocally(place.code);
         clearSelection();
         await loadAll(true);
         toast('Локация «' + label + '» удалена', 'success');
@@ -1777,8 +1792,10 @@
         body: JSON.stringify({ code: p.code, rotation: rot }),
       });
       p.rotation = rot;
+      await loadAll(true);
+      const fresh = places.find(x => x.code === p.code);
+      if (fresh) selectDesk(fresh);
       toast('Стол сохранён', 'success');
-      render();
     } catch (e) { toast(e.message || 'Ошибка', 'error'); }
   }
 
@@ -1799,6 +1816,7 @@
         } else {
           await api('/api/admin/place-by-code/' + encodeURIComponent(p.code), { method: 'DELETE' });
         }
+        removePlaceLocally(p.code);
         clearSelection();
         await loadAll(true);
         toast('Стол удалён', 'success');
@@ -1899,6 +1917,8 @@
     if (!selection || selection.type !== 'door' || !selection.door) return;
     try {
       await api('/api/admin/door/' + selection.door.id, { method: 'DELETE' });
+      doors = doors.filter(d => d.id !== selection.door.id);
+      renderDoors();
       clearSelection();
       await loadAll(true);
       toast('Дверь удалена', 'success');

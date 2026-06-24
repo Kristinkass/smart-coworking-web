@@ -411,7 +411,7 @@
             {% endif %}
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            {% if is_manager or is_admin %}
+            {% if is_manager and not is_admin %}
             <button class="btn-create" onclick="openIssueTemplateModal()">
                 <i class="fas fa-user-plus"></i> Выдать по шаблону
             </button>
