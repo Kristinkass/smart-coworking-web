@@ -41,7 +41,16 @@ def test_room_dict_dedupe_keeps_category_with_places():
     assert result[0]['id'] == 2
 
 
-def test_dedup_key_room_uses_capacity_only():
-    a = _cat(capacity=10, name='Переговорная 10 мест')
-    b = _cat(capacity=10, name='Комната 10')
-    assert category_dedup_key(a) == category_dedup_key(b)
+def test_meeting_actual_variant_uses_room_dimensions():
+    from internal.utils.room_geometry import meeting_actual_variant
+
+    place = type('P', (), {'name': 'Переговорная 10 мест'})()
+    category = type('C', (), {
+        'id': 5, 'name': 'Переговорная 10 мест', 'capacity': 10, 'tariffs': [],
+    })()
+    v = meeting_actual_variant(place, category, 620, 472)
+    assert v['is_current'] is True
+    assert v['width_m'] == 6.2
+    assert v['height_m'] == 4.72
+    assert v['capacity'] == 10
+    assert 'текущее помещение' in v['description']

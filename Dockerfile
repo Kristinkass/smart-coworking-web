@@ -12,13 +12,13 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY scripts/ensure_pdf_fonts.py scripts/ensure_pdf_fonts.py
-RUN python scripts/ensure_pdf_fonts.py || echo "PDF fonts: skip (Helvetica fallback)"
-
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 COPY . .
+
+# После COPY — иначе assets/fonts из контекста затирает скачанные ttf
+RUN python scripts/ensure_pdf_fonts.py || echo "PDF fonts: skip (Helvetica fallback)"
 
 EXPOSE 5000
 

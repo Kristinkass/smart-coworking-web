@@ -71,9 +71,10 @@ def _resolve_zone_kind(place, zone_type_id=None):
     return DESK_ZONE_KIND, 'Зона столов'
 
 
-def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name=None):
+def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name=None, place=None):
     from internal.models.location_zone import is_amenity_zone_kind, ROOM_ZONE_KIND
     from internal.utils.category_dedup import dedupe_category_dicts
+    from internal.utils.room_geometry import meeting_actual_variant
 
     cats = dedupe_category_dicts([
         c.to_dict() for c in PlaceCategory.query.filter_by(active=True).all()
@@ -85,6 +86,8 @@ def _build_room_variants(rw, rh, room, floor_walls, floor_doors, zone_kind, zone
             'description': 'Служебная зона – без бронирования и столов',
         }]
     if zone_kind == ROOM_ZONE_KIND:
+        if place and place.category and place.category.kind == 'room':
+            return 'meeting', [meeting_actual_variant(place, place.category, rw, rh)]
         return 'meeting', meeting_fit_variants(
             rw, rh, [c for c in cats if c.get('kind') == 'room'],
         )
@@ -230,12 +233,15 @@ def api_room_variants(code):
         }
 
         zone_kind, zone_name = _resolve_zone_kind(place, zone_type_id)
-        cache_key = ('room', code, rw, rh, zone_type_id or 0, zone_kind)
+        cache_key = (
+            'room', code, rw, rh, zone_type_id or 0, zone_kind,
+            place.category_id if place and place.category else 0,
+        )
         cached = _variant_cache_get(cache_key)
         if cached:
             return jsonify(cached)
         mode, variants = _build_room_variants(
-            rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name,
+            rw, rh, room, floor_walls, floor_doors, zone_kind, zone_name, place=place,
         )
 
         payload = {

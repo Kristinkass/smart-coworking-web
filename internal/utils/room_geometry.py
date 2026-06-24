@@ -949,6 +949,41 @@ def meeting_fit_variants(room_w, room_h, room_categories):
     return variants
 
 
+def meeting_actual_variant(place, category, room_w, room_h, scale=SCALE):
+    """Вариант для уже созданной переговорной — по фактическим размерам и категории места."""
+    room_w_m = round(room_w / scale, 2)
+    room_h_m = round(room_h / scale, 2)
+    cap = int(getattr(category, 'capacity', None) or category.get('capacity', 1))
+    cat_id = getattr(category, 'id', None) or category.get('id')
+    name = (getattr(place, 'name', None) or place.get('name') or
+            getattr(category, 'name', None) or category.get('name') or 'Переговорная')
+    hourly = None
+    if isinstance(category, dict):
+        tariffs = category.get('tariffs') or []
+    else:
+        tariffs = getattr(category, 'tariffs', None) or []
+    for t in tariffs:
+        tt = t.tariff_type if hasattr(t, 'tariff_type') else t.get('tariff_type')
+        active = t.active if hasattr(t, 'active') else t.get('active', True)
+        if tt == 'hourly' and active:
+            hourly = t.price if hasattr(t, 'price') else t.get('price')
+            break
+    return {
+        'variant_type': 'meeting',
+        'is_current': True,
+        'category_id': cat_id,
+        'title': name,
+        'description': f'{room_w_m}×{room_h_m} м · {cap} мест · текущее помещение',
+        'fits': True,
+        'capacity': cap,
+        'price_per_hour': hourly,
+        'width_m': room_w_m,
+        'height_m': room_h_m,
+        'footprint_w_m': room_w_m,
+        'footprint_h_m': room_h_m,
+    }
+
+
 def compute_desk_positions(room, cols, rows, tw, th, margin=40, gap=30,
                            align='center', rotation=0, door_margin=DOOR_CLEARANCE_PX):
     return pack_desks_fill(

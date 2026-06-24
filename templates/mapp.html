@@ -34,8 +34,33 @@
             background: #fafbfc;
             box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
         }
-        .floor-plan-container { background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
+        .floor-plan-container { position: relative; background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
             padding: 15px; margin: 16px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: auto; }
+        .map-float-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 25;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin: -15px -15px 10px -15px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0;
+        }
+        .map-legend--overlay {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            flex: 1;
+            min-width: 0;
+            gap: 8px 12px;
+            font-size: 12px;
+        }
         .floor-plan-svg { background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             width: 100%; min-width: 1100px; height: auto; user-select: none; overflow: visible; }
         .floor-plan-svg text {
@@ -128,8 +153,8 @@
 
         .maintenance-panel { display: none; background: #1e293b; color: white; border-radius: 0; padding: 20px; margin-top: 12px; }
 
-        /* Временная шкала бронирования - 15-минутные слоты */
-        .timeline-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        /* Временная шкала бронирования */
+        .timeline-wrapper { background: #fdfdf9; border: 1px solid #dde3d4; border-radius: 12px; padding: 14px; margin: 12px 0; box-shadow: none; }
         .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .timeline-title { font-weight: 600; font-size: 14px; color: #1e293b; }
         .capacity-badge { background: #eef2e8; color: #6f855c; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -155,15 +180,15 @@
             -webkit-overflow-scrolling: touch;
             overscroll-behavior-x: contain;
             border-radius: 8px;
-            border: 1px solid #d1d5db;
-            background: #f3f4f6;
+            border: 1px solid #dde3d4;
+            background: #f5f7f4;
         }
         .booking-timeline {
             display: flex;
             width: max-content;
             min-width: 100%;
-            height: 50px;
-            background: #f3f4f6;
+            height: 44px;
+            background: #f5f7f4;
             border-radius: 8px 8px 0 0;
             margin: 0;
             position: relative;
@@ -181,11 +206,11 @@
             transition: background 0.2s ease, transform 0.2s ease;
         }
         .timeline-slot:last-child { border-right: none; }
-        .timeline-slot:hover { transform: scaleY(1.1); z-index: 10; }
-        .timeline-slot.occupied { background: #FCA5A5; cursor: not-allowed; }
-        .timeline-slot.partial { background: #FDE047; }
-        .timeline-slot.available { background: #86EFAC; }
-        .timeline-slot.past { background: #E5E7EB; cursor: not-allowed; }
+        .timeline-slot:hover { transform: scaleY(1.05); z-index: 10; }
+        .timeline-slot.occupied { background: #e8d4d4; cursor: not-allowed; }
+        .timeline-slot.partial { background: #efe8d4; }
+        .timeline-slot.available { background: #e3ebe0; }
+        .timeline-slot.past { background: #ecefee; cursor: not-allowed; }
 
         /* Метки времени под timeline */
         .timeline-labels {
@@ -211,14 +236,14 @@
         }
 
         /* Выделенный диапазон */
-        .timeline-slot.selected { background: #8fa67a !important; }
+        .timeline-slot.selected { background: #a8b89a !important; }
         .timeline-slot.selected-start {
-            background: #6f855c !important;
-            border-left: 3px solid #5a7048;
+            background: #8fa67a !important;
+            border-left: 2px solid #6f855c;
         }
         .timeline-slot.selected-end {
-            background: #6f855c !important;
-            border-right: 3px solid #5a7048;
+            background: #8fa67a !important;
+            border-right: 2px solid #6f855c;
         }
         .timeline-slot.in-range {
             background: #d4dfc8 !important;
@@ -243,7 +268,7 @@
             margin-bottom: 4px;
         }
         .timeline-slot:hover::after { opacity: 1; }
-        .timeline-legend { display: flex; gap: 16px; margin-top: 24px; font-size: 12px; justify-content: center; }
+        .timeline-legend { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-top: 12px; font-size: 11px; justify-content: flex-start; color: #64748b; }
         .timeline-loading, .timeline-empty {
             padding: 24px 16px;
             text-align: center;
@@ -515,11 +540,11 @@
             padding: 0 4px;
         }
         .legend-item { display: flex; align-items: center; gap: 6px; }
-        .legend-color { width: 16px; height: 16px; border-radius: 4px; }
-        .legend-color.free { background: #86efac; }
-        .legend-color.partial { background: #fde047; }
-        .legend-color.occupied { background: #fca5a5; }
-        .legend-color.selected { background: #8fa67a; }
+        .legend-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.06); }
+        .legend-color.free { background: #e3ebe0; }
+        .legend-color.partial { background: #efe8d4; }
+        .legend-color.occupied { background: #e8d4d4; }
+        .legend-color.selected { background: #a8b89a; }
         .maintenance-panel.active { display: block; }
         .maintenance-panel h4 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
         .maintenance-panel .place-info { background: #334155; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; font-size: 14px; }
@@ -536,13 +561,12 @@
         .toggle-switch input:checked + .toggle-slider { background: #ef4444; }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
 
-        .zoom-controls { position: fixed; right: 20px; bottom: 30px; z-index: 900;
-            display: flex; flex-direction: column; gap: 6px; }
-        .zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: none; background: #1e293b;
-            color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.2); transition: background .2s; }
-        .zoom-btn:hover { background: #334155; }
-        .zoom-btn.reset { font-size: 13px; font-weight: 700; }
+        .zoom-controls { display: flex; flex-direction: row; gap: 4px; flex-shrink: 0; }
+        .zoom-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff;
+            color: #334155; font-size: 18px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.08); transition: background .2s; }
+        .zoom-btn:hover { background: #f1f5f9; }
+        .zoom-btn.reset { font-size: 11px; font-weight: 700; }
 
         /* Tooltip кастомный */
         .place-tooltip { position: fixed; background: #1e293b; color: white; border-radius: 10px;
@@ -558,10 +582,9 @@
 
         @media (max-width: 1024px) {
             .map-container h1 { font-size: 1.35rem; }
-            .map-legend { flex-wrap: wrap; gap: 8px 12px; }
-            .legend-item { font-size: 12px; }
-            .zoom-controls { right: 12px; bottom: 16px; }
-            .zoom-btn { width: 44px; height: 44px; }
+            .map-legend--overlay { flex-wrap: wrap; gap: 6px 10px; }
+            .legend-item { font-size: 11px; }
+            .zoom-btn { width: 40px; height: 40px; }
         }
 
         @media (max-width: 768px) {
@@ -569,7 +592,7 @@
             .map-container { padding: 12px 0; }
             .map-container h1 { font-size: 1.2rem; margin-bottom: 12px; }
             .view-toggle button { flex: 1; min-width: 0; padding: 10px 8px; font-size: 13px; }
-            .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
+            .map-legend--overlay { display: none; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
             .form-row-2 { grid-template-columns: 1fr; }
             .floor-plan-container {
@@ -578,7 +601,6 @@
                 padding: 10px;
             }
             .floor-plan-svg { min-width: 900px; }
-            .zoom-controls { right: 10px; bottom: 80px; z-index: 2500; }
             .timeline-scroll-hint { display: block; }
             .time-picker-box {
                 display: flex;
@@ -630,12 +652,6 @@
     {% set active_page = 'map' %}
     {% include '_navbar.html' %}
 
-    <div class="zoom-controls map-only-view">
-        <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
-        <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
-        <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
-    </div>
-
     <div class="container">
         <div class="map-container">
             <h1><i class="fas fa-map-marked-alt"></i> Карта пространства</h1>
@@ -661,16 +677,6 @@
                 <button id="floor-map-btn-1" class="active" onclick="setMapFloor(1)">Этаж 1</button>
             </div>
 
-            <div class="map-legend">
-                <div class="legend-item"><div class="legend-box desk"></div> Рабочий стол</div>
-                <div class="legend-item"><div class="legend-box desk-zone"></div> Зона рабочих столов</div>
-                <div class="legend-item"><div class="legend-box room"></div> Переговорная</div>
-                <div class="legend-item"><div class="legend-box partial"></div> Частично занято</div>
-                <div class="legend-item"><div class="legend-box occupied"></div> Полностью занято</div>
-                <div class="legend-item"><div class="legend-box maintenance"></div> На обслуживании</div>
-                <div class="legend-item"><div class="legend-box amenity"></div> Служебная зона</div>
-            </div>
-
             {% if is_admin or is_manager %}
             <div class="manager-status-list map-view-hidden" id="manager-status-list"></div>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -689,7 +695,23 @@
                 <button class="btn-edit-mode active" onclick="toggleEditMode()"><i class="fas fa-times"></i> Выйти</button>
             </div>
 
-            <div class="floor-plan-container">
+            <div class="floor-plan-container map-only-view">
+                <div class="map-float-toolbar map-only-view">
+                    <div class="map-legend map-legend--overlay">
+                        <div class="legend-item"><div class="legend-box desk"></div> Стол</div>
+                        <div class="legend-item"><div class="legend-box desk-zone"></div> Зона столов</div>
+                        <div class="legend-item"><div class="legend-box room"></div> Переговорная</div>
+                        <div class="legend-item"><div class="legend-box partial"></div> Частично</div>
+                        <div class="legend-item"><div class="legend-box occupied"></div> Занято</div>
+                        <div class="legend-item"><div class="legend-box maintenance"></div> Обслуживание</div>
+                        <div class="legend-item"><div class="legend-box amenity"></div> Служебная</div>
+                    </div>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
+                        <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
+                        <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
+                    </div>
+                </div>
                 <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
                     <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="0"/>
                     <defs>
@@ -962,11 +984,11 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=13"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
-    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=30"></script>
+    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=8"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=31"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

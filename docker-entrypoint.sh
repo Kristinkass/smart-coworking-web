@@ -42,4 +42,20 @@ fi
 
 python /app/scripts/ensure_pdf_fonts.py 2>/dev/null || true
 
+echo "Инициализация БД..."
+python <<'PY' || exit 1
+import sys
+try:
+    from wsgi import app
+    from internal.models import init_db
+    init_db(app)
+    print("Инициализация БД завершена")
+except Exception as exc:
+    print(f"Ошибка инициализации БД: {exc}", file=sys.stderr)
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+PY
+
+echo "Запуск приложения..."
 exec "$@"

@@ -892,21 +892,34 @@
     try {
       const room = selection.room;
       if (!room) return;
+      const { z, amenity, meeting, label } = zoneKindFlags();
+      const roomW = room?.width ?? selection.place?.width ?? 0;
+      const roomH = room?.height ?? selection.place?.height ?? 0;
+      const rw = (roomW / SCALE).toFixed(1);
+      const rh = (roomH / SCALE).toFixed(1);
+
+      // Зарегистрированная переговорная — данные помещения, не подбор из шаблонов категорий
+      if (meeting && selection.place && !selection.draft) {
+        $('layout-helper-title').textContent = 'Параметры помещения';
+        const cat = selection.place.category;
+        const cap = cat?.capacity;
+        const catName = cat?.name || 'не назначен';
+        metrics.innerHTML = `${label} · ${rw}×${rh} м · ${catName}${cap ? ` (${cap} мест)` : ''}`;
+        options.innerHTML = '<div class="metric">Размер задаётся стенами. Тип и название — в полях выше, затем «Сохранить».</div>';
+        filterCategoryByZone();
+        return;
+      }
+
       const data = selection.draft || !selection.place
         ? await fetchRoomVariants(room, null)
         : await fetchRoomVariants(room, selection.place.code);
       variants = data.variants || [];
       variantMode = data.mode || 'desks';
-      const roomW = room?.width ?? selection.place?.width ?? 0;
-      const roomH = room?.height ?? selection.place?.height ?? 0;
-      const rw = (roomW / SCALE).toFixed(1);
-      const rh = (roomH / SCALE).toFixed(1);
-      const { z, amenity, meeting, label } = zoneKindFlags();
 
       if (meeting && variants.length) {
-        const fitting = dedupeVariantsByCategory(variants.filter(v => v.fits && v.category_id));
+        const fitting = dedupeVariantsByCategory(variants.filter(v => v.fits && v.category_id && !v.is_current));
         const sel = $('prop-category');
-        if (sel && fitting.length) {
+        if (sel && fitting.length && (selection.draft || !selection.place)) {
           const cur = sel.value;
           sel.innerHTML = fitting.map(v =>
             `<option value="${v.category_id}">${v.title}</option>`
@@ -917,6 +930,8 @@
           if (nameInput && !nameInput.value.trim()) {
             nameInput.value = fitting[0].title || '';
           }
+        } else if (sel) {
+          filterCategoryByZone();
         }
       }
       metrics.innerHTML = amenity
@@ -941,6 +956,11 @@
     }
     if (!variants.length) {
       container.innerHTML = '<div class="metric">Нет подходящих вариантов</div>';
+      return;
+    }
+    if (variantMode === 'meeting' && variants.length === 1 && variants[0].is_current) {
+      const v = variants[0];
+      container.innerHTML = `<div class="suggestion-card fits"><strong>${escapeHtml(v.title)}</strong><span>${escapeHtml(v.description)}</span></div>`;
       return;
     }
     variants.forEach((v, idx) => {
