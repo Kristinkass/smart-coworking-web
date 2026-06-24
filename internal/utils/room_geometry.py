@@ -828,7 +828,7 @@ def _variant_quality(placed, room_w, room_h, margin):
 
 def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
                        room=None, doors=None, walls=None):
-    """Быстрые разные варианты: углы, стены, центр, плотный и смешанный сценарии."""
+    """Варианты размещения строго от категорий столов, без дублей стратегий."""
     abs_room = room if room else {
         'x': 0, 'y': 0, 'width': room_w, 'height': room_h, 'floor': 1,
     }
@@ -838,55 +838,44 @@ def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
 
     w, h = abs_room['width'], abs_room['height']
     variants = []
-    placed_variants = []
-    seen = set()
+    seen_categories = set()
     cap_map = {c['id']: int(c.get('capacity', 1)) for c in cats}
     base_seed = int(w * 997 + h * 13 + len(cats) * 31)
-    strategy_runs = [
-        ('corner_first', 0, 45),
-        ('wall_ring', 0, 50),
-        ('center_island', 12, 45),
-        ('mixed_compact', 8, 45),
-        ('max_capacity', 8, 40),
-        ('sparse_comfort', 18, 60),
-        ('corner_first', 8, 55),
-        ('mixed_compact', 0, 50),
-        ('center_island', 0, 55),
-        ('max_capacity', 0, 45),
-    ]
 
-    for attempt, (strategy, wall_margin, desk_gap) in enumerate(strategy_runs):
+    for attempt, cat in enumerate(cats):
+        cat_key = (
+            int(cat.get('id') or 0),
+            int(cat.get('tw') or 0),
+            int(cat.get('th') or 0),
+            int(cat.get('capacity') or 1),
+        )
+        if cat_key in seen_categories:
+            continue
+        seen_categories.add(cat_key)
         seed = base_seed + attempt * 1009
         trial = pack_room_greedy_random(
-            w, h, cats, desk_gap, wall_margin, seed, strategy=strategy,
+            w, h, [cat], DESK_GAP_PX, WALL_CLEARANCE_PX, seed,
+            strategy='max_capacity',
         )
         if not trial:
             continue
-        sig = _layout_signature(trial, grid=12)
-        if sig in seen:
-            continue
-        if any(_layout_distance(trial, other) < 0.35 for other in placed_variants):
-            continue
-        seen.add(sig)
-        placed_variants.append([dict(p) for p in trial])
 
         mix_desc, total_cap = _mix_description(trial, cats)
         for p in trial:
             p['capacity'] = cap_map.get(p['category_id'], 1)
 
-        n = len(variants) + 1
         variants.append(_variant_from_positions(
             abs_room, trial,
-            title=f'Вариант {n} · {len(trial)} столов',
+            title=f'{cat.get("name", "Стол")} · {len(trial)} шт.',
             description=f'{total_cap} мест · {mix_desc}',
             extra={
-                'mixed': _count_mix_types(trial) >= 2,
-                'strategy': strategy,
-                'gap': desk_gap,
-                'margin': wall_margin,
+                'mixed': False,
+                'strategy': 'category',
+                'gap': DESK_GAP_PX,
+                'margin': WALL_CLEARANCE_PX,
                 'category_id': trial[0].get('category_id'),
                 'capacity_total': total_cap,
-                'quality_score': _variant_quality(trial, w, h, wall_margin),
+                'quality_score': _variant_quality(trial, w, h, WALL_CLEARANCE_PX),
                 'mix_breakdown': [
                     {'category_id': cid, 'count': cnt}
                     for cid, cnt in Counter(p['category_id'] for p in trial).most_common()
@@ -894,18 +883,44 @@ def desk_grid_variants(room_w, room_h, desk_categories, margin=40, gap=30,
             },
         ))
 
+    if len(cats) > 1:
+        mixed_trial = pack_room_greedy_random(
+            w, h, cats, DESK_GAP_PX, WALL_CLEARANCE_PX, base_seed + 9001,
+            strategy='mixed_compact',
+        )
+        if mixed_trial and _count_mix_types(mixed_trial) >= 2:
+            mix_desc, total_cap = _mix_description(mixed_trial, cats)
+            for p in mixed_trial:
+                p['capacity'] = cap_map.get(p['category_id'], 1)
+            variants.append(_variant_from_positions(
+                abs_room, mixed_trial,
+                title=f'Смешанный вариант · {len(mixed_trial)} столов',
+                description=f'{total_cap} мест · {mix_desc}',
+                extra={
+                    'mixed': True,
+                    'strategy': 'mixed_categories',
+                    'gap': DESK_GAP_PX,
+                    'margin': WALL_CLEARANCE_PX,
+                    'category_id': mixed_trial[0].get('category_id'),
+                    'capacity_total': total_cap,
+                    'quality_score': _variant_quality(mixed_trial, w, h, WALL_CLEARANCE_PX),
+                    'mix_breakdown': [
+                        {'category_id': cid, 'count': cnt}
+                        for cid, cnt in Counter(p['category_id'] for p in mixed_trial).most_common()
+                    ],
+                },
+            ))
+
     variants.sort(key=lambda v: (
         -v.get('capacity_total', 0),
         -v.get('quality_score', 0),
         -v.get('count', 0),
     ))
-    for i, v in enumerate(variants[:8], 1):
-        v['title'] = f'Вариант {i} · {v.get("count", 0)} столов'
     return variants[:8]
 
 
 def meeting_fit_variants(room_w, room_h, room_categories):
-    """Какие переговорные помещаются в комнату."""
+    """Варианты переговорных строго из активных категорий."""
     variants = []
     room_w_m = room_w / SCALE
     room_h_m = room_h / SCALE
@@ -914,12 +929,6 @@ def meeting_fit_variants(room_w, room_h, room_categories):
         cw = float(cat.get('width_m', 1))
         ch = float(cat.get('height_m', 0.75))
         cap = int(cat.get('capacity', 1))
-        name = (cat.get('name') or '').lower()
-        # Только реальные переговорные, не столы/зоны
-        if cap < 2 or max(cw, ch) < 1.8:
-            continue
-        if 'стол' in name or 'зона рабоч' in name:
-            continue
         # 1м отступ под проход/дверной проём (от выступа стены)
         DOOR_CLEARANCE_M = 1.0
         effective_w = room_w_m - DOOR_CLEARANCE_M
@@ -947,41 +956,6 @@ def meeting_fit_variants(room_w, room_h, room_categories):
         })
     variants.sort(key=lambda v: (not v['fits'], -v.get('capacity', 0)))
     return variants
-
-
-def meeting_actual_variant(place, category, room_w, room_h, scale=SCALE):
-    """Вариант для уже созданной переговорной — по фактическим размерам и категории места."""
-    room_w_m = round(room_w / scale, 2)
-    room_h_m = round(room_h / scale, 2)
-    cap = int(getattr(category, 'capacity', None) or category.get('capacity', 1))
-    cat_id = getattr(category, 'id', None) or category.get('id')
-    name = (getattr(place, 'name', None) or place.get('name') or
-            getattr(category, 'name', None) or category.get('name') or 'Переговорная')
-    hourly = None
-    if isinstance(category, dict):
-        tariffs = category.get('tariffs') or []
-    else:
-        tariffs = getattr(category, 'tariffs', None) or []
-    for t in tariffs:
-        tt = t.tariff_type if hasattr(t, 'tariff_type') else t.get('tariff_type')
-        active = t.active if hasattr(t, 'active') else t.get('active', True)
-        if tt == 'hourly' and active:
-            hourly = t.price if hasattr(t, 'price') else t.get('price')
-            break
-    return {
-        'variant_type': 'meeting',
-        'is_current': True,
-        'category_id': cat_id,
-        'title': name,
-        'description': f'{room_w_m}×{room_h_m} м · {cap} мест · текущее помещение',
-        'fits': True,
-        'capacity': cap,
-        'price_per_hour': hourly,
-        'width_m': room_w_m,
-        'height_m': room_h_m,
-        'footprint_w_m': room_w_m,
-        'footprint_h_m': room_h_m,
-    }
 
 
 def compute_desk_positions(room, cols, rows, tw, th, margin=40, gap=30,

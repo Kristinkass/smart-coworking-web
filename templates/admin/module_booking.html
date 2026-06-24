@@ -26,7 +26,7 @@
     </a>
     <a href="{{ url_for('admin_subscriptions') }}" class="module-card">
       <i class="fas fa-id-card"></i><span>Абонементы клиентов</span>
-      <small>Просмотр сроков и выдача по шаблону</small>
+      <small>Сроки действия и выдача по шаблону</small>
     </a>
     {% if current_user.is_admin() %}
     <a href="{{ url_for('admin_users') }}" class="module-card">

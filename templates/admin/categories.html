@@ -8,15 +8,11 @@
         {% include "admin/_nav_back.html" %}
         <h1><i class="fas fa-tags"></i> Управление категориями мест</h1>
         <p class="text-muted">Создавайте категории столов и переговорных (цены настраиваются отдельно в разделе Тарифы)</p>
-        <div style="margin-top: 12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="margin-top: 12px;">
             <a href="/admin/tariffs" class="btn btn-primary">
                 <i class="fas fa-dollar-sign"></i> Перейти к управлению тарифами
             </a>
-            <button type="button" class="btn btn-outline-warning" id="btn-dedupe-categories" onclick="dedupeCategories()" style="display:none;">
-                <i class="fas fa-compress-arrows-alt"></i> Объединить дубликаты
-            </button>
         </div>
-        <div id="categories-dedupe-hint" style="display:none; margin-top:10px; padding:10px 12px; background:#fef3c7; border-radius:8px; color:#92400e; font-size:14px;"></div>
     </div>
 
     <div class="admin-grid">
@@ -175,44 +171,17 @@ let places = [];
 // Загрузка категорий
 async function loadCategories() {
     try {
-        const r = await fetch('/api/admin/categories?view=all');
+        const r = await fetch('/api/admin/categories');
         const d = await r.json();
         if (!r.ok || !d.success) {
             showAlert(d.error || 'Ошибка загрузки категорий', 'error');
             return;
         }
         categories = d.categories || [];
-        const dupBtn = document.getElementById('btn-dedupe-categories');
-        const dupHint = document.getElementById('categories-dedupe-hint');
-        if (dupBtn) dupBtn.style.display = (d.duplicate_groups || 0) > 0 ? '' : 'none';
-        if (dupHint) {
-            if ((d.duplicate_groups || 0) > 0) {
-                dupHint.style.display = 'block';
-                dupHint.textContent = `Найдено ${d.duplicate_groups} групп дублирующихся категорий (например, две «Переговорная 20 мест»). Нажмите «Объединить дубликаты», чтобы оставить по одной записи на тип.`;
-            } else {
-                dupHint.style.display = 'none';
-            }
-        }
         renderCategories();
         renderPlacesTable();
     } catch (e) {
         console.error('Ошибка загрузки категорий:', e);
-    }
-}
-
-async function dedupeCategories() {
-    if (!confirm('Объединить дубликаты? Места будут перенесены на основную категорию, лишние записи деактивируются.')) return;
-    try {
-        const r = await fetch('/api/admin/categories/dedupe', { method: 'POST' });
-        const d = await r.json();
-        if (!r.ok || !d.success) {
-            showAlert(d.error || 'Не удалось объединить', 'error');
-            return;
-        }
-        showAlert(d.message || 'Готово', 'success');
-        await loadCategories();
-    } catch (e) {
-        showAlert('Ошибка объединения дубликатов', 'error');
     }
 }
 
@@ -276,7 +245,6 @@ function renderCategories() {
                     ${cat.name}
                     <span class="badge badge-${cat.kind}">${cat.kind === 'desk' ? 'Стол' : (cat.kind === 'room' ? 'Переговорная' : 'Устар.')}</span>
                     ${!cat.active ? '<span class="badge badge-inactive">Неактивна</span>' : ''}
-                    ${cat.is_duplicate ? '<span class="badge badge-warning" style="background:#f59e0b;color:#fff;">Дубликат</span>' : ''}
                 </div>
                 <div class="category-details">
                     ${seats} мест · ${sizeLabel} · ${tariffsText}

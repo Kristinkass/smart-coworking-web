@@ -2,6 +2,38 @@
 const SLOT_DURATION = 15;
 const MIN_SLOTS = 2;
 const MINUTE_OPTIONS = ['00', '15', '30', '45'];
+const MOBILE_TIMELINE_SLOT_PX = 16;
+
+function timelineUsesFixedSlots() {
+    return typeof isMobileViewport === 'function' && isMobileViewport();
+}
+
+function applyTimelineScrollLayout(slotCount) {
+    const timeline = document.getElementById('booking-timeline');
+    const labels = document.querySelector('.timeline-labels');
+    if (!timeline || !slotCount) return;
+
+    if (timelineUsesFixedSlots()) {
+        const width = slotCount * MOBILE_TIMELINE_SLOT_PX;
+        timeline.classList.add('timeline-fixed-slots');
+        timeline.style.minWidth = `${width}px`;
+        timeline.style.width = `${width}px`;
+        if (labels) {
+            labels.classList.add('timeline-fixed-slots');
+            labels.style.minWidth = `${width}px`;
+            labels.style.width = `${width}px`;
+        }
+    } else {
+        timeline.classList.remove('timeline-fixed-slots');
+        timeline.style.minWidth = '';
+        timeline.style.width = '';
+        if (labels) {
+            labels.classList.remove('timeline-fixed-slots');
+            labels.style.minWidth = '';
+            labels.style.width = '';
+        }
+    }
+}
 
 let currentTimegrid = null;
 let selectedStartIndex = null;
@@ -200,13 +232,17 @@ function renderTimegrid(data) {
     });
 
     addTimelineLabels(data.slots);
+    applyTimelineScrollLayout(data.slots.length);
 }
 
 function addTimelineLabels(slots) {
-    const labelsDiv = document.getElementById('timeline-labels');
-    if (!labelsDiv) return;
-    labelsDiv.innerHTML = '';
+    const container = document.querySelector('.timeline-container');
+    const oldLabels = container?.querySelector('.timeline-labels');
+    if (oldLabels) oldLabels.remove();
     if (!slots || slots.length === 0) return;
+
+    const labelsDiv = document.createElement('div');
+    labelsDiv.className = 'timeline-labels';
 
     slots.forEach((slot) => {
         const [, minute] = slot.time.split(':').map(Number);
@@ -215,6 +251,8 @@ function addTimelineLabels(slots) {
         label.textContent = minute === 0 ? slot.time : '';
         labelsDiv.appendChild(label);
     });
+
+    container?.appendChild(labelsDiv);
 }
 
 function selectStartSlot(index) {
@@ -487,3 +525,9 @@ async function bookWithSubscription(subscriptionId, placeId, date, start, end, u
     });
     return await r.json();
 }
+
+window.addEventListener('resize', () => {
+    if (currentTimegrid?.length) {
+        applyTimelineScrollLayout(currentTimegrid.length);
+    }
+});

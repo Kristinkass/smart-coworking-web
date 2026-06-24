@@ -23,9 +23,7 @@ def register_subscription_routes(app):
     def get_subscriptions():
         """Абонементы пользователей (без шаблонов)."""
         try:
-            subs = models.Subscription.query.filter_by(is_template=False).order_by(
-                models.Subscription.end_date.asc(),
-            ).all()
+            subs = models.Subscription.query.filter_by(is_template=False).all()
             return jsonify({'subscriptions': [sub.to_dict() for sub in subs]})
         except Exception as e:
             return jsonify({'error': user_error_message(e)}), 500
@@ -74,7 +72,7 @@ def register_subscription_routes(app):
             return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
     @app.route('/api/admin/subscriptions/<int:user_id>', methods=['GET'])
-    @staff_required
+    @admin_required
     def get_user_subscriptions(user_id):
         try:
             subs = Subscription.query.filter_by(user_id=user_id, is_template=False).all()

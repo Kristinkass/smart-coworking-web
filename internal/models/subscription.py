@@ -39,33 +39,29 @@ class Subscription(db.Model):
         """Активен ли абонемент сейчас"""
         return self.is_valid()
 
-    def _expiry_info(self):
-        today = datetime.now().date()
-        if not self.end_date:
-            return None, '—'
-        days = (self.end_date - today).days
-        if not self.active:
-            label = 'Неактивен'
-        elif self.start_date and today < self.start_date:
-            label = f'С {self.start_date.strftime("%d.%m.%Y")}'
-        elif days < 0:
-            label = f'Истёк {abs(days)} дн. назад'
-        elif days == 0:
-            label = 'Истекает сегодня'
-        elif days <= 7:
-            label = f'Через {days} дн.'
-        else:
-            label = f'до {self.end_date.strftime("%d.%m.%Y")}'
-        return days, label
-
     def to_dict(self):
         import json
-        days_until_end, expires_label = self._expiry_info()
+        from datetime import date
+
+        today = date.today()
+        days_until_expiry = None
+        expiry_label = None
+        if self.end_date:
+            days_until_expiry = (self.end_date - today).days
+            if days_until_expiry < 0:
+                expiry_label = f'Истёк {abs(days_until_expiry)} дн. назад'
+            elif days_until_expiry == 0:
+                expiry_label = 'Истекает сегодня'
+            elif days_until_expiry == 1:
+                expiry_label = 'Истекает завтра'
+            else:
+                expiry_label = f'Через {days_until_expiry} дн.'
+
         data = {
             'id': self.id_subscription,
             'user_id': self.user_id,
             'user_email': self.user.login_label if self.user else None,
-            'user_username': self.user.username if self.user else None,
+            'user_name': self.user.username if self.user else None,
             'name': self.name,
             'is_template': bool(self.is_template),
             'duration_days': self.duration_days,
@@ -78,8 +74,8 @@ class Subscription(db.Model):
             'price': self.price,
             'active': self.active,
             'is_valid': self.is_valid(),
-            'days_until_end': days_until_end,
-            'expires_label': expires_label,
+            'days_until_expiry': days_until_expiry,
+            'expiry_label': expiry_label,
             'created_at': self.created_at.strftime('%d.%m.%Y %H:%M')
         }
         if self.is_template:

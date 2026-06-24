@@ -600,33 +600,27 @@
       .join(' · ');
   }
 
-  function dedupeRoomCategories(cats) {
-    const byKey = new Map();
-    for (const c of cats) {
-      const key = c.kind === 'room' ? `room:${c.capacity}` : `desk:${c.capacity}:${c.width_m}:${c.height_m}:${(c.name || '').toLowerCase()}`;
-      const prev = byKey.get(key);
-      if (!prev || (c.places_count || 0) > (prev.places_count || 0) || (c.active && !prev.active)) {
-        byKey.set(key, c);
-      }
-    }
-    return [...byKey.values()].sort((a, b) => (a.capacity || 0) - (b.capacity || 0));
-  }
-
-  function dedupeVariantsByCategory(variants) {
-    const seen = new Map();
-    for (const v of variants) {
-      const id = v.category_id;
-      if (!id || seen.has(id)) continue;
-      seen.set(id, v);
-    }
-    return [...seen.values()];
-  }
-
   function populateCategorySelect() {
     const sel = $('prop-category');
     if (!sel) return;
     sel.innerHTML = '<option value="">– категория –</option>' +
       categories.map(c => `<option value="${c.id}" data-kind="${c.kind}">${c.name}</option>`).join('');
+  }
+
+  function activeUniqueCategories(kind) {
+    const seen = new Set();
+    return categories.filter(c => c.active !== false && (!kind || c.kind === kind)).filter(c => {
+      const key = [
+        c.kind,
+        String(c.name || '').trim().toLowerCase(),
+        Number(c.capacity || 0),
+        Number(c.width_m || 0).toFixed(2),
+        Number(c.height_m || 0).toFixed(2),
+      ].join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function placeFromRoom(room) {
@@ -847,7 +841,7 @@
     const sel = $('prop-category');
     if (!sel || !categories.length) return;
     if (!isRoomZone(z)) return;
-    const roomCats = dedupeRoomCategories(categories.filter(c => c.kind === 'room' && c.active !== false));
+    const roomCats = activeUniqueCategories('room');
     const cur = sel.value;
     sel.innerHTML = roomCats.length
       ? roomCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('')
@@ -892,46 +886,37 @@
     try {
       const room = selection.room;
       if (!room) return;
-      const { z, amenity, meeting, label } = zoneKindFlags();
-      const roomW = room?.width ?? selection.place?.width ?? 0;
-      const roomH = room?.height ?? selection.place?.height ?? 0;
-      const rw = (roomW / SCALE).toFixed(1);
-      const rh = (roomH / SCALE).toFixed(1);
-
-      // Зарегистрированная переговорная — данные помещения, не подбор из шаблонов категорий
-      if (meeting && selection.place && !selection.draft) {
-        $('layout-helper-title').textContent = 'Параметры помещения';
-        const cat = selection.place.category;
-        const cap = cat?.capacity;
-        const catName = cat?.name || 'не назначен';
-        metrics.innerHTML = `${label} · ${rw}×${rh} м · ${catName}${cap ? ` (${cap} мест)` : ''}`;
-        options.innerHTML = '<div class="metric">Размер задаётся стенами. Тип и название — в полях выше, затем «Сохранить».</div>';
-        filterCategoryByZone();
-        return;
-      }
-
       const data = selection.draft || !selection.place
         ? await fetchRoomVariants(room, null)
         : await fetchRoomVariants(room, selection.place.code);
       variants = data.variants || [];
       variantMode = data.mode || 'desks';
+      const roomW = room?.width ?? selection.place?.width ?? 0;
+      const roomH = room?.height ?? selection.place?.height ?? 0;
+      const rw = (roomW / SCALE).toFixed(1);
+      const rh = (roomH / SCALE).toFixed(1);
+      const { z, amenity, meeting, label } = zoneKindFlags();
 
       if (meeting && variants.length) {
-        const fitting = dedupeVariantsByCategory(variants.filter(v => v.fits && v.category_id && !v.is_current));
+        const fittingIds = new Set(variants.filter(v => v.fits && v.category_id).map(v => String(v.category_id)));
         const sel = $('prop-category');
-        if (sel && fitting.length && (selection.draft || !selection.place)) {
+        const roomCats = activeUniqueCategories('room');
+        if (sel && roomCats.length) {
           const cur = sel.value;
-          sel.innerHTML = fitting.map(v =>
-            `<option value="${v.category_id}">${v.title}</option>`
+          sel.innerHTML = roomCats.map(c =>
+            `<option value="${c.id}"${fittingIds.has(String(c.id)) ? '' : ' disabled'}>${c.name}${fittingIds.has(String(c.id)) ? '' : ' — не помещается'}</option>`
           ).join('');
-          if (cur && sel.querySelector(`option[value="${cur}"]`)) sel.value = cur;
-          else sel.value = String(fitting[0].category_id);
+          const currentOption = cur ? sel.querySelector(`option[value="${cur}"]`) : null;
+          if (currentOption && !currentOption.disabled) sel.value = cur;
+          else {
+            const firstFit = roomCats.find(c => fittingIds.has(String(c.id)));
+            if (firstFit) sel.value = String(firstFit.id);
+          }
           const nameInput = $('prop-name');
           if (nameInput && !nameInput.value.trim()) {
-            nameInput.value = fitting[0].title || '';
+            const selected = roomCats.find(c => String(c.id) === sel.value);
+            nameInput.value = selected?.name || '';
           }
-        } else if (sel) {
-          filterCategoryByZone();
         }
       }
       metrics.innerHTML = amenity
@@ -956,11 +941,6 @@
     }
     if (!variants.length) {
       container.innerHTML = '<div class="metric">Нет подходящих вариантов</div>';
-      return;
-    }
-    if (variantMode === 'meeting' && variants.length === 1 && variants[0].is_current) {
-      const v = variants[0];
-      container.innerHTML = `<div class="suggestion-card fits"><strong>${escapeHtml(v.title)}</strong><span>${escapeHtml(v.description)}</span></div>`;
       return;
     }
     variants.forEach((v, idx) => {
@@ -1509,7 +1489,7 @@
   function renderDeskTemplates() {
     const box = $('templates-list');
     if (!box) return;
-    const desks = categories.filter(c => c.kind === 'desk');
+    const desks = activeUniqueCategories('desk');
     const loc = selection && selection.place;
     const deskHint = loc && isMeetingPlace(loc)
       ? '<p style="font-size:11px;color:#a5b4fc;">Мебель переговорной (бронь только целиком)</p>'

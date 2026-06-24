@@ -40,20 +40,4 @@ if [ -n "$LAYOUT_PATH" ] && [ ! -f "$LAYOUT_PATH" ]; then
     cp /app/static/layout.json "$LAYOUT_PATH"
 fi
 
-echo "Инициализация БД..."
-python -u <<'PY' || exit 1
-import sys
-try:
-    from wsgi import app
-    from internal.models import init_db
-    init_db(app)
-    print("Инициализация БД завершена", flush=True)
-except Exception as exc:
-    print(f"Ошибка инициализации БД: {exc}", file=sys.stderr, flush=True)
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-PY
-
-echo "Запуск приложения..."
 exec "$@"

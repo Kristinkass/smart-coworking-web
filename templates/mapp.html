@@ -34,16 +34,9 @@
             background: #fafbfc;
             box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
         }
-        .floor-plan-container { position: relative; background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
-            padding: 12px; margin: 16px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: auto; }
-        .map-canvas-wrap {
-            display: flex;
-            align-items: flex-start;
-            gap: 0;
-            min-width: min-content;
-        }
+        .floor-plan-container { background: #dde3d4; border: 2px solid #a8b89a; border-radius: 14px;
+            padding: 15px; margin: 16px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: auto; }
         .floor-plan-svg { background: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            flex: 1 1 auto;
             width: 100%; min-width: 1100px; height: auto; user-select: none; overflow: visible; }
         .floor-plan-svg text {
             user-select: none; -webkit-user-select: none; pointer-events: none;
@@ -135,8 +128,8 @@
 
         .maintenance-panel { display: none; background: #1e293b; color: white; border-radius: 0; padding: 20px; margin-top: 12px; }
 
-        /* Временная шкала бронирования */
-        .timeline-wrapper { background: #fdfdf9; border: 1px solid #dde3d4; border-radius: 12px; padding: 14px; margin: 12px 0; box-shadow: none; }
+        /* Временная шкала бронирования - 15-минутные слоты */
+        .timeline-wrapper { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .timeline-title { font-weight: 600; font-size: 14px; color: #1e293b; }
         .capacity-badge { background: #eef2e8; color: #6f855c; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -148,84 +141,77 @@
         .duration-display { font-size: 16px; font-weight: 700; color: #1e293b; min-width: 140px; text-align: center; }
         .duration-hint { font-size: 11px; color: #64748b; text-align: center; margin-top: 4px; }
 
-        /* Timeline - горизонтальная полоса с прокруткой на узких экранах */
+        /* Timeline - одна длинная полоса с 15-минутными слотами */
         .timeline-container { position: relative; margin: 20px 0; }
+        .timeline-scroll-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+        }
         .timeline-scroll-hint {
             display: none;
             font-size: 11px;
             color: #64748b;
+            margin: 0 0 8px;
             text-align: center;
-            margin-bottom: 6px;
         }
-        .timeline-scroll {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior-x: contain;
-            border-radius: 8px;
-            border: 1px solid #dde3d4;
-            background: #f5f7f4;
+        .booking-timeline.timeline-fixed-slots .timeline-slot,
+        .timeline-labels.timeline-fixed-slots .timeline-label {
+            flex: 0 0 16px;
+            min-width: 16px;
         }
         .booking-timeline {
             display: flex;
-            width: max-content;
-            min-width: 100%;
-            height: 44px;
-            background: #f5f7f4;
-            border-radius: 8px 8px 0 0;
-            margin: 0;
+            height: 50px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 15px 0;
             position: relative;
-            border: none;
+            border: 1px solid #d1d5db;
         }
 
         /* 15-минутные слоты */
         .timeline-slot {
-            flex: 0 0 var(--timeline-slot-width, 36px);
-            width: var(--timeline-slot-width, 36px);
+            flex: 1;
             height: 100%;
             border-right: 1px solid #d1d5db;
             position: relative;
             cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
         }
         .timeline-slot:last-child { border-right: none; }
-        .timeline-slot:hover { transform: scaleY(1.05); z-index: 10; }
-        .timeline-slot.occupied { background: #e8d4d4; cursor: not-allowed; }
-        .timeline-slot.partial { background: #efe8d4; }
-        .timeline-slot.available { background: #e3ebe0; }
-        .timeline-slot.past { background: #ecefee; cursor: not-allowed; }
+        .timeline-slot:hover { transform: scaleY(1.1); z-index: 10; }
+        .timeline-slot.occupied { background: #FCA5A5; cursor: not-allowed; }
+        .timeline-slot.partial { background: #FDE047; }
+        .timeline-slot.available { background: #86EFAC; }
+        .timeline-slot.past { background: #E5E7EB; cursor: not-allowed; }
 
         /* Метки времени под timeline */
         .timeline-labels {
             display: flex;
-            width: max-content;
-            min-width: 100%;
-            margin-top: 0;
-            padding: 4px 0 8px;
+            margin-top: 8px;
             font-size: 11px;
             color: #6b7280;
-            background: #fff;
-            border-radius: 0 0 8px 8px;
         }
         .timeline-label {
-            flex: 0 0 var(--timeline-slot-width, 36px);
-            width: var(--timeline-slot-width, 36px);
+            flex: 1;
             text-align: left;
             padding-left: 2px;
             font-size: 10px;
             color: #6b7280;
             overflow: hidden;
-            white-space: nowrap;
         }
 
         /* Выделенный диапазон */
-        .timeline-slot.selected { background: #a8b89a !important; }
+        .timeline-slot.selected { background: #8fa67a !important; }
         .timeline-slot.selected-start {
-            background: #8fa67a !important;
-            border-left: 2px solid #6f855c;
+            background: #6f855c !important;
+            border-left: 3px solid #5a7048;
         }
         .timeline-slot.selected-end {
-            background: #8fa67a !important;
-            border-right: 2px solid #6f855c;
+            background: #6f855c !important;
+            border-right: 3px solid #5a7048;
         }
         .timeline-slot.in-range {
             background: #d4dfc8 !important;
@@ -250,7 +236,7 @@
             margin-bottom: 4px;
         }
         .timeline-slot:hover::after { opacity: 1; }
-        .timeline-legend { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-top: 12px; font-size: 11px; justify-content: flex-start; color: #64748b; }
+        .timeline-legend { display: flex; gap: 16px; margin-top: 24px; font-size: 12px; justify-content: center; }
         .timeline-loading, .timeline-empty {
             padding: 24px 16px;
             text-align: center;
@@ -522,11 +508,11 @@
             padding: 0 4px;
         }
         .legend-item { display: flex; align-items: center; gap: 6px; }
-        .legend-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.06); }
-        .legend-color.free { background: #e3ebe0; }
-        .legend-color.partial { background: #efe8d4; }
-        .legend-color.occupied { background: #e8d4d4; }
-        .legend-color.selected { background: #a8b89a; }
+        .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+        .legend-color.free { background: #86efac; }
+        .legend-color.partial { background: #fde047; }
+        .legend-color.occupied { background: #fca5a5; }
+        .legend-color.selected { background: #8fa67a; }
         .maintenance-panel.active { display: block; }
         .maintenance-panel h4 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
         .maintenance-panel .place-info { background: #334155; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px; font-size: 14px; }
@@ -543,33 +529,13 @@
         .toggle-switch input:checked + .toggle-slider { background: #ef4444; }
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
 
-        .zoom-controls--map {
-            position: sticky;
-            left: 0;
-            top: 10px;
-            z-index: 40;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-shrink: 0;
-            margin: 8px 8px 8px 4px;
-            padding: 6px;
-            background: rgba(30, 41, 59, 0.92);
-            border-radius: 10px;
-            box-shadow: 0 4px 14px rgba(0,0,0,.18);
-        }
-        .zoom-controls--map .zoom-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: none;
-            background: #334155;
-            color: #fff;
-            font-size: 20px;
-            box-shadow: none;
-        }
-        .zoom-controls--map .zoom-btn:hover { background: #475569; }
-        .zoom-controls--map .zoom-btn.reset { font-size: 12px; font-weight: 700; }
+        .zoom-controls { position: fixed; left: 20px; top: 92px; z-index: 900;
+            display: flex; flex-direction: column; gap: 6px; }
+        .zoom-btn { width: 40px; height: 40px; border-radius: 10px; border: none; background: #1e293b;
+            color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.2); transition: background .2s; }
+        .zoom-btn:hover { background: #334155; }
+        .zoom-btn.reset { font-size: 13px; font-weight: 700; }
 
         /* Tooltip кастомный */
         .place-tooltip { position: fixed; background: #1e293b; color: white; border-radius: 10px;
@@ -587,23 +553,17 @@
             .map-container h1 { font-size: 1.35rem; }
             .map-legend { flex-wrap: wrap; gap: 8px 12px; }
             .legend-item { font-size: 12px; }
-            .zoom-controls--map .zoom-btn { width: 44px; height: 44px; }
+            .zoom-controls { left: 12px; top: 82px; }
+            .zoom-btn { width: 44px; height: 44px; }
         }
 
         @media (max-width: 768px) {
-            :root { --timeline-slot-width: 40px; }
             .map-container { padding: 12px 0; }
             .map-container h1 { font-size: 1.2rem; margin-bottom: 12px; }
             .view-toggle button { flex: 1; min-width: 0; padding: 10px 8px; font-size: 13px; }
-            .map-legend { display: grid; grid-template-columns: 1fr 1fr; font-size: 11px; }
+            .map-legend { display: grid; grid-template-columns: 1fr 1fr; }
             .space-view-bar { flex-wrap: wrap; gap: 8px; }
             .form-row-2 { grid-template-columns: 1fr; }
-            .floor-plan-container {
-                margin: 12px 0;
-                padding: 8px;
-            }
-            .floor-plan-svg { min-width: 900px; }
-            .timeline-scroll-hint { display: block; }
             .time-picker-box {
                 display: flex;
                 flex-wrap: nowrap;
@@ -638,6 +598,14 @@
             .clock-time-box {
                 display: none;
             }
+            .timeline-scroll-hint { display: block; }
+            .floor-plan-container {
+                max-height: min(55vh, 420px);
+            }
+            .zoom-controls {
+                left: 10px;
+                top: 76px;
+            }
         }
     </style>
 </head>
@@ -653,6 +621,12 @@
 
     {% set active_page = 'map' %}
     {% include '_navbar.html' %}
+
+    <div class="zoom-controls map-only-view">
+        <button class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
+        <button class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
+        <button class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
+    </div>
 
     <div class="container">
         <div class="map-container">
@@ -679,7 +653,7 @@
                 <button id="floor-map-btn-1" class="active" onclick="setMapFloor(1)">Этаж 1</button>
             </div>
 
-            <div class="map-legend map-only-view">
+            <div class="map-legend">
                 <div class="legend-item"><div class="legend-box desk"></div> Рабочий стол</div>
                 <div class="legend-item"><div class="legend-box desk-zone"></div> Зона рабочих столов</div>
                 <div class="legend-item"><div class="legend-box room"></div> Переговорная</div>
@@ -707,14 +681,8 @@
                 <button class="btn-edit-mode active" onclick="toggleEditMode()"><i class="fas fa-times"></i> Выйти</button>
             </div>
 
-            <div class="floor-plan-container map-only-view">
-                <div class="map-canvas-wrap">
-                    <div class="zoom-controls zoom-controls--map">
-                        <button type="button" class="zoom-btn" onclick="zoomIn()" title="Приблизить">+</button>
-                        <button type="button" class="zoom-btn reset" onclick="zoomReset()" title="Сброс">1:1</button>
-                        <button type="button" class="zoom-btn" onclick="zoomOut()" title="Отдалить">−</button>
-                    </div>
-                    <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
+            <div class="floor-plan-container">
+                <svg id="floor-plan" viewBox="0 0 2240 1344" class="floor-plan-svg" preserveAspectRatio="xMinYMin meet">
                     <rect x="0" y="0" width="2240" height="1344" fill="#f8fafc" stroke="#475569" stroke-width="6" rx="0"/>
                     <defs>
                         <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
@@ -726,7 +694,6 @@
                     <g id="doors-layer"></g>
                     <g id="places-layer"></g>
                 </svg>
-                </div>
             </div>
 
             <div class="maintenance-panel" id="maintenance-panel">
@@ -907,14 +874,13 @@
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="setDuration(240)">4 ч</button>
                     </div>
 
+                    <div class="timeline-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Проведите по шкале, чтобы выбрать время</div>
+                    <div class="timeline-scroll-wrap">
                     <div class="timeline-container">
-                        <div class="timeline-scroll-hint"><i class="fas fa-arrows-alt-h"></i> Листайте шкалу времени влево-вправо</div>
-                        <div class="timeline-scroll" id="timeline-scroll">
-                            <div class="booking-timeline" id="booking-timeline">
-                                <!-- Слоты генерируются JS -->
-                            </div>
-                            <div class="timeline-labels" id="timeline-labels"></div>
+                        <div class="booking-timeline" id="booking-timeline">
+                            <!-- Слоты генерируются JS -->
                         </div>
+                    </div>
                     </div>
                     <div class="timeline-legend">
                         <div class="legend-item"><span class="legend-color free"></span> Свободно</div>
@@ -987,11 +953,11 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/input-limits.js') }}?v=1"></script>
-    <script src="{{ url_for('static', filename='js/booking.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/booking.js') }}?v=12"></script>
     <script src="{{ url_for('static', filename='js/clock-time-picker.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/place-display.js') }}?v=2"></script>
-    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=9"></script>
-    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=32"></script>
+    <script src="{{ url_for('static', filename='js/map/places-list.js') }}?v=7"></script>
+    <script src="{{ url_for('static', filename='js/map_updated.js') }}?v=30"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof activeSpace !== 'undefined') activeSpace = null;

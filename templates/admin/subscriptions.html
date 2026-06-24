@@ -382,15 +382,34 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
+
+.subscriptions-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.expiry-ok { color: #4d8f5f; font-weight: 600; }
+.expiry-soon { color: #d97706; font-weight: 600; }
+.expiry-expired { color: #dc2626; font-weight: 600; }
+
+.page-subtitle {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 400;
+}
 </style>
 
 <div class="admin-subscriptions-container">
     <div class="page-header">
         {% include "admin/_nav_back.html" %}
-        <h1 class="page-title">{% if is_manager and not is_admin %}Абонементы клиентов{% else %}Управление абонементами{% endif %}</h1>
-        {% if is_manager and not is_admin %}
-        <p style="margin:8px 0 0; color:#64748b; font-size:15px;">Просмотр абонементов клиентов, сроков действия и выдача по шаблону</p>
-        {% endif %}
+        <div>
+            <h1 class="page-title">{% if is_manager and not is_admin %}Абонементы клиентов{% else %}Управление абонементами{% endif %}</h1>
+            {% if is_manager and not is_admin %}
+            <p class="page-subtitle">Просмотр сроков действия и выдача абонементов клиентам</p>
+            {% endif %}
+        </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             {% if is_manager or is_admin %}
             <button class="btn-create" onclick="openIssueTemplateModal()">
@@ -405,7 +424,8 @@
         </div>
     </div>
 
-    <div class="subscriptions-card" style="margin-bottom:24px;">
+    <div class="subscriptions-layout">
+    <div class="subscriptions-card" style="margin-bottom:24px; order:{% if is_manager and not is_admin %}2{% else %}1{% endif %};">
         <h3 style="margin:0 0 16px;"><i class="fas fa-copy"></i> {% if is_manager and not is_admin %}Доступные шаблоны{% else %}Шаблоны для самостоятельного оформления{% endif %}</h3>
         <div class="table-responsive">
             <table class="subscriptions-table">
@@ -417,8 +437,8 @@
                         <th>Типы мест</th>
                         <th>Часы</th>
                         <th>Цена</th>
-                        <th>Статус</th>
-                        {% if is_admin %}<th>Действия</th>{% endif %}
+                        {% if is_admin %}<th>Статус</th>{% endif %}
+                        <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody id="templatesTable"></tbody>
@@ -427,7 +447,7 @@
     </div>
 
     <!-- Фильтры -->
-    <div class="filter-card">
+    <div class="filter-card" style="order:{% if is_manager and not is_admin %}1{% else %}2{% endif %};">
         <div class="filter-row">
             <div>
                 <label class="form-label">Пользователь</label>
@@ -444,15 +464,8 @@
                     <option value="">Все</option>
                     <option value="active">Активные</option>
                     <option value="inactive">Неактивные</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label">Срок действия</label>
-                <select id="filterExpiry" class="form-select">
-                    <option value="">Все</option>
-                    <option value="valid">Действующие</option>
-                    <option value="expiring_7">Истекают в 7 дней</option>
-                    <option value="expired">Истёкшие</option>
+                    <option value="expiring">Истекают в течение 7 дней</option>
+                    <option value="expired">Срок истёк</option>
                 </select>
             </div>
             <div>
@@ -462,13 +475,14 @@
     </div>
 
     <!-- Таблица абонементов -->
-    <div class="subscriptions-card">
+    <div class="subscriptions-card" style="order:{% if is_manager and not is_admin %}1{% else %}3{% endif %};">
+        <h3 style="margin:0 0 16px;"><i class="fas fa-id-card"></i> Выданные абонементы</h3>
         <div class="table-responsive">
             <table class="subscriptions-table">
                 <thead>
                     <tr>
                         <th>№</th>
-                        <th>Пользователь</th>
+                        <th>Клиент</th>
                         <th>Название</th>
                         <th>Типы мест</th>
                         <th>Период</th>
@@ -484,6 +498,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
     </div>
 </div>
 
@@ -714,8 +729,12 @@ function renderTemplates(templates) {
                 ? `<button class="btn-action btn-edit" style="background:#4d8f5f;color:#fff;" onclick="archiveTemplate(${tpl.id}, false)">Восстановить</button>`
                 : `<button class="btn-action btn-edit" onclick="editTemplate(${tpl.id})">Редактировать</button>
                    <button class="btn-action btn-delete" style="background:#c9a84c;color:#fff;" onclick="archiveTemplate(${tpl.id}, true)">Архивировать</button>`)
+            : (IS_MANAGER && !archived
+                ? `<button class="btn-action btn-edit" onclick="openIssueTemplateModal(${tpl.id})">Выдать</button>`
+                : '–');
+        const statusCell = IS_ADMIN
+            ? `<td>${statusBadge}</td>`
             : '';
-        const actionsCell = IS_ADMIN ? `<td>${adminActions}</td>` : '';
         tbody.innerHTML += `
             <tr${archived ? ' style="opacity:.75"' : ''}>
                 <td>${index + 1}</td>
@@ -724,8 +743,8 @@ function renderTemplates(templates) {
                 <td>${kinds}</td>
                 <td>${hours}</td>
                 <td>${price} ₽</td>
-                <td>${statusBadge}</td>
-                ${actionsCell}
+                ${statusCell}
+                <td>${adminActions}</td>
             </tr>`;
     });
 }
@@ -784,8 +803,12 @@ async function archiveTemplate(id, archive) {
     else alert('Ошибка');
 }
 
-function openIssueTemplateModal() {
+function openIssueTemplateModal(templateId) {
     document.getElementById('issueTemplateModal').classList.add('active');
+    if (templateId) {
+        const sel = document.getElementById('issue-template-select');
+        if (sel) sel.value = String(templateId);
+    }
 }
 function closeIssueTemplateModal() {
     document.getElementById('issueTemplateModal').classList.remove('active');
@@ -868,12 +891,34 @@ async function loadSubscriptions() {
     try {
         const response = await fetch('/api/admin/subscriptions');
         const data = await response.json();
-        allSubscriptions = data.subscriptions;
+        allSubscriptions = data.subscriptions || [];
+        allSubscriptions.sort((a, b) => {
+            const da = a.days_until_expiry ?? 99999;
+            const db = b.days_until_expiry ?? 99999;
+            return da - db;
+        });
         renderSubscriptions(allSubscriptions);
     } catch (error) {
         console.error('Ошибка загрузки абонементов:', error);
         alert('Ошибка загрузки абонементов');
     }
+}
+
+function formatUserCell(sub) {
+    const name = sub.user_name ? `<div><strong>${sub.user_name}</strong></div>` : '';
+    const email = sub.user_email ? `<small style="color:#64748b">${sub.user_email}</small>` : '';
+    return name || email ? `${name}${email}` : '–';
+}
+
+function formatExpiryCell(sub) {
+    if (sub.end_date == null) return '–';
+    let cls = 'expiry-ok';
+    if (sub.days_until_expiry != null) {
+        if (sub.days_until_expiry < 0) cls = 'expiry-expired';
+        else if (sub.days_until_expiry <= 7) cls = 'expiry-soon';
+    }
+    const label = sub.expiry_label || sub.end_date;
+    return `<div>${sub.end_date}</div><small class="${cls}">${label}</small>`;
 }
 
 // Отображение абонементов
@@ -895,29 +940,18 @@ function renderSubscriptions(subscriptions) {
         const statusText = sub.active ? 'Активен' : 'Неактивен';
         const validClass = sub.is_valid ? 'text-success' : 'text-danger';
         const validText = sub.is_valid ? '✓ Действителен' : '✗ Недействителен';
-
-        const days = sub.days_until_end;
-        let expiryClass = 'text-muted';
-        if (days != null) {
-            if (days < 0) expiryClass = 'text-danger';
-            else if (days <= 7) expiryClass = 'text-warning';
-            else expiryClass = 'text-success';
-        }
-        const userLabel = sub.user_username
-            ? `${sub.user_email}<br><small class="text-muted">${sub.user_username}</small>`
-            : (sub.user_email || '–');
-        const actionsCell = IS_ADMIN
+        const adminActions = IS_ADMIN
             ? `<td><button class="btn-action btn-edit" onclick="editSubscription(${sub.id})">Редактировать</button></td>`
             : '';
-
+        
         tbody.innerHTML += `
             <tr>
                 <td>${index + 1}</td>
-                <td>${userLabel}</td>
+                <td>${formatUserCell(sub)}</td>
                 <td>${sub.name}</td>
                 <td>${placeKinds}</td>
                 <td>${sub.start_date} – ${sub.end_date}</td>
-                <td><span class="${expiryClass}">${sub.expires_label || '–'}</span></td>
+                <td>${formatExpiryCell(sub)}</td>
                 <td>${hoursInfo}</td>
                 <td>${sub.price} ₽</td>
                 <td>
@@ -925,7 +959,7 @@ function renderSubscriptions(subscriptions) {
                     <br>
                     <small class="${validClass}">${validText}</small>
                 </td>
-                ${actionsCell}
+                ${adminActions}
             </tr>
         `;
     });
@@ -935,32 +969,28 @@ function renderSubscriptions(subscriptions) {
 function filterSubscriptions() {
     const userId = document.getElementById('filterUser').value;
     const status = document.getElementById('filterStatus').value;
-    const expiry = document.getElementById('filterExpiry')?.value || '';
-
+    
     let filtered = allSubscriptions;
-
+    
     if (userId) {
         filtered = filtered.filter(s => s.user_id == userId);
     }
-
+    
     if (status === 'active') {
         filtered = filtered.filter(s => s.active);
     } else if (status === 'inactive') {
         filtered = filtered.filter(s => !s.active);
-    }
-
-    if (expiry === 'valid') {
-        filtered = filtered.filter(s => s.is_valid);
-    } else if (expiry === 'expiring_7') {
+    } else if (status === 'expiring') {
         filtered = filtered.filter(s =>
-            s.active && s.days_until_end != null && s.days_until_end >= 0 && s.days_until_end <= 7
+            s.active &&
+            s.days_until_expiry != null &&
+            s.days_until_expiry >= 0 &&
+            s.days_until_expiry <= 7
         );
-    } else if (expiry === 'expired') {
-        filtered = filtered.filter(s =>
-            s.days_until_end != null && s.days_until_end < 0
-        );
+    } else if (status === 'expired') {
+        filtered = filtered.filter(s => s.days_until_expiry != null && s.days_until_expiry < 0);
     }
-
+    
     renderSubscriptions(filtered);
 }
 

@@ -82,10 +82,6 @@ def create_app(config_class=Config):
     from internal.swagger import register_swagger
     register_swagger(app)
 
-    @app.route('/health')
-    def health():
-        return jsonify({'ok': True}), 200
-
     if not app.config.get('TESTING'):
         with app.app_context():
             from internal.models.seed import run_migrations

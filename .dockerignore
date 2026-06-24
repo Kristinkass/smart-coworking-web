@@ -6,7 +6,6 @@ venv
 .venv
 env
 __pycache__
-**/__pycache__
 *.py[cod]
 .mypy_cache
 .ruff_cache
@@ -15,18 +14,3 @@ __pycache__
 .env.*
 !.env.example
 instance
-data
-
-# Не часть приложения на сервере
-defense
-defense/**
-docs
-docs/**
-tests
-tests/**
-deploy
-deploy/**
-
-*.pptx
-*.bkp
-.$*.bkp

@@ -15,5 +15,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from internal.application import create_app
+from internal.models import init_db
 
 app = create_app()
+init_db(app)

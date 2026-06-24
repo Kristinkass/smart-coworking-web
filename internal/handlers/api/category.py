@@ -7,12 +7,6 @@ from internal.models import CategoryTariff, PlaceCategory, db
 from internal.layout.repository import LayoutRepository
 from internal.repositories.place_repository import PlaceRepository
 from internal.utils.errors import user_error_message
-from internal.utils.category_dedup import (
-    category_priority_score,
-    dedupe_category_orm_list,
-    find_duplicate_groups,
-    merge_duplicate_categories,
-)
 
 VALID_CATEGORY_KINDS = frozenset({'desk', 'room'})
 
@@ -39,6 +33,30 @@ def _parse_category_id(raw):
     if raw is None or raw == '':
         return None
     return int(raw)
+
+
+def _category_duplicate(kind, name, capacity, width_m, height_m, exclude_id=None):
+    """Найти дубль категории по смысловым полям."""
+    normalized_name = (name or '').strip().lower()
+    if not normalized_name:
+        return None
+
+    query = PlaceCategory.query.filter(
+        PlaceCategory.kind == kind,
+        PlaceCategory.capacity == int(capacity),
+    )
+    if exclude_id:
+        query = query.filter(PlaceCategory.id_category != int(exclude_id))
+
+    for cat in query.all():
+        same_name = (cat.name or '').strip().lower() == normalized_name
+        same_size = (
+            round(float(cat.width_m or 0), 2) == round(float(width_m or 0), 2)
+            and round(float(cat.height_m or 0), 2) == round(float(height_m or 0), 2)
+        )
+        if same_name and same_size:
+            return cat
+    return None
 
 
 def _place_category_payload(place):
@@ -167,59 +185,17 @@ def _is_auto_zone_category(cat) -> bool:
 
 @category_bp.route('/api/admin/categories', methods=['GET'])
 def api_get_categories():
-    """Список категорий. view=canonical — без дублей (для редактора), view=all — полный список."""
+    """Список категорий (все, включая неактивные – для админки)."""
     try:
-        view = (request.args.get('view') or 'canonical').strip().lower()
         categories = PlaceCategory.query.order_by(
             PlaceCategory.kind, PlaceCategory.capacity
         ).all()
         visible = [cat for cat in categories if not _is_auto_zone_category(cat)]
-
-        duplicate_map = {}
-        for key, group in find_duplicate_groups(visible).items():
-            group.sort(key=category_priority_score, reverse=True)
-            keeper = group[0]
-            for cat in group[1:]:
-                duplicate_map[cat.id_category] = keeper.id_category
-
-        if view == 'canonical':
-            visible = dedupe_category_orm_list(visible)
-
-        payload = []
-        for cat in visible:
-            data = _enrich_category(cat)
-            dup_of = duplicate_map.get(cat.id_category)
-            if dup_of:
-                data['is_duplicate'] = True
-                data['duplicate_of'] = dup_of
-            payload.append(data)
-
         return jsonify({
             'success': True,
-            'categories': payload,
-            'duplicate_groups': len(find_duplicate_groups(
-                [c for c in categories if not _is_auto_zone_category(c)]
-            )),
+            'categories': [_enrich_category(cat) for cat in visible],
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': user_error_message(e)}), 500
-
-
-@category_bp.route('/api/admin/categories/dedupe', methods=['POST'])
-def api_dedupe_categories():
-    """Объединить дублирующиеся категории (перенос мест на одну запись)."""
-    try:
-        result = merge_duplicate_categories(db.session)
-        return jsonify({
-            'success': True,
-            'message': (
-                f'Объединено групп дублей: {result["merged_groups"]}'
-                if result['merged_groups'] else 'Дубликатов не найдено'
-            ),
-            **result,
-        })
-    except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': user_error_message(e)}), 500
 
 
@@ -235,18 +211,16 @@ def api_create_category():
         if kind_err:
             return jsonify({'success': False, 'error': kind_err}), 400
 
-        kind = data['kind']
-        capacity = int(data['capacity'])
-        if kind == 'room':
-            existing = PlaceCategory.query.filter_by(kind='room', capacity=capacity, active=True).first()
-            if existing:
-                return jsonify({
-                    'success': False,
-                    'error': (
-                        f'Переговорная на {capacity} мест уже есть '
-                        f'({existing.name}). Используйте существующую категорию.'
-                    ),
-                }), 409
+        width_m = float(data.get('width_m', 1.0))
+        height_m = float(data.get('height_m', 0.75))
+        duplicate = _category_duplicate(
+            data['kind'], data['name'], data['capacity'], width_m, height_m,
+        )
+        if duplicate:
+            return jsonify({
+                'success': False,
+                'error': f'Такая категория уже есть: «{duplicate.name}»',
+            }), 400
 
         category = PlaceCategory(
             name=data['name'],
@@ -254,8 +228,8 @@ def api_create_category():
             capacity=int(data['capacity']),
             description=data.get('description', ''),
             active=True,
-            width_m=float(data.get('width_m', 1.0)),
-            height_m=float(data.get('height_m', 0.75)),
+            width_m=width_m,
+            height_m=height_m,
         )
         db.session.add(category)
         db.session.commit()
@@ -275,13 +249,31 @@ def api_update_category(category_id):
         category = PlaceCategory.query.get_or_404(category_id)
         data = request.get_json(silent=True) or {}
 
-        if 'name' in data:
-            category.name = data['name']
+        new_name = data.get('name', category.name)
+        new_kind = data.get('kind', category.kind)
+        new_capacity = data.get('capacity', category.capacity)
+        new_width_m = data.get('width_m', category.width_m)
+        new_height_m = data.get('height_m', category.height_m)
+
         if 'kind' in data:
-            kind_err = _validate_category_kind(data['kind'])
+            kind_err = _validate_category_kind(new_kind)
             if kind_err:
                 return jsonify({'success': False, 'error': kind_err}), 400
-            category.kind = data['kind']
+
+        duplicate = _category_duplicate(
+            new_kind, new_name, new_capacity, new_width_m, new_height_m,
+            exclude_id=category.id,
+        )
+        if duplicate:
+            return jsonify({
+                'success': False,
+                'error': f'Такая категория уже есть: «{duplicate.name}»',
+            }), 400
+
+        if 'name' in data:
+            category.name = new_name
+        if 'kind' in data:
+            category.kind = new_kind
         if 'capacity' in data:
             category.capacity = int(data['capacity'])
         if 'description' in data:
