@@ -268,6 +268,14 @@ def create_booking_route():
     if not ok_rules:
         return jsonify({'success': False, 'error': rules_err}), 400
 
+    if tariff_type in ('weekly', 'monthly') and booking_service.user_has_overlapping_period_tariff(
+        target_user_id, booking_date, tariff_type,
+    ):
+        return jsonify({
+            'success': False,
+            'error': booking_service.user_period_tariff_conflict_message(),
+        }), 400
+
     is_available, message, slots = booking_service.check_period_availability(
         place_id, booking_date, start_time, end_time, people_count,
         tariff_type=tariff_type,

@@ -268,6 +268,7 @@ def _seed_demo_bookings():
     start_day = today - timedelta(days=60)
     statuses_weights = [('completed', 0.72), ('active', 0.13), ('cancelled', 0.15)]
     created = 0
+    user_period_ranges = {}
 
     for day_offset in range(61):
         bdate = start_day + timedelta(days=day_offset)
@@ -309,10 +310,22 @@ def _seed_demo_bookings():
                 duration_hours = 7 * 8
                 end_t = dt_time(22, 0)
                 total = int(weekly_price)
+                period_end = bdate + timedelta(days=6)
             else:
                 duration_hours = 30 * 8
                 end_t = dt_time(22, 0)
                 total = int(monthly_price)
+                period_end = bdate + timedelta(days=29)
+
+            if tariff_type in ('weekly', 'monthly'):
+                ranges = user_period_ranges.setdefault(client.id, [])
+                overlaps = any(
+                    bdate <= existing_end and existing_start <= period_end
+                    for existing_start, existing_end in ranges
+                )
+                if overlaps:
+                    continue
+                ranges.append((bdate, period_end))
 
             db.session.add(Booking(
                 user_id=client.id,
@@ -437,6 +450,50 @@ def normalize_pricing_limits(max_price=20000):
         db.session.rollback()
         print(f'[MIGRATE] normalize_pricing_limits: {e}')
         return None
+
+
+def cleanup_overlapping_period_bookings():
+    """Удалить пересекающиеся недельные/месячные брони одного клиента (демо-накрутка)."""
+    from sqlalchemy import inspect as sa_inspect
+    from internal.services.booking_service import booking_period_end, period_ranges_overlap
+
+    try:
+        if not sa_inspect(db.engine).has_table('bookings'):
+            return 0
+        period_bookings = Booking.query.filter(
+            Booking.tariff_type.in_(('weekly', 'monthly')),
+            Booking.status.in_(('active', 'completed')),
+        ).order_by(Booking.user_id.asc(), Booking.created_at.asc(), Booking.id_booking.asc()).all()
+
+        by_user = {}
+        for booking in period_bookings:
+            by_user.setdefault(booking.user_id, []).append(booking)
+
+        to_delete = []
+        for bookings in by_user.values():
+            kept = []
+            for booking in bookings:
+                start = booking.booking_date
+                end = booking_period_end(booking)
+                if any(
+                    period_ranges_overlap(start, end, kept_start, kept_end)
+                    for kept_start, kept_end in kept
+                ):
+                    to_delete.append(booking)
+                else:
+                    kept.append((start, end))
+
+        for booking in to_delete:
+            db.session.delete(booking)
+
+        if to_delete:
+            db.session.commit()
+            print(f'[MIGRATE] Удалено пересекающихся периодных броней: {len(to_delete)}')
+        return len(to_delete)
+    except Exception as e:
+        db.session.rollback()
+        print(f'[MIGRATE] cleanup_overlapping_period_bookings: {e}')
+        return 0
 
 
 def run_migrations():
@@ -621,6 +678,11 @@ def run_migrations():
         normalize_pricing_limits()
     except Exception as e:
         print(f"[MIGRATE] pricing limits: {e}")
+
+    try:
+        cleanup_overlapping_period_bookings()
+    except Exception as e:
+        print(f"[MIGRATE] overlapping period bookings: {e}")
 
 
 def _migrate_user_login_fields(inspector):

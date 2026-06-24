@@ -151,6 +151,15 @@ def register_booking_legacy_routes(app):
             end_time = datetime.strptime(data['end_time'], '%H:%M').time()
 
             if tariff_type in ('weekly', 'monthly'):
+                from internal.services import booking_service
+                if booking_service.user_has_overlapping_period_tariff(
+                    target_user_id, booking_date, tariff_type,
+                ):
+                    return jsonify({
+                        'error': booking_service.user_period_tariff_conflict_message(),
+                    }), 400
+
+            if tariff_type in ('weekly', 'monthly'):
                 days = 7 if tariff_type == 'weekly' else 30
                 day_hours = (
                     datetime.combine(date.today(), end_time) - datetime.combine(date.today(), start_time)

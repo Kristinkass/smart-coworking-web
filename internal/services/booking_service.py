@@ -84,6 +84,50 @@ def booking_period_end(booking) -> date:
     return booking.booking_date
 
 
+def period_date_range(start_date: date, tariff_type: str) -> Tuple[date, date]:
+    """Начало и конец (включительно) для недельного/месячного тарифа."""
+    days = period_days_for_tariff(tariff_type)
+    if days <= 1:
+        return start_date, start_date
+    return start_date, start_date + timedelta(days=days - 1)
+
+
+def period_ranges_overlap(start_a: date, end_a: date, start_b: date, end_b: date) -> bool:
+    return start_a <= end_b and start_b <= end_a
+
+
+def user_has_overlapping_period_tariff(
+    user_id: int,
+    start_date: date,
+    tariff_type: str,
+    exclude_booking_id: Optional[int] = None,
+) -> bool:
+    """У клиента уже есть недельная/месячная бронь на пересекающийся период."""
+    if tariff_type not in ('weekly', 'monthly'):
+        return False
+    new_start, new_end = period_date_range(start_date, tariff_type)
+    query = models.Booking.query.filter(
+        models.Booking.user_id == user_id,
+        models.Booking.tariff_type.in_(('weekly', 'monthly')),
+        models.Booking.status.in_(('active', 'completed')),
+    )
+    if exclude_booking_id:
+        query = query.filter(models.Booking.id != exclude_booking_id)
+    for existing in query.all():
+        ex_start = existing.booking_date
+        ex_end = booking_period_end(existing)
+        if period_ranges_overlap(new_start, new_end, ex_start, ex_end):
+            return True
+    return False
+
+
+def user_period_tariff_conflict_message() -> str:
+    return (
+        'У клиента уже есть недельная или месячная бронь на пересекающийся период. '
+        'Оформите почасовой тариф или выберите другие даты.'
+    )
+
+
 def booking_covers_date(booking, target_date: date) -> bool:
     if booking.status != 'active':
         return False
