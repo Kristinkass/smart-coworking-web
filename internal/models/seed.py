@@ -93,12 +93,12 @@ def init_default_data():
         default_tariffs = {
             'Стол складной (1 место)': {'hourly': 250.0, 'weekly': 3500.0,  'monthly': 12000.0},
             'Стол на 2 места':         {'hourly': 450.0, 'weekly': 6000.0,  'monthly': 20000.0},
-            'Стол на 4 места':         {'hourly': 800.0, 'weekly': 10000.0, 'monthly': 35000.0},
-            'Стол на 6 мест':          {'hourly': 1100.0,'weekly': 14000.0, 'monthly': 50000.0},
-            'Стол на 8 мест':          {'hourly': 1400.0,'weekly': 17000.0, 'monthly': 60000.0},
+            'Стол на 4 места':         {'hourly': 800.0, 'weekly': 10000.0, 'monthly': 20000.0},
+            'Стол на 6 мест':          {'hourly': 1100.0,'weekly': 14000.0, 'monthly': 20000.0},
+            'Стол на 8 мест':          {'hourly': 1400.0,'weekly': 17000.0, 'monthly': 20000.0},
             'Переговорная 10 мест':    {'hourly': 500.0, 'weekly': 6000.0,  'monthly': 20000.0},
-            'Переговорная 14 мест':    {'hourly': 700.0, 'weekly': 8000.0,  'monthly': 28000.0},
-            'Переговорная 20 мест':    {'hourly': 1000.0,'weekly': 12000.0, 'monthly': 40000.0},
+            'Переговорная 14 мест':    {'hourly': 700.0, 'weekly': 8000.0,  'monthly': 20000.0},
+            'Переговорная 20 мест':    {'hourly': 1000.0,'weekly': 12000.0, 'monthly': 20000.0},
         }
         for cat_data in default_categories:
             existing = PlaceCategory.query.filter_by(name=cat_data['name']).first()
@@ -363,22 +363,32 @@ def update_booking_statuses():
     return 0
 
 
-def cleanup_suspicious_bookings(max_hourly_rate=2500, max_short_total=5000, max_short_hours=2):
-    """Удалить брони с нереалистичной почасовой стоимостью (артефакты демо-данных)."""
+def cleanup_suspicious_bookings(
+    max_hourly_rate=2500,
+    max_short_total=5000,
+    max_short_hours=2,
+    max_booking_total=20000,
+):
+    """Удалить демо-брони с нереалистичной стоимостью."""
     from sqlalchemy import inspect as sa_inspect
     try:
         if not sa_inspect(db.engine).has_table('bookings'):
             return 0
         deleted = 0
-        for booking in Booking.query.filter(Booking.tariff_type == 'hourly').all():
-            if not booking.total_price:
+        for booking in Booking.query.all():
+            total = float(booking.total_price or 0)
+            if total > max_booking_total:
+                db.session.delete(booking)
+                deleted += 1
+                continue
+            if booking.tariff_type != 'hourly' or not total:
                 continue
             hours = booking.duration_hours or 0
             if hours <= 0:
                 hours = 1.0
-            hourly_rate = float(booking.total_price) / float(hours)
+            hourly_rate = total / float(hours)
             if hourly_rate > max_hourly_rate or (
-                booking.total_price >= max_short_total and hours <= max_short_hours
+                total >= max_short_total and hours <= max_short_hours
             ):
                 db.session.delete(booking)
                 deleted += 1
@@ -390,6 +400,43 @@ def cleanup_suspicious_bookings(max_hourly_rate=2500, max_short_total=5000, max_
         db.session.rollback()
         print(f'[MIGRATE] cleanup_suspicious_bookings: {e}')
         return 0
+
+
+def normalize_pricing_limits(max_price=20000):
+    """Ограничить тарифы, абонементы и почистить слишком дорогие брони в существующей БД."""
+    from sqlalchemy import inspect as sa_inspect
+    try:
+        inspector = sa_inspect(db.engine)
+        capped_tariffs = 0
+        capped_subs = 0
+
+        if inspector.has_table('category_tariffs'):
+            for tariff in CategoryTariff.query.filter(CategoryTariff.price > max_price).all():
+                tariff.price = float(max_price)
+                capped_tariffs += 1
+
+        if inspector.has_table('subscriptions'):
+            for sub in Subscription.query.filter(Subscription.price > max_price).all():
+                sub.price = float(max_price)
+                capped_subs += 1
+
+        deleted_bookings = cleanup_suspicious_bookings(max_booking_total=max_price)
+
+        if capped_tariffs or capped_subs:
+            db.session.commit()
+        if capped_tariffs:
+            print(f'[MIGRATE] Тарифы ограничены до {max_price} руб.: {capped_tariffs} записей')
+        if capped_subs:
+            print(f'[MIGRATE] Абонементы ограничены до {max_price} руб.: {capped_subs} записей')
+        return {
+            'capped_tariffs': capped_tariffs,
+            'capped_subscriptions': capped_subs,
+            'deleted_bookings': deleted_bookings,
+        }
+    except Exception as e:
+        db.session.rollback()
+        print(f'[MIGRATE] normalize_pricing_limits: {e}')
+        return None
 
 
 def run_migrations():
@@ -571,9 +618,9 @@ def run_migrations():
         print(f"[MIGRATE] PK rename: {e}")
 
     try:
-        cleanup_suspicious_bookings()
+        normalize_pricing_limits()
     except Exception as e:
-        print(f"[MIGRATE] suspicious bookings: {e}")
+        print(f"[MIGRATE] pricing limits: {e}")
 
 
 def _migrate_user_login_fields(inspector):
