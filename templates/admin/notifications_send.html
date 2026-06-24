@@ -95,11 +95,12 @@
                 <th>Тема</th>
                 <th>Детали</th>
                 <th>Кому</th>
-                <th>Клиент и действия</th>
+                <th>Клиент</th>
+                <th>Действия</th>
               </tr>
             </thead>
             <tbody id="history-feedback-tbody">
-              <tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>
+              <tr><td colspan="6" class="cell-empty">Загрузка...</td></tr>
             </tbody>
           </table>
         </div>
@@ -204,34 +205,16 @@
       if (label) selectAudience(label, value);
     }
 
-    function writeToClient(userId, clientLabel, title) {
+    function writeToClient(userId, clientName, title) {
       setAudience('user');
       const select = document.getElementById('notify-user');
       select.value = String(userId || '');
       document.getElementById('notify-title').value = title || 'Ответ на обращение';
       const message = document.getElementById('notify-message');
-      message.value = clientLabel ? `${clientLabel}, здравствуйте!\n\n` : '';
+      const name = (clientName || '').trim();
+      message.value = name ? `${name}, здравствуйте!\n\n` : '';
       message.focus();
       document.querySelector('.notify-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function openProblemPlace(placeCode, floor) {
-      if (!placeCode) {
-        setResult('error', 'У обращения нет привязанного места на карте');
-        return;
-      }
-      const params = new URLSearchParams();
-      params.set('place', placeCode);
-      if (floor) params.set('floor', floor);
-      window.open('/mapp?' + params.toString(), '_blank');
-    }
-
-    function openBookingContext(bookingId) {
-      if (!bookingId) {
-        setResult('error', 'У обращения нет привязанной брони');
-        return;
-      }
-      window.open('/admin/bookings?booking_id=' + encodeURIComponent(bookingId), '_blank');
     }
 
     async function loadHistory() {
@@ -239,7 +222,7 @@
       const feedbackBody = document.getElementById('history-feedback-tbody');
       if (!systemBody || !feedbackBody) return;
       systemBody.innerHTML = '<tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>';
-      feedbackBody.innerHTML = '<tr><td colspan="5" class="cell-empty">Загрузка...</td></tr>';
+      feedbackBody.innerHTML = '<tr><td colspan="6" class="cell-empty">Загрузка...</td></tr>';
       try {
         const r = await fetch('/api/admin/notifications/history?limit=50');
         const d = await r.json();
@@ -268,18 +251,8 @@
           : '<tr><td colspan="5" class="cell-empty">Системных уведомлений пока нет</td></tr>';
         feedbackBody.innerHTML = feedback.length
           ? feedback.map(n => {
-              const bookingDetails = (n.booking?.detail_lines || []).map(line =>
-                `<div class="cell-sub">${escapeHtml(line)}</div>`
-              ).join('');
-              const path = n.booking?.location?.path
-                ? `<div class="cell-sub"><strong>Где:</strong> ${escapeHtml(n.booking.location.path)}</div>`
-                : '';
-              const loc = n.booking?.location || {};
-              const placeCode = loc.place_code || loc.container_code || '';
-              const clientLabel = n.client_label || n.sender_phone || n.sender_login_label || n.sender_name || 'Клиент';
-              const clientArg = encodeURIComponent(clientLabel);
-              const titleArg = encodeURIComponent('Ответ на обращение: ' + (n.title || ''));
-              const placeArg = encodeURIComponent(placeCode);
+              const clientName = n.sender_name || 'Клиент';
+              const clientPhone = n.sender_phone ? escapeHtml(n.sender_phone) : '';
               const statusBadge = n.is_archived
                 ? '<span class="cell-sub" style="color:#5a7350;font-weight:600;"><i class="fas fa-archive"></i> В архиве</span>'
                 : (!n.is_read
@@ -288,18 +261,24 @@
               const replyBlock = n.staff_reply
                 ? `<div class="cell-sub" style="margin-top:8px;padding:8px;background:#f4f7f0;border-left:3px solid #8fa67a;"><strong>Ответ:</strong> ${escapeHtml(n.staff_reply)}</div>`
                 : '';
+              const bookingBlock = (n.booking?.summary_lines || n.booking?.detail_lines || [])
+                .map(line => `<div class="cell-sub">${escapeHtml(line)}</div>`)
+                .join('');
               return `
               <tr class="${n.is_archived ? 'row-archived' : ''}">
                 <td class="cell-date">${escapeHtml(n.created_at)}</td>
                 <td class="cell-title">${escapeHtml(n.title)} ${statusBadge}</td>
                 <td class="cell-text">
                   <div class="cell-muted">${escapeHtml(n.message)}</div>
+                  ${bookingBlock}
                   ${replyBlock}
-                  ${n.booking ? `<div class="cell-sub">${path}${bookingDetails || escapeHtml(n.booking.label)}</div>` : ''}
                 </td>
                 <td>${escapeHtml(n.audience_label || audienceMap[n.target_audience] || n.target_audience)}</td>
                 <td>
-                  <div class="cell-title">${escapeHtml(clientLabel)}</div>
+                  <div class="cell-title">${escapeHtml(clientName)}</div>
+                  ${clientPhone ? `<div class="cell-muted">${clientPhone}</div>` : ''}
+                </td>
+                <td>
                   <div class="feedback-actions">
                     ${!n.is_archived ? `
                     <button type="button" onclick="replyFeedbackHistory(${n.id})">
@@ -308,25 +287,16 @@
                     <button type="button" onclick="archiveFeedbackHistory(${n.id})">
                       <i class="fas fa-check"></i> В архив
                     </button>
-                    ` : ''}
-                    <button type="button" onclick="writeToClient(${n.sender_id || 'null'}, decodeURIComponent('${clientArg}'), decodeURIComponent('${titleArg}'))">
-                      <i class="fas fa-paper-plane"></i> Уведомление
-                    </button>
-                    <button type="button" onclick="openProblemPlace(decodeURIComponent('${placeArg}'), ${loc.floor || 'null'})">
-                      <i class="fas fa-map-marker-alt"></i> Место
-                    </button>
-                    <button type="button" onclick="openBookingContext(${n.booking_id || 'null'})">
-                      <i class="fas fa-list-alt"></i> Бронь
-                    </button>
+                    ` : '<span class="cell-muted">Закрыто</span>'}
                   </div>
                 </td>
               </tr>`;
             }).join('')
-          : '<tr><td colspan="5" class="cell-empty">Обращений клиентов пока нет</td></tr>';
+          : '<tr><td colspan="6" class="cell-empty">Обращений клиентов пока нет</td></tr>';
       } catch (e) {
         const msg = friendlyError(e, 'Не удалось загрузить историю уведомлений');
         systemBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
-        feedbackBody.innerHTML = `<tr><td colspan="5" class="cell-error">${escapeHtml(msg)}</td></tr>`;
+        feedbackBody.innerHTML = `<tr><td colspan="6" class="cell-error">${escapeHtml(msg)}</td></tr>`;
       }
       if (typeof enhanceDataTables === 'function') enhanceDataTables();
     }

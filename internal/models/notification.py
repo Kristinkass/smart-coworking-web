@@ -101,21 +101,14 @@ class Notification(db.Model):
 
             detail_lines = []
             if location['floor'] is not None:
-                floor_line = f"Этаж {location['floor']}"
+                floor_part = f"Этаж {location['floor']}"
                 if location['floor_name']:
-                    floor_line += f" · {location['floor_name']}"
-                detail_lines.append(floor_line)
-            if location['zone_letter'] or location['location_code']:
-                zone_title = location['zone_type_name'] or location['location_name'] or 'Зона'
-                zone_code = location['zone_letter'] or location['location_code'] or '–'
-                detail_lines.append(f"Зона: {zone_title} · код {zone_code}")
-            elif location['location_name']:
-                detail_lines.append(
-                    f"Локация: {location['location_name']} ({location['location_code'] or '–'})"
-                )
+                    floor_part += f" · {location['floor_name']}"
+                detail_lines.append(f"Где: {floor_part}")
             if location['container_name']:
+                container_code = location['container_code'] or '–'
                 detail_lines.append(
-                    f"Помещение: {location['container_name']} ({location['container_code'] or '–'})"
+                    f"Помещение: {location['container_name']} ({container_code})"
                 )
             if location['place_name']:
                 detail_lines.append(
@@ -131,6 +124,7 @@ class Notification(db.Model):
                 'label': f'№{self.booking_id}: {place_name}, {date_str} {start}–{end}',
                 'location': location,
                 'detail_lines': detail_lines,
+                'summary_lines': detail_lines,
             }
         legacy_booking, _ = _split_legacy_feedback_message(self.message)
         if legacy_booking:
@@ -165,10 +159,10 @@ class Notification(db.Model):
             'created_at': format_local_datetime(self.created_at),
         }
         if self.is_feedback():
-            data['booking'] = self._booking_payload()
             data['recipient_label'] = (
                 'Менеджеру' if self.target_audience == 'managers' else 'Администратору'
             )
+            data['booking'] = self._booking_payload()
             data['staff_reply'] = self.staff_reply
             data['replied_at'] = format_local_datetime(self.replied_at) if self.replied_at else None
             data['replier_name'] = self.replied_by.username if self.replied_by else None

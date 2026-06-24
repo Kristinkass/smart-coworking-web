@@ -283,7 +283,6 @@ def register_notification_routes(app):
             message = (data.get('message') or '').strip()
             recipient = (data.get('recipient') or 'manager').strip().lower()
             title = (data.get('title') or '').strip() or 'Обращение клиента'
-            booking_id = data.get('booking_id')
 
             if len(message) < 10:
                 return jsonify({
@@ -297,6 +296,7 @@ def register_notification_routes(app):
             target_audience = 'managers' if recipient == 'manager' else 'admins'
             linked_booking_id = None
 
+            booking_id = data.get('booking_id')
             if booking_id:
                 booking = Booking.query.get(booking_id)
                 if not booking or booking.user_id != current_user.id:

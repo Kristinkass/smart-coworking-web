@@ -1319,14 +1319,13 @@
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="feedback-booking">Связанное бронирование (необязательно)</label>
+                                            <label for="feedback-booking">Бронирование <small style="color:#6b7280">(необязательно)</small></label>
                                             <select id="feedback-booking" class="form-control">
-                                                <option value="">Без привязки к брони</option>
+                                                <option value="">Без привязки</option>
                                                 {% for booking in feedback_bookings %}
                                                 <option value="{{ booking.id }}">
                                                     №{{ booking.id }} – {{ booking.place.name if booking.place else 'Место' }},
                                                     {{ booking.booking_date.strftime('%d.%m.%Y') }}
-                                                    ({{ 'активно' if booking.status == 'active' else 'завершено' }})
                                                 </option>
                                                 {% endfor %}
                                             </select>
@@ -1453,34 +1452,13 @@
                     }).join('');
                 }
 
-                function formatFeedbackBookingPreview(booking) {
-                    if (!booking) {
-                        return '<div class="feedback-booking-preview feedback-booking-empty">Без привязки к бронированию</div>';
-                    }
-                    if (booking.location?.path) {
-                        return `<div class="feedback-booking-preview"><i class="fas fa-map-marker-alt"></i>${escapeHtml(booking.location.path)}</div>`;
-                    }
-                    if (booking.detail_lines?.length) {
-                        return `<div class="feedback-booking-preview"><i class="fas fa-link"></i>${escapeHtml(booking.detail_lines.join(' · '))}</div>`;
-                    }
-                    if (booking.label) {
-                        return `<div class="feedback-booking-preview"><i class="fas fa-calendar-alt"></i>${escapeHtml(booking.label)}</div>`;
-                    }
-                    return '';
-                }
-
                 function formatFeedbackBookingBlock(booking) {
                     if (!booking) return '';
-                    const path = booking.location?.path
-                        ? `<div class="feedback-location-path"><strong>Где:</strong> ${escapeHtml(booking.location.path)}</div>`
-                        : '';
-                    const lines = (booking.detail_lines || []).map(line =>
+                    const lines = booking.summary_lines || booking.detail_lines || [];
+                    if (!lines.length) return '';
+                    return `<div class="feedback-booking">${lines.map(line =>
                         `<div>${escapeHtml(line)}</div>`
-                    ).join('');
-                    const details = lines
-                        ? `<div class="feedback-booking-details">${lines}</div>`
-                        : `<div>${escapeHtml(booking.label || '')}</div>`;
-                    return `<div class="feedback-booking"><strong>Привязка:</strong>${path}${details}</div>`;
+                    ).join('')}</div>`;
                 }
 
                 function renderStaffReplyBlock(n) {
@@ -1529,18 +1507,9 @@
                         if (n.sender_name) metaParts.unshift(escapeHtml(n.sender_name));
                         if (n.sender_phone) metaParts.unshift(escapeHtml(n.sender_phone));
                         if (n.recipient_label) metaParts.push(escapeHtml(n.recipient_label));
-                        if (n.is_archived && n.archived_at) metaParts.push('В архиве с ' + escapeHtml(n.archived_at));
 
                         let readStatusHtml = '';
-                        if (showReadStatus) {
-                            if (n.is_archived) {
-                                readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-archive"></i> Решено</span>';
-                            } else if (n.staff_reply) {
-                                readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-reply"></i> Получен ответ</span>';
-                            } else {
-                                readStatusHtml = '<span class="feedback-read-status pending"><i class="fas fa-hourglass-half"></i> Ожидаем ответ</span>';
-                            }
-                        } else if (n.is_archived) {
+                        if (!showReadStatus && n.is_archived) {
                             readStatusHtml = '<span class="feedback-read-status read"><i class="fas fa-archive"></i> В архиве</span>';
                         }
 
@@ -1550,8 +1519,8 @@
                         }
 
                         const previewText = showReadStatus
-                            ? (n.is_archived ? 'Архивное обращение' : (n.staff_reply ? 'Есть ответ сотрудника' : 'Ожидаем ответ'))
-                            : (isUnread ? 'Нажмите, чтобы прочитать сообщение' : (n.is_archived ? 'Архивное обращение' : 'Нажмите, чтобы открыть'));
+                            ? 'Нажмите, чтобы открыть'
+                            : (isUnread ? 'Нажмите, чтобы прочитать' : 'Нажмите, чтобы открыть');
 
                         const deleteBtnHtml = showReadStatus
                             ? `<button type="button" class="feedback-delete-btn" title="Удалить из истории"
@@ -1577,7 +1546,7 @@
                                 </div>
                                 <div class="feedback-body">
                                     <div class="feedback-text">${escapeHtml(n.message)}</div>
-                                    ${bookingBlock || '<div class="feedback-booking-empty">Без привязки к бронированию</div>'}
+                                    ${bookingBlock}
                                     ${renderStaffReplyBlock(n)}
                                     ${renderStaffActions(n)}
                                 </div>
@@ -1727,7 +1696,7 @@
                         title: document.getElementById('feedback-title').value.trim(),
                         message: document.getElementById('feedback-message').value.trim(),
                     };
-                    const bookingId = document.getElementById('feedback-booking').value;
+                    const bookingId = document.getElementById('feedback-booking')?.value;
                     if (bookingId) payload.booking_id = parseInt(bookingId, 10);
                     try {
                         const res = await fetch('/api/feedback', {
