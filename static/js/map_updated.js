@@ -1309,10 +1309,45 @@ async function applyMaintenance() {
 let categoryTariffs = {};
 let currentPlaceTariffs = [];
 
-function tariffsForPlace(place) {
+function deskTariffsForPlace(place) {
     const catId = place?.category?.id;
     if (catId && categoryTariffs[catId]) return categoryTariffs[catId];
     return place?.tariffs || place?.category?.tariffs || [];
+}
+
+function tariffsForZoneContainer(space) {
+    const desks = typeof bookableDesksInZone === 'function'
+        ? bookableDesksInZone(space)
+        : desksInSpace(space).filter(d => !d.is_amenity && d.bookable !== false);
+    if (!desks.length) return [];
+
+    const types = ['hourly', 'weekly', 'monthly'];
+    const result = [];
+    types.forEach(tariffType => {
+        let sum = 0;
+        let allHave = true;
+        for (const desk of desks) {
+            const deskTariffs = deskTariffsForPlace(desk);
+            const t = deskTariffs.find(x => x.tariff_type === tariffType && x.active !== false);
+            if (!t || t.price == null) {
+                allHave = false;
+                break;
+            }
+            sum += Number(t.price);
+        }
+        if (allHave) {
+            result.push({ tariff_type: tariffType, price: sum, active: true });
+        }
+    });
+    return result;
+}
+
+function tariffsForPlace(place) {
+    if (typeof isDeskZoneSpace === 'function' && isDeskZoneSpace(place)) {
+        const zoneTariffs = tariffsForZoneContainer(place);
+        if (zoneTariffs.length) return zoneTariffs;
+    }
+    return deskTariffsForPlace(place);
 }
 
 const TARIFF_LABELS = {

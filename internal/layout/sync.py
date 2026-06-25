@@ -296,32 +296,10 @@ def _layout_size_m(layout_place):
 
 
 def _zone_desk_tariff_sum(space_code, layout_places, tariff_type='hourly'):
-    """Сумма тарифов всех столов в закрытой зоне."""
-    from internal.models.category import PlaceCategory
-
-    total = 0.0
-    for lp in layout_places:
-        if lp.get('container_code') != space_code or lp.get('kind') != 'desk':
-            continue
-        if lp.get('visual_only'):
-            continue
-        cat_id = lp.get('category_id')
-        price = None
-        if cat_id:
-            cat = PlaceCategory.query.get(cat_id)
-            if cat:
-                t = cat.get_tariff(tariff_type)
-                if t:
-                    price = t.price
-        if price is None:
-            base = PlaceCategory.query.filter_by(kind='desk', capacity=1).first()
-            if base:
-                t = base.get_tariff(tariff_type)
-                price = t.price if t else 250.0
-            else:
-                price = 250.0
-        total += float(price)
-    return round(total, 2)
+    """Сумма тарифов всех столов в закрытой зоне (или None, если тип не у всех столов)."""
+    from internal.utils.zone_tariffs import zone_tariff_price
+    price = zone_tariff_price(space_code, tariff_type, layout_places)
+    return price if price is not None else 0.0
 
 
 def get_or_create_zone_category(seat_count, space_code, width_m, height_m):
@@ -344,15 +322,22 @@ def get_or_create_zone_category(seat_count, space_code, width_m, height_m):
                 cat.height_m = height_m
                 updated = True
         layout = load_layout()
-        for tariff_type in ('hourly', 'weekly', 'monthly'):
-            price = _zone_desk_tariff_sum(space_code, layout.get('places', []), tariff_type)
-            if price <= 0:
-                continue
+        from internal.utils.zone_tariffs import compute_zone_tariffs, ZONE_TARIFF_TYPES
+        zone_tariffs = compute_zone_tariffs(space_code, layout.get('places', []))
+        for tariff_type in ZONE_TARIFF_TYPES:
+            price = zone_tariffs.get(tariff_type)
             t = cat.get_tariff(tariff_type)
-            if t and t.price != price:
-                t.price = price
-                updated = True
-            elif not t:
+            if price is None:
+                if t and t.active:
+                    t.active = False
+                    updated = True
+                continue
+            if t:
+                if not t.active or t.price != price:
+                    t.active = True
+                    t.price = price
+                    updated = True
+            else:
                 db.session.add(CategoryTariff(
                     category_id=cat.id, tariff_type=tariff_type, price=price, active=True,
                 ))
@@ -361,7 +346,6 @@ def get_or_create_zone_category(seat_count, space_code, width_m, height_m):
             db.session.flush()
         return cat
 
-    base = PlaceCategory.query.filter_by(kind='desk', capacity=1).first()
     cat = PlaceCategory(
         name=name,
         kind='desk',
@@ -376,33 +360,13 @@ def get_or_create_zone_category(seat_count, space_code, width_m, height_m):
 
     default_prices = {}
     layout = load_layout()
-    summed_hourly = _zone_desk_tariff_sum(space_code, layout.get('places', []), 'hourly')
-    summed_weekly = _zone_desk_tariff_sum(space_code, layout.get('places', []), 'weekly')
-    summed_monthly = _zone_desk_tariff_sum(space_code, layout.get('places', []), 'monthly')
-    if summed_hourly > 0:
-        default_prices = {
-            'hourly': summed_hourly,
-            'weekly': summed_weekly or round(summed_hourly * 14, 2),
-            'monthly': summed_monthly or round(summed_hourly * 48, 2),
-        }
-    elif base:
-        for bt in base.tariffs:
-            if not bt.active:
-                continue
-            if bt.tariff_type == 'hourly':
-                default_prices['hourly'] = round(bt.price * seat_count * 0.9, 2)
-            elif bt.tariff_type == 'weekly':
-                default_prices['weekly'] = round(bt.price * seat_count * 0.85, 2)
-            elif bt.tariff_type == 'monthly':
-                default_prices['monthly'] = round(bt.price * seat_count * 0.85, 2)
-    if not default_prices:
-        default_prices = {
-            'hourly': round(250 * seat_count * 0.9, 2),
-            'weekly': round(3500 * seat_count * 0.85, 2),
-            'monthly': round(12000 * seat_count * 0.85, 2),
-        }
+    from internal.utils.zone_tariffs import compute_zone_tariffs, ZONE_TARIFF_TYPES
+    default_prices = compute_zone_tariffs(space_code, layout.get('places', []))
 
-    for tariff_type, price in default_prices.items():
+    for tariff_type in ZONE_TARIFF_TYPES:
+        price = default_prices.get(tariff_type)
+        if price is None:
+            continue
         db.session.add(CategoryTariff(
             category_id=cat.id,
             tariff_type=tariff_type,

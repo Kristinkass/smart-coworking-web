@@ -17,6 +17,45 @@ def _zone_booking_rules(place, people_count):
     return True, None
 
 
+def _is_desk_zone_container(place):
+    return (
+        place
+        and place.is_container()
+        and place.allows_child_desks()
+        and not place.is_meeting_room()
+    )
+
+
+def _resolve_booking_tariff(place, tariff_type):
+    """Тариф для брони: у зоны тип доступен только если он есть у каждого стола внутри."""
+    if _is_desk_zone_container(place):
+        from internal.utils.zone_tariffs import zone_tariff_price
+        if zone_tariff_price(place.code, tariff_type) is None:
+            return None
+        if not place.category:
+            return None
+        tariff = place.category.get_tariff(tariff_type)
+        if tariff:
+            return tariff
+        for t in place.category.tariffs:
+            if t.tariff_type == tariff_type:
+                return t
+        return None
+
+    if not place.category:
+        return None
+    return place.category.get_tariff(tariff_type)
+
+
+def _booking_unit_price(place, tariff, tariff_type):
+    """Цена за единицу тарифа с учётом правил зоны."""
+    if _is_desk_zone_container(place):
+        from internal.utils.zone_tariffs import zone_tariff_price
+        price = zone_tariff_price(place.code, tariff_type)
+        return price
+    return tariff.price if tariff else None
+
+
 def _duration_hours_from_times(start_time, end_time):
     """Длительность по 15-минутной сетке (совпадает с модулем бронирования)."""
     start_m = start_time.hour * 60 + start_time.minute
@@ -38,18 +77,22 @@ def _calc_booking_total(place, tariff, tariff_type, duration_hours, people_count
     capacity = max(1, place.capacity or 1)
     people = max(1, people_count or 1)
 
+    unit_price = _booking_unit_price(place, tariff, tariff_type)
+    if unit_price is None:
+        return 0
+
     if tariff_type == 'hourly':
         if start_time is not None and end_time is not None:
             duration_hours = _duration_hours_from_times(start_time, end_time)
         if use_full_price:
-            total = duration_hours * tariff.price
+            total = duration_hours * unit_price
         else:
-            total = duration_hours * tariff.price * people
+            total = duration_hours * unit_price * people
         return int(round(total))
 
     if use_full_price:
-        return int(round(tariff.price))
-    return int(round(tariff.price * people))
+        return int(round(unit_price))
+    return int(round(unit_price * people))
 
 booking_bp = Blueprint('booking_api', __name__)
 
@@ -104,8 +147,8 @@ def check_booking():
     )
 
     total_price = None
-    if is_available and place.category:
-        tariff = place.category.get_tariff(tariff_type)
+    if is_available:
+        tariff = _resolve_booking_tariff(place, tariff_type)
         if tariff:
             total_price = _calc_booking_total(
                 place, tariff, tariff_type, 0, people_count,
@@ -157,14 +200,12 @@ def calculate_price():
 
     duration_hours = _duration_hours_from_times(start_time, end_time)
 
-    tariff = None
-    if place.category:
-        tariff = place.category.get_tariff(tariff_type)
+    tariff = _resolve_booking_tariff(place, tariff_type)
 
     if not tariff:
         return jsonify({
             'success': False,
-            'error': f'Тариф "{tariff_type}" не доступен для этой категории'
+            'error': f'Тариф "{tariff_type}" не доступен для этой зоны или категории'
         }), 400
 
     total_price = _calc_booking_total(
@@ -333,24 +374,17 @@ def create_booking_route():
     category_tariff_id = None
 
     if not is_subscription_booking:
-        if place.category:
-            # Получаем тариф для категории
-            tariff = place.category.get_tariff(tariff_type)
-            if tariff:
-                category_tariff_id = tariff.id
-                total_price = _calc_booking_total(
-                    place, tariff, tariff_type, duration_hours, people_count,
-                    start_time=start_time, end_time=end_time,
-                )
-            else:
-                return jsonify({
-                    'success': False,
-                    'error': f'Тариф "{tariff_type}" не настроен для этой категории мест'
-                }), 400
+        tariff = _resolve_booking_tariff(place, tariff_type)
+        if tariff:
+            category_tariff_id = getattr(tariff, 'id', None) or getattr(tariff, 'id_tariff', None)
+            total_price = _calc_booking_total(
+                place, tariff, tariff_type, duration_hours, people_count,
+                start_time=start_time, end_time=end_time,
+            )
         else:
             return jsonify({
                 'success': False,
-                'error': 'У места не назначена категория - бронирование невозможно'
+                'error': f'Тариф "{tariff_type}" не настроен для этой категории мест'
             }), 400
 
     booking = Booking(
