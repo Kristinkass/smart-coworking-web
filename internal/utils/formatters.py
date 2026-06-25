@@ -313,11 +313,15 @@ def build_report_stats(bookings):
             'detail': f"{sub_name_counts[name]} шт.",
         })
 
+    from internal.utils.stats import place_statistics_kind
+
     by_place_type = {}
     for booking in bookings:
-        if not (booking.place and booking.place.kind):
+        if not booking.place:
             continue
-        kind = booking.place.kind
+        kind = place_statistics_kind(booking.place)
+        if not kind:
+            continue
         if kind not in by_place_type:
             by_place_type[kind] = {
                 'count': 0,

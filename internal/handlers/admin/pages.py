@@ -22,7 +22,12 @@ from internal.utils.formatters import (
     format_duration,
     format_place_code,
 )
-from internal.utils.stats import compute_desk_seat_capacity, compute_meeting_room_count
+from internal.utils.stats import (
+    aggregate_bookings_by_statistics_kind,
+    compute_desk_seat_capacity,
+    compute_meeting_room_count,
+    place_statistics_kind,
+)
 from internal.utils.phone import format_phone_display
 from internal.utils.errors import user_error_message
 
@@ -621,18 +626,14 @@ def register_admin_pages_routes(app):
             daily_labels.append(date.strftime('%d.%m'))
             daily_data.append(int(daily_dict.get(date, 0) or 0))
 
-        # Данные для графика по категориям – только реальные места (desk, room),
-        # без зон-контейнеров (space), которые не бронируются напрямую
-        category_stats = db.session.query(
-            models.Place.kind,
-            func.count(models.Booking.id)
-        ).join(models.Booking).filter(
-            models.Booking.booking_date >= start_date,
-            models.Booking.booking_date <= end_date,
+        # График по категориям: desk и room (переговорные часто kind=space в БД)
+        category_bookings = base_query.filter(
             models.Booking.status.in_(['completed', 'active']),
-            models.Place.kind.in_(['desk', 'room']),
-        ).group_by(models.Place.kind).all()
-
+        ).options(
+            joinedload(models.Booking.place).joinedload(models.Place.category),
+            joinedload(models.Booking.place).joinedload(models.Place.location),
+        ).all()
+        category_stats = aggregate_bookings_by_statistics_kind(category_bookings)
         category_labels = [get_type_name(c[0]) for c in category_stats] if category_stats else ['Нет данных']
         category_data = [c[1] for c in category_stats] if category_stats else [0]
 
@@ -675,7 +676,7 @@ def register_admin_pages_routes(app):
             top_places.append({
                 'code': format_place_code(place),
                 'name': place.name,
-                'type': get_type_name(place.kind),
+                'type': get_type_name(place_statistics_kind(place) or place.kind),
                 'bookings_count': bookings_count,
                 'total_hours': round(total_hours_place or 0, 1),
                 'total_hours_display': format_duration(total_hours_place or 0),
