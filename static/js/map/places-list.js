@@ -119,11 +119,13 @@ function placesForListSelection() {
 function openListZone(zoneCode) {
     listActiveZoneCode = zoneCode;
     renderPlacesList();
+    if (typeof updateWholeZoneBookButtons === 'function') updateWholeZoneBookButtons();
 }
 
 function exitListZone() {
     listActiveZoneCode = null;
     renderPlacesList();
+    if (typeof updateWholeZoneBookButtons === 'function') updateWholeZoneBookButtons();
 }
 
 function listPriceLabel(place) {
@@ -261,11 +263,13 @@ function renderPlacesList() {
         container.innerHTML = listActiveZoneCode
             ? '<div class="places-list-empty">В этой зоне нет доступных столов</div>'
             : '<div class="places-list-empty">Нет доступных мест по выбранным фильтрам</div>';
+        if (typeof updateWholeZoneBookButtons === 'function') updateWholeZoneBookButtons();
         return;
     }
 
     if (listActiveZoneCode) {
         container.innerHTML = `<div class="places-list-grid">${filtered.map(renderPlaceListItem).join('')}</div>`;
+        if (typeof updateWholeZoneBookButtons === 'function') updateWholeZoneBookButtons();
         return;
     }
 
@@ -284,6 +288,7 @@ function renderPlacesList() {
     });
 
     container.innerHTML = html;
+    if (typeof updateWholeZoneBookButtons === 'function') updateWholeZoneBookButtons();
 }
 
 function selectPlaceForBookingFromList(place) {

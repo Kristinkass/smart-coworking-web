@@ -713,8 +713,8 @@
                     <i class="fas fa-arrow-left"></i> К этажу
                 </button>
                 <span id="space-view-title" class="space-view-title"></span>
-                <button type="button" class="btn btn-outline-primary btn-sm" id="book-whole-space-btn" onclick="bookWholeSpace()" style="display:none;" title="Доступно только если все столы внутри свободны на выбранное время">
-                    <i class="fas fa-door-open"></i> Забронировать всё помещение
+                <button type="button" class="btn btn-outline-primary btn-sm" id="book-whole-space-btn" onclick="bookWholeSpace()" style="display:none;" title="Стоимость — сумма тарифов всех столов внутри. Доступно, если все столы свободны на выбранное время">
+                    <i class="fas fa-door-open"></i> Забронировать всю зону
                 </button>
             </div>
 
@@ -798,6 +798,9 @@
                         <i class="fas fa-arrow-left"></i> К списку
                     </button>
                     <span id="list-zone-title" class="list-zone-title"></span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="book-whole-zone-list-btn" onclick="bookWholeZoneFromList()" style="display:none;" title="Стоимость — сумма тарифов всех столов внутри. Доступно, если все столы свободны на выбранное время">
+                        <i class="fas fa-door-open"></i> Забронировать всю зону
+                    </button>
                 </div>
                 <div id="places-list-filters" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
                     <div style="display:flex; align-items:center; gap:6px;">

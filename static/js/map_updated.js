@@ -1129,6 +1129,30 @@ function updateSpaceViewBar() {
     if (!bar) return;
     const show = Boolean(activeSpace) && currentUserView === 'map';
     bar.style.display = show ? 'flex' : 'none';
+    updateWholeZoneBookButtons();
+}
+
+function bookableDesksInZone(space) {
+    if (!space) return [];
+    return desksInSpace(space).filter(d => !d.is_amenity && d.bookable !== false);
+}
+
+function canBookWholeZone(space) {
+    if (!space || !isDeskZoneSpace(space)) return false;
+    return bookableDesksInZone(space).length > 0;
+}
+
+function updateWholeZoneBookButtons() {
+    const mapBtn = document.getElementById('book-whole-space-btn');
+    const listBtn = document.getElementById('book-whole-zone-list-btn');
+    const showMap = Boolean(activeSpace) && currentUserView === 'map' && canBookWholeZone(activeSpace);
+    if (mapBtn) mapBtn.style.display = showMap ? '' : 'none';
+
+    const zoneCode = typeof listActiveZoneCode !== 'undefined' ? listActiveZoneCode : null;
+    const source = window.allPlaces || places;
+    const listZone = zoneCode ? source.find(p => p.code === zoneCode) : null;
+    const showList = currentUserView === 'list' && canBookWholeZone(listZone);
+    if (listBtn) listBtn.style.display = showList ? '' : 'none';
 }
 
 function enterSpaceView(space) {
@@ -1143,7 +1167,7 @@ function enterSpaceView(space) {
         document.getElementById('space-view-title').textContent = space.name;
     }
     updateSpaceViewBar();
-    const children = desksInSpace(space);
+    const children = bookableDesksInZone(space);
     if (!children.length) {
         showAlert('В этом помещении пока нет столов. Обратитесь к администратору.', 'info');
     }
@@ -1162,9 +1186,19 @@ function exitSpaceView() {
 }
 
 function bookWholeSpace() {
-    if (!activeSpace) return;
+    if (!activeSpace || !canBookWholeZone(activeSpace)) return;
     selectPlaceForBooking(activeSpace);
 }
+
+function bookWholeZoneFromList() {
+    if (typeof listActiveZoneCode === 'undefined' || !listActiveZoneCode) return;
+    const source = window.allPlaces || places;
+    const zone = source.find(p => p.code === listActiveZoneCode);
+    if (!zone || !canBookWholeZone(zone)) return;
+    selectPlaceForBooking(zone);
+}
+
+window.bookWholeZoneFromList = bookWholeZoneFromList;
 
 // ================== РЕЖИМ РЕДАКТИРОВАНИЯ ==================
 function updateEditSelectionHighlight() {
@@ -1507,6 +1541,10 @@ async function selectPlaceForBooking(place) {
                         ? `${place.location_name} (${place.location_code || ''})`
                         : (place.location_code || '')));
             metaEl.textContent = `${floorLabel}${locLabel ? ' · ' + locLabel : ''}`;
+        }
+        if (isDeskZoneSpace(place)) {
+            const seats = zoneSeatCapacity(place);
+            metaEl.textContent += ` · Бронь всей зоны (${seats} мест, сумма тарифов столов)`;
         }
     }
     document.getElementById('booking-form').style.display = 'block';
