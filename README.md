@@ -60,23 +60,6 @@ venv\Scripts\python.exe cmd\app\main.py
 | http://127.0.0.1:5000/docs/ | Swagger UI |
 | http://127.0.0.1:5000/openapi.json | OpenAPI 3.0 |
 
-## Запуск на VPS (production)
-
-На сервере используйте **один** файл — без merge:
-
-```bash
-cp .env.example .env   # один раз, заполнить
-docker compose -f docker-compose.vps.yml up -d --build
-```
-
-Остановка: `docker compose -f docker-compose.vps.yml down`
-
-Обновление после `git pull`:
-
-```bash
-docker compose -f docker-compose.vps.yml up -d --build
-```
-
 ## Запуск через Docker (локально)
 
 ```bash
@@ -106,21 +89,3 @@ internal/
 static/                  — CSS, JS, layout.json
 templates/               — HTML-шаблоны
 ```
-
-## Production (без Docker)
-
-```bash
-waitress-serve --host=0.0.0.0 --port=5000 wsgi:app
-```
-
-## Публикация на GitHub
-
-```powershell
-cd путь\к\проекту
-git add .
-git commit -m "Система управления коворкингом"
-git remote add origin https://github.com/ВАШ_ЛОГИН/smart-coworking.git
-git push -u origin main
-```
-
-Не коммитьте `.env` и папку `venv/`.
